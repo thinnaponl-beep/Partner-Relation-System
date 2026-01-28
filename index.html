@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Partner Relation Support</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts (Sarabun) -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
+  <style>
+    :root { 
+        --ci-primary: #31C1D7; 
+        --ci-secondary: #82C9D9;
+        --ci-accent: #F2AC57;
+        --ci-success: #31D782;
+        --ci-bg: #F8F9FA; 
+        --ci-text: #2d3436;
+        --ci-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        --sidebar-width: 260px;
+        --sidebar-width-collapsed: 80px;
+    }
+    body { font-family: 'Sarabun', sans-serif; background-color: var(--ci-bg); color: var(--ci-text); overflow-x: hidden; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+        height: 100vh;
+        width: var(--sidebar-width);
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: #ffffff;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #f0f0f0;
+    }
+    
+    .sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+    
+    .sidebar-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 80px;
+        border-bottom: 1px solid #f8f9fa;
+        justify-content: center;
+    }
+    
+    .logo-box {
+        min-width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--ci-primary), #25a0b5);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 10px rgba(49, 193, 215, 0.3);
+    }
+    
+    .brand-text {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #2d3436;
+        transition: opacity 0.2s;
+        margin-left: 10px;
+    }
+    .sidebar.collapsed .brand-text { display: none; }
+
+    .sidebar-menu {
+        padding: 20px 10px;
+        list-style: none;
+        margin: 0;
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .sidebar-menu li { margin-bottom: 8px; }
+    
+    .nav-link-custom {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #636e72;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.2s;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    .sidebar.collapsed .nav-link-custom { justify-content: center; padding: 12px 0; }
+    .sidebar.collapsed .nav-link-custom span { display: none; }
+    .sidebar.collapsed .nav-link-custom:hover { transform: none; background-color: #f1f3f5; }
+    
+    .nav-link-custom:hover {
+        background-color: #f1f3f5;
+        color: var(--ci-primary);
+        transform: translateX(3px);
+    }
+    
+    .nav-link-custom.active {
+        background-color: rgba(49, 193, 215, 0.1);
+        color: var(--ci-primary);
+        font-weight: 600;
+    }
+    
+    .nav-icon {
+        min-width: 24px;
+        font-size: 1.1rem;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .sidebar.collapsed .nav-icon { margin-right: 0; }
+
+    .user-section {
+        padding: 15px;
+        border-top: 1px solid #f8f9fa;
+        background-color: #fff;
+    }
+    .user-card {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .sidebar.collapsed .user-card { justify-content: center; padding: 10px 0; }
+    .sidebar.collapsed .user-text { display: none; }
+    
+    /* --- Main Content --- */
+    .main-content {
+        margin-left: var(--sidebar-width);
+        padding: 20px 30px;
+        transition: all 0.3s ease;
+        min-height: 100vh;
+    }
+    .main-content.expanded { margin-left: var(--sidebar-width-collapsed); }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px dashed #e9ecef;
+    }
+    .toggle-btn {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #636e72;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background 0.2s;
+    }
+    .toggle-btn:hover { background-color: #e9ecef; }
+
+    /* Soft Buttons */
+    .btn-soft-primary { background-color: rgba(49, 193, 215, 0.1); color: var(--ci-primary); border: none; font-weight: 600; }
+    .btn-soft-primary:hover { background-color: var(--ci-primary); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(49, 193, 215, 0.2); }
+    
+    .btn-soft-success { background-color: rgba(25, 135, 84, 0.1); color: #198754; border: none; font-weight: 600; }
+    .btn-soft-success:hover { background-color: #198754; color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(25, 135, 84, 0.2); }
+
+    /* Status Cards */
+    .status-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border-left: 5px solid #ddd; transition: all 0.2s ease; }
+    .status-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.08); }
+    .status-card.primary { border-left-color: var(--ci-primary); } 
+    .status-card.success { border-left-color: var(--ci-success); } 
+    .status-card.warning { border-left-color: var(--ci-accent); }  
+    .status-card.danger { border-left-color: #dc3545; }            
+    .status-card.info { border-left-color: var(--ci-secondary); }  
+    .status-card h3 { color: #333; font-weight: 600; }
+
+    /* Table */
+    .table-container { background: #fff; border-radius: 16px; padding: 25px; margin-top: 20px; overflow-x: auto; box-shadow: var(--ci-shadow); border: 1px solid #f0f0f0; }
+    .table th { white-space: nowrap; background-color: #f8fbfb; color: #2d3436; font-weight: 600; border-bottom: 2px solid #eef2f5; padding-top: 15px; padding-bottom: 15px; }
+    .table td { white-space: nowrap; vertical-align: middle; padding-top: 12px; padding-bottom: 12px; color: #555; }
+    .badge-status { padding: 6px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; }
+
+    .btn-primary-theme { background-color: var(--ci-primary); border-color: var(--ci-primary); color: white; font-weight: 500; }
+    .btn-primary-theme:hover { background-color: #29a8bb; border-color: #29a8bb; color: white; }
+    
+    .flatpickr-day.selected { background: var(--ci-primary) !important; border-color: var(--ci-primary) !important; }
+    .flatpickr-input[readonly] { background-color: #fff !important; cursor: pointer; }
+
+    /* Mobile Overlay */
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; backdrop-filter: blur(2px); }
+    .overlay.active { display: block; }
+    
+    @media (max-width: 768px) {
+        .sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        .sidebar.active { margin-left: 0; }
+        .main-content { margin-left: 0 !important; padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+          <div class="logo-box"><i class="fas fa-bolt"></i></div>
+          <div class="brand-text">Partner Relation<br><small class="fw-light">Support</small></div>
+      </div>
+      
+      <ul class="sidebar-menu">
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="nav-link-custom">
+                  <i class="fas fa-th-large nav-icon"></i>
+                  <span>หน้าแรก</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="nav-link-custom">
+                  <i class="fas fa-user-check nav-icon"></i>
+                  <span>ติดตามเปิดระบบ</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=firstbk" class="nav-link-custom">
+                  <i class="fas fa-briefcase nav-icon"></i>
+                  <span>ติดตามรับงานแรก</span>
+              </a>
+          </li>
+          <li>
+              <a href="javascript:void(0)" class="nav-link-custom active">
+                  <i class="fas fa-file-signature nav-icon"></i>
+                  <span>ตรวจประวัติใหม่</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="nav-link-custom">
+                  <i class="fas fa-calendar-check nav-icon"></i>
+                  <span>ตรวจประวัติรายปี</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="nav-link-custom d-none" id="nav-config">
+                  <i class="fas fa-cogs nav-icon"></i>
+                  <span>ตั้งค่า</span>
+              </a>
+          </li>
+      </ul>
+
+      <div class="user-section">
+          <div class="user-card" title="ข้อมูลผู้ใช้">
+              <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 35px; height: 35px; min-width: 35px;">
+                  <i class="fas fa-user"></i>
+              </div>
+              <div class="ms-2 user-text overflow-hidden">
+                  <div class="small fw-bold text-truncate" id="userEmail">Loading...</div>
+                  <div class="text-muted" style="font-size: 0.7rem;">Officer</div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="d-flex align-items-center">
+            <button class="toggle-btn me-3" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 fw-bold text-secondary">ตรวจประวัติคุณแม่บ้านใหม่</h4>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-soft-primary btn-sm px-3 rounded-pill d-flex align-items-center gap-2" onclick="openExportModal()">
+                <i class="fas fa-file-export"></i> <span class="d-none d-md-inline">Export CSV</span>
+            </button>
+            <button class="btn btn-soft-success btn-sm px-3 rounded-pill d-flex align-items-center gap-2" onclick="exportMonthlyReport()">
+                <i class="fas fa-file-excel"></i> <span class="d-none d-md-inline">Report</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Cards -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-5 g-3 mb-4">
+      <div class="col">
+        <div class="status-card primary h-100">
+          <small class="text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Total</small>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <h3 class="mb-0" id="countTotal">0</h3>
+            <i class="fas fa-users fs-4 text-primary opacity-50"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="status-card success h-100">
+          <small class="text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Verified (ผ่าน)</small>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <h3 class="mb-0" id="countVerified">0</h3>
+            <i class="fas fa-check-circle fs-4 text-success opacity-50"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="status-card warning h-100">
+          <small class="text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Pending (อนุโลม)</small>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <h3 class="mb-0" id="countPending">0</h3>
+            <i class="fas fa-exclamation-triangle fs-4 text-warning opacity-50"></i>
+          </div>
+        </div>
+      </div>
+       <div class="col">
+        <div class="status-card danger h-100">
+           <small class="text-muted text-uppercase fw-bold" style="font-size:0.7rem;">Not Verified</small>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <h3 class="mb-0" id="countNotVerified">0</h3>
+            <i class="fas fa-times-circle text-danger opacity-50 fs-4"></i>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="status-card info h-100">
+          <small class="text-muted text-uppercase fw-bold" style="font-size:0.7rem;">In Progress</small>
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <h3 class="mb-0" id="countProgress">0</h3>
+            <i class="fas fa-spinner fs-4 text-info opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="row g-3 mb-4 align-items-end">
+      <div class="col-md-3">
+         <label class="form-label small text-muted fw-bold text-uppercase">ช่วงเวลา</label>
+         <div class="input-group shadow-sm">
+             <select class="form-select bg-light border-end-0" id="filterMode" style="max-width: 90px;" onchange="toggleFilterMode()">
+                 <option value="month">เดือน</option>
+                 <option value="year">ปี</option>
+             </select>
+             <input type="text" class="form-control border-start-0" id="monthFilter" placeholder="เลือกเดือน..." readonly>
+             <select class="form-select border-start-0 d-none" id="yearFilter" onchange="loadData()">
+                 <!-- JS Populated -->
+             </select>
+         </div>
+      </div>
+
+      <div class="col-md-2">
+         <label class="form-label small text-muted fw-bold text-uppercase">ศูนย์</label>
+         <select class="form-select shadow-sm" id="centerFilter" onchange="filterTable()">
+            <option value="">ทั้งหมด</option>
+         </select>
+      </div>
+
+      <div class="col-md-2">
+         <label class="form-label small text-muted fw-bold text-uppercase">สถานะ</label>
+         <select class="form-select shadow-sm" id="statusFilter" onchange="filterTable()">
+            <option value="">ทั้งหมด</option>
+         </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label small text-muted fw-bold text-uppercase">ค้นหา</label>
+        <div class="input-group shadow-sm">
+          <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+          <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="ชื่อ, รหัส, เลขบัตร..." onkeyup="filterTable()">
+        </div>
+      </div>
+
+      <div class="col-md-2 text-end">
+        <button class="btn btn-primary-theme w-100 shadow-sm py-2 rounded-pill fw-bold" onclick="openAddModal()">
+          <i class="fas fa-user-plus me-1"></i> เพิ่มรายการ
+        </button>
+      </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-container">
+      <table class="table table-hover align-middle" id="dataTable">
+        <thead>
+          <tr>
+            <th class="text-center">#</th>
+            <th>รหัส</th>
+            <th>วันที่ยื่น</th>
+            <th>วันที่อบรม</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th>เลขบัตร ปชช.</th>
+            <th>เบอร์โทร</th>
+            <th>ศูนย์</th>
+            <th>วันที่รับผล</th>
+            <th>ผลตรวจสอบ</th>
+            <th>สถานะ FT</th>
+            <th style="min-width: 150px;">หมายเหตุ</th>
+            <th class="text-center">Export</th>
+            <th class="text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="noDataMessage" class="text-center py-5 text-muted" style="display:none;">
+        <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i><br>ไม่พบข้อมูลในเดือนนี้
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Form (Add/Edit) -->
+  <div class="modal fade" id="formModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h5 class="modal-title fw-bold text-primary" id="formModalTitle"><i class="fas fa-edit me-2"></i>บันทึกข้อมูล</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-4">
+          <form id="dataForm">
+            <input type="hidden" id="recordId">
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-bold text-muted">รหัสคุณแม่บ้าน</label>
+                <input type="text" class="form-control" id="code">
+              </div>
+              <div class="col-md-8">
+                <label class="form-label small fw-bold text-muted">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+                <input type="text" class="form-control fw-bold" id="name" required>
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">เลขบัตรประชาชน (13 หลัก) <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="idCard" maxlength="17" required 
+                       oninput="formatIdCard(this)" onblur="validateIdCard(this)">
+                <div class="invalid-feedback">เลขบัตรประชาชนไม่ถูกต้อง</div>
+              </div>
+              
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">เบอร์โทรศัพท์</label>
+                <input type="text" class="form-control" id="phone">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">วันที่อบรม</label>
+                <div class="input-group">
+                   <span class="input-group-text bg-light"><i class="far fa-calendar"></i></span>
+                   <input type="text" class="form-control datepicker-input" id="trainingDate" placeholder="เลือกวันที่..." readonly>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">วันที่ยื่นเอกสาร <span class="text-danger">*</span></label>
+                <div class="input-group">
+                   <span class="input-group-text bg-light"><i class="far fa-calendar-check"></i></span>
+                   <input type="text" class="form-control datepicker-input" id="submitDate" placeholder="เลือกวันที่..." required readonly>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">ศูนย์ (Center)</label>
+                <select class="form-select" id="center">
+                  <option value="" selected disabled>เลือกศูนย์...</option>
+                </select>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label small fw-bold text-muted">เจ้าหน้าที่ (Officer)</label>
+                <input type="text" class="form-control bg-light" id="officer" readonly>
+              </div>
+              
+              <div id="officerSection" class="mt-4 pt-3 border-top">
+                  <h6 class="text-danger fw-bold mb-3"><i class="fas fa-user-shield me-2"></i>สำหรับเจ้าหน้าที่ส่งตรวจประวัติ</h6>
+                  
+                  <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">วันที่รับผล</label>
+                        <div class="input-group">
+                           <span class="input-group-text bg-light"><i class="far fa-calendar-alt"></i></span>
+                           <input type="text" class="form-control datepicker-input" id="resultDate" placeholder="เลือกวันที่..." readonly>
+                        </div>
+                      </div>
+                      
+                      <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">ผลตรวจสอบ</label>
+                        <select class="form-select" id="result">
+                           <option value="" selected disabled>เลือกผล...</option>
+                        </select>
+                      </div>
+                      
+                      <div class="col-md-4">
+                        <label class="form-label small fw-bold text-muted">สถานะ FT</label>
+                        <select class="form-select" id="ftStatus">
+                          <option value="" selected disabled>เลือกสถานะ...</option>
+                        </select>
+                      </div>
+                      
+                      <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">หมายเหตุ</label>
+                        <textarea class="form-control" id="note" rows="2"></textarea>
+                      </div>
+                  </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-top-0">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center pb-5">
+          <i class="fas fa-file-csv display-4 mb-3" style="color: var(--ci-primary);"></i>
+          <h4>Export CSV</h4>
+          <p class="text-muted">เลือกกลุ่มที่ต้องการ Export (เฉพาะรายการที่ยังไม่เคย Export)</p>
+          <p class="small mb-4 text-primary fw-bold" id="exportMonthDisplay"></p>
+          <div class="d-grid gap-2 col-10 mx-auto">
+            <button class="btn p-3 text-start text-white shadow-sm border-0" style="background-color: var(--ci-success);" onclick="previewExport('Verified')">
+              <div class="d-flex justify-content-between"><span><i class="fas fa-check-circle me-2"></i> กลุ่ม 1: Verified (ผ่าน)</span><i class="fas fa-arrow-right"></i></div>
+            </button>
+            <button class="btn p-3 text-start text-white shadow-sm border-0" style="background-color: var(--ci-accent);" onclick="previewExport('Pending Result')">
+              <div class="d-flex justify-content-between"><span><i class="fas fa-exclamation-triangle me-2"></i> กลุ่ม 2: Pending Result (อนุโลม)</span><i class="fas fa-arrow-right"></i></div>
+            </button>
+            <button class="btn btn-danger p-3 text-start shadow-sm border-0" onclick="previewExport('Not Verified')">
+              <div class="d-flex justify-content-between"><span><i class="fas fa-times-circle me-2"></i> กลุ่ม 3: Not Verified (ไม่ผ่าน)</span><i class="fas fa-arrow-right"></i></div>
+            </button>
+             <button class="btn p-3 text-start text-dark shadow-sm border-0" style="background-color: var(--ci-secondary);" onclick="previewExport('In Progress')">
+              <div class="d-flex justify-content-between"><span><i class="fas fa-spinner me-2"></i> กลุ่ม 4: In Progress (รอผล)</span><i class="fas fa-arrow-right"></i></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title">ตรวจสอบรายการ Export</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-sm table-bordered">
+            <thead class="table-light"><tr><th>Code</th><th>ชื่อ-นามสกุล</th><th>เลขบัตร</th><th>สถานะ</th></tr></thead>
+            <tbody id="previewTableBody"></tbody>
+          </table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-primary-theme" onclick="confirmExport()">ยืนยัน Download CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+  
+  <script>
+    let globalData = [], centersList = [], resultList = [], ftStatusList = [];
+    let currentUserEmail = "", isUserAdmin = false;
+    let formModal, exportModal, previewModal;
+    let monthPickerInstance;
+    let currentExportStatus = "";
+
+    window.onload = function() {
+      formModal = new bootstrap.Modal(document.getElementById('formModal'));
+      exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+      previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+
+      const today = new Date();
+      monthPickerInstance = flatpickr("#monthFilter", {
+        plugins: [ new monthSelectPlugin({ shorthand: true, dateFormat: "Y-m", altFormat: "F Y", theme: "light" }) ],
+        locale: "th", defaultDate: today,
+        onChange: function(selectedDates, dateStr) { loadData(); }
+      });
+
+      flatpickr(".datepicker-input", { dateFormat: "Y-m-d", altInput: true, altFormat: "j F Y", locale: "th", allowInput: true });
+      populateYearDropdown();
+      loadData();
+      
+      // Check Admin
+      google.script.run.withSuccessHandler(res => {
+           if(res.isAdmin) document.getElementById('nav-config').classList.remove('d-none');
+      }).getClientConfig();
+    };
+    
+    // --- Sidebar Toggle ---
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const overlay = document.getElementById('overlay');
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('active'); overlay.classList.toggle('active');
+        } else {
+            sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded');
+        }
+    }
+
+    function populateYearDropdown() {
+       const yearSelect = document.getElementById('yearFilter');
+       const currentYear = new Date().getFullYear();
+       yearSelect.innerHTML = "";
+       for(let y = currentYear + 2; y >= currentYear - 3; y--) {
+           let thaiYear = y + 543;
+           let option = new Option(thaiYear, y);
+           if(y === currentYear) option.selected = true;
+           yearSelect.add(option);
+       }
+    }
+
+    function toggleFilterMode() {
+        const mode = document.getElementById('filterMode').value;
+        const flatpickrInput = document.getElementById('monthFilter');
+        const yearSelect = document.getElementById('yearFilter');
+
+        if(mode === 'month') {
+            flatpickrInput.classList.remove('d-none');
+            // Helper to find mobile flatpickr input if hidden
+            if(flatpickrInput.nextElementSibling && flatpickrInput.nextElementSibling.tagName === "INPUT") {
+                 flatpickrInput.nextElementSibling.classList.remove('d-none');
+            }
+            yearSelect.classList.add('d-none');
+        } else {
+            flatpickrInput.classList.add('d-none');
+            if(flatpickrInput.nextElementSibling && flatpickrInput.nextElementSibling.tagName === "INPUT") {
+                 flatpickrInput.nextElementSibling.classList.add('d-none');
+            }
+            yearSelect.classList.remove('d-none');
+        }
+        loadData();
+    }
+
+    function loadData() {
+      const mode = document.getElementById('filterMode').value;
+      let filterVal = (mode === 'month') ? document.getElementById('monthFilter').value : document.getElementById('yearFilter').value;
+
+      showLoading(true);
+      google.script.run.withSuccessHandler(onDataLoaded).withFailureHandler(onFailure).getInitialData(filterVal);
+    }
+
+    function onDataLoaded(response) {
+      globalData = response.data || [];
+      currentUserEmail = response.currentUser;
+      isUserAdmin = response.isAdmin;
+      
+      centersList = response.centers || [];
+      resultList = response.results || [];
+      ftStatusList = response.ftStatuses || [];
+
+      document.getElementById('userEmail').textContent = currentUserEmail;
+      
+      const navConfig = document.getElementById('nav-config');
+      if (navConfig) {
+          if (isUserAdmin) navConfig.classList.remove('d-none');
+          else navConfig.classList.add('d-none');
+      }
+
+      populateDropdowns();
+      updateStats();
+      renderTable(globalData);
+      showLoading(false);
+    }
+
+    function populateDropdowns() {
+      const centerFilter = document.getElementById('centerFilter');
+      const centerForm = document.getElementById('center');
+      const statusFilter = document.getElementById('statusFilter');
+      const ftStatusForm = document.getElementById('ftStatus');
+      const resultForm = document.getElementById('result');
+
+      const currCenterFilter = centerFilter.value;
+      const currStatusFilter = statusFilter.value;
+
+      centerFilter.innerHTML = '<option value="">ทั้งหมด</option>';
+      centerForm.innerHTML = '<option value="" selected disabled>เลือกศูนย์...</option>';
+      statusFilter.innerHTML = '<option value="">ทั้งหมด</option>';
+      statusFilter.innerHTML += '<option value="NEW">รายการใหม่</option>';
+
+      ftStatusForm.innerHTML = '<option value="" selected disabled>เลือกสถานะ...</option>';
+      resultForm.innerHTML = '<option value="" selected disabled>เลือกผล...</option>';
+
+      centersList.forEach(c => {
+        centerFilter.add(new Option(c, c));
+        centerForm.add(new Option(c, c));
+      });
+
+      ftStatusList.forEach(s => {
+        statusFilter.add(new Option(s, s));
+        ftStatusForm.add(new Option(s, s));
+      });
+
+      resultList.forEach(r => {
+        resultForm.add(new Option(r, r));
+      });
+      
+      if(currCenterFilter) centerFilter.value = currCenterFilter;
+      if(currStatusFilter) statusFilter.value = currStatusFilter;
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody');
+      const noDataMsg = document.getElementById('noDataMessage');
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        noDataMsg.style.display = 'block';
+        return;
+      }
+      noDataMsg.style.display = 'none';
+
+      data.forEach((item, index) => {
+        let tr = document.createElement('tr');
+        
+        let badgeStyle = '';
+        if(item.ftStatus === 'Verified') badgeStyle = 'background-color: var(--ci-success); color: white;';
+        else if(item.ftStatus === 'Pending Result') badgeStyle = 'background-color: var(--ci-accent); color: white;';
+        else if(item.ftStatus === 'Not Verified') badgeStyle = 'background-color: #dc3545; color: white;';
+        else if(item.ftStatus === 'In Progress') badgeStyle = 'background-color: var(--ci-secondary); color: #333;';
+        else badgeStyle = 'background-color: #6c757d; color: white;'; 
+
+        let exportIcon = item.exportStatus 
+          ? `<i class="fas fa-file-export text-success fs-5" title="${item.exportStatus}"></i>` 
+          : '<span class="text-muted">-</span>';
+          
+        let safeName = (item.name || "").replace(/'/g, "\\'");
+        let deleteBtn = isUserAdmin ? 
+            `<button class="btn btn-sm btn-outline-danger" onclick="deleteItem('${item.id}', '${safeName}')"><i class="fas fa-trash-alt"></i></button>` : '';
+            
+        // Linked Code
+        let codeDisplay = item.code 
+            ? `<a href="https://admin-test.beneat.co/professional/${item.code}/profile" target="_blank" class="fw-bold text-primary text-decoration-none">${item.code}</a>` 
+            : '-';
+
+        tr.innerHTML = `
+          <td class="text-center">${index + 1}</td>
+          <td>${codeDisplay}</td>
+          <td>${formatDateDisplay(item.submitDate)}</td>
+          <td>${formatDateDisplay(item.trainingDate)}</td>
+          <td style="font-weight:500;">${item.name}</td>
+          <td>${item.idCard}</td>
+          <td>${item.phone}</td>
+          <td>${item.center}</td>
+          <td>${formatDateDisplay(item.resultDate)}</td>
+          <td>${item.result || '-'}</td>
+          <td><span class="badge-status" style="${badgeStyle}">${item.ftStatus}</span></td>
+          <td class="text-muted small text-truncate" style="max-width: 150px;">${item.note}</td>
+          <td class="text-center">${exportIcon}</td>
+          <td class="text-center">
+             <div class="d-flex justify-content-center gap-1">
+               <button class="btn btn-sm btn-outline-info" onclick="openEditModal('${item.id}')">
+                 <i class="fas fa-edit"></i>
+               </button>
+               ${deleteBtn}
+             </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function updateStats() {
+      const total = globalData.length;
+      const verified = globalData.filter(x => x.ftStatus === 'Verified').length;
+      const pending = globalData.filter(x => x.ftStatus === 'Pending Result').length;
+      const notVerified = globalData.filter(x => x.ftStatus === 'Not Verified').length;
+      const progress = globalData.filter(x => x.ftStatus === 'In Progress').length;
+      
+      document.getElementById('countTotal').textContent = total;
+      document.getElementById('countVerified').textContent = verified;
+      document.getElementById('countPending').textContent = pending;
+      document.getElementById('countNotVerified').textContent = notVerified;
+      document.getElementById('countProgress').textContent = progress;
+    }
+
+    function filterTable() {
+      const txt = document.getElementById('searchInput').value.toLowerCase();
+      const centerFilter = document.getElementById('centerFilter').value;
+      const statusFilter = document.getElementById('statusFilter').value;
+
+      const filtered = globalData.filter(item => {
+        const matchesText = (item.name && item.name.toLowerCase().includes(txt)) ||
+                            (item.idCard && item.idCard.includes(txt)) ||
+                            (item.code && item.code.toLowerCase().includes(txt));
+        
+        const matchesCenter = (centerFilter === "" || item.center === centerFilter);
+        
+        let matchesStatus = false;
+        if (statusFilter === "") {
+            matchesStatus = true;
+        } else if (statusFilter === "NEW") {
+            matchesStatus = (item.ftStatus === "" || item.ftStatus == null);
+        } else {
+            matchesStatus = (item.ftStatus === statusFilter);
+        }
+
+        return matchesText && matchesCenter && matchesStatus;
+      });
+      renderTable(filtered);
+    }
+
+    function formatIdCard(input) {
+      let val = input.value.replace(/\D/g, '');
+      if (val.length > 13) val = val.substring(0, 13);
+      let formatted = '';
+      if (val.length > 0) formatted += val.substring(0, 1);
+      if (val.length > 1) formatted += '-' + val.substring(1, 5);
+      if (val.length > 5) formatted += '-' + val.substring(5, 10);
+      if (val.length > 10) formatted += '-' + val.substring(10, 12);
+      if (val.length > 12) formatted += '-' + val.substring(12, 13);
+      input.value = formatted;
+      if(val.length === 13) validateIdCard(input);
+      else input.classList.remove('is-invalid', 'is-valid');
+    }
+    
+    function validateIdCard(input) {
+       const id = input.value.replace(/-/g, '');
+       if(id.length !== 13) { input.classList.add('is-invalid'); return false; }
+       let sum = 0;
+       for(let i=0; i<12; i++) sum += parseFloat(id.charAt(i)) * (13-i);
+       const mod = sum % 11;
+       const check = (11 - mod) % 10;
+       if(check === parseFloat(id.charAt(12))) {
+           input.classList.remove('is-invalid'); input.classList.add('is-valid'); return true;
+       } else {
+           input.classList.add('is-invalid'); input.classList.remove('is-valid'); return false;
+       }
+    }
+
+    function openAddModal() {
+      document.getElementById('dataForm').reset();
+      document.getElementById('recordId').value = "";
+      document.getElementById('formModalTitle').textContent = "เพิ่มรายการตรวจประวัติ";
+      document.getElementById('officer').value = currentUserEmail;
+      
+      const today = new Date();
+      document.getElementById('submitDate')._flatpickr.setDate(today);
+      document.getElementById('trainingDate')._flatpickr.clear();
+      document.getElementById('resultDate')._flatpickr.clear();
+      document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
+      document.getElementById('officerSection').style.display = 'none';
+
+      formModal.show();
+    }
+
+    function openEditModal(id) {
+      const item = globalData.find(x => String(x.id) === String(id));
+      if(!item) return;
+
+      document.getElementById('recordId').value = item.id;
+      document.getElementById('code').value = item.code;
+      document.getElementById('name').value = item.name;
+      document.getElementById('idCard').value = item.idCard; 
+      formatIdCard(document.getElementById('idCard'));
+      document.getElementById('phone').value = item.phone;
+      
+      setFlatpickrValue('trainingDate', item.trainingDate);
+      setFlatpickrValue('submitDate', item.submitDate);
+      setFlatpickrValue('resultDate', item.resultDate);
+
+      document.getElementById('center').value = item.center;
+      document.getElementById('officer').value = item.officer;
+      document.getElementById('result').value = item.result;
+      document.getElementById('ftStatus').value = item.ftStatus;
+      document.getElementById('note').value = item.note;
+
+      document.getElementById('formModalTitle').textContent = "แก้ไขข้อมูล";
+      document.getElementById('officerSection').style.display = 'block';
+      
+      formModal.show();
+    }
+    
+    function setFlatpickrValue(fpId, dateStr) {
+       const el = document.getElementById(fpId);
+       if(el && el._flatpickr) {
+           if(!dateStr) el._flatpickr.clear();
+           else el._flatpickr.setDate(dateStr);
+       }
+    }
+
+    function saveData() {
+      const idInput = document.getElementById('idCard');
+      if(idInput.value && !validateIdCard(idInput)) {
+           Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณาตรวจสอบเลขบัตรประชาชน', 'error'); return;
+      }
+      const rawIdCard = idInput.value.replace(/-/g, '');
+
+      const form = {
+        id: document.getElementById('recordId').value,
+        code: document.getElementById('code').value,
+        name: document.getElementById('name').value,
+        idCard: rawIdCard,
+        phone: document.getElementById('phone').value,
+        trainingDate: document.getElementById('trainingDate').value,
+        submitDate: document.getElementById('submitDate').value,
+        center: document.getElementById('center').value,
+        officer: document.getElementById('officer').value,
+        resultDate: document.getElementById('resultDate').value,
+        result: document.getElementById('result').value,
+        ftStatus: document.getElementById('ftStatus').value,
+        note: document.getElementById('note').value
+      };
+
+      if(!form.name || !form.idCard || !form.submitDate) {
+        Swal.fire('แจ้งเตือน', 'กรุณากรอก ชื่อ, เลขบัตร และวันที่ยื่น', 'warning'); return;
+      }
+
+      showLoading(true);
+      google.script.run.withSuccessHandler(res => {
+        if(res.success) {
+          formModal.hide();
+          Swal.fire({ icon: 'success', title: 'สำเร็จ', text: res.message, timer: 1500, showConfirmButton: false });
+          loadData();
+        } else {
+          Swal.fire('Error', res.message, 'error');
+        }
+      }).withFailureHandler(onFailure).saveData(form);
+    }
+
+    function deleteItem(id, name) {
+        Swal.fire({
+            title: 'ยืนยันการลบ?', text: `คุณต้องการลบข้อมูลของ "${name}" ใช่หรือไม่?`, icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบข้อมูล'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                showLoading(true);
+                google.script.run.withSuccessHandler(res => {
+                    if (res.success) {
+                        Swal.fire('ลบสำเร็จ!', res.message, 'success'); loadData();
+                    } else {
+                        Swal.fire('เกิดข้อผิดพลาด', res.message, 'error');
+                    }
+                }).withFailureHandler(onFailure).deleteData(id);
+            }
+        });
+    }
+
+    function exportMonthlyReport() {
+        const mode = document.getElementById('filterMode').value;
+        let filterVal = (mode === 'month') ? document.getElementById('monthFilter').value : document.getElementById('yearFilter').value;
+        if (!filterVal) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกช่วงเวลาก่อนทำการ Export', 'warning'); return; }
+
+        showLoading(true);
+        google.script.run.withSuccessHandler(res => {
+            if (res.count > 0) {
+                downloadCSV(res.content, res.filename);
+                Swal.fire('สำเร็จ', `ดาวน์โหลดรายงานเรียบร้อย (${res.count} รายการ)`, 'success');
+            } else {
+                Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลในช่วงเวลาที่เลือก', 'info');
+            }
+        }).withFailureHandler(onFailure).exportMonthlyReport(filterVal);
+    }
+
+    function downloadCSV(csvContent, filename) {
+      const BOM = "\uFEFF"; 
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      if (link.download !== undefined) {
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+
+    function showLoading(isLoading) {
+      if (isLoading) {
+        Swal.fire({ title: 'กำลังประมวลผล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+      } else {
+        Swal.close();
+      }
+    }
+
+    function openExportModal() {
+      const mode = document.getElementById('filterMode').value;
+      let filterVal = (mode === 'month') ? document.getElementById('monthFilter').value : document.getElementById('yearFilter').value;
+      let displayText = "";
+      if(mode === 'month' && filterVal) {
+          const dateObj = new Date(filterVal + '-01');
+          displayText = "ประจำเดือน: " + dateObj.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+      } else if (mode === 'year' && filterVal) {
+          displayText = "ประจำปี: " + (parseInt(filterVal) + 543);
+      }
+      document.getElementById('exportMonthDisplay').textContent = displayText;
+      exportModal.show();
+    }
+
+    function previewExport(ftStatus) {
+       currentExportStatus = ftStatus;
+       const mode = document.getElementById('filterMode').value;
+       const filterVal = (mode === 'month') ? document.getElementById('monthFilter').value : document.getElementById('yearFilter').value;
+
+       showLoading(true);
+       google.script.run.withSuccessHandler(showPreviewModal).withFailureHandler(onFailure).exportMasterCSV(ftStatus, filterVal, true);
+    }
+
+    function showPreviewModal(data) {
+        Swal.close();
+        if (!data || data.length === 0) {
+            Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลใหม่สำหรับ Export ในกลุ่มนี้ (หรือ Export แล้ว)', 'info');
+            return;
+        }
+        
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = "";
+        data.forEach(row => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td>${row.code}</td><td>${row.name}</td><td>${row.idCard}</td><td><span class="badge bg-secondary">${row.ftStatus}</span></td>`;
+            tbody.appendChild(tr);
+        });
+
+        exportModal.hide();
+        previewModal.show();
+    }
+
+    function confirmExport() {
+       if (!currentExportStatus) return;
+       const mode = document.getElementById('filterMode').value;
+       const filterVal = (mode === 'month') ? document.getElementById('monthFilter').value : document.getElementById('yearFilter').value;
+       
+       previewModal.hide();
+       showLoading(true);
+       google.script.run.withSuccessHandler(result => {
+           if (result.count > 0) {
+               downloadCSV(result.content, result.filename);
+               Swal.fire('สำเร็จ', `Export เรียบร้อย ${result.count} รายการ`, 'success');
+               loadData(); 
+           } else {
+               Swal.fire('Error', 'เกิดข้อผิดพลาดในการ Export', 'error');
+           }
+       }).withFailureHandler(onFailure).exportMasterCSV(currentExportStatus, filterVal, false);
+    }
+
+    function onFailure(error) { showLoading(false); Swal.fire('Error', 'เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message, 'error'); }
+    function formatDateDisplay(dateStr) { 
+        if(!dateStr) return "-";
+        const d = new Date(dateStr);
+        if(isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: '2-digit' });
+    }
+  </script>
+</body>
+</html>

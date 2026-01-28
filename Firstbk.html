@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>First Job Tracking</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <style>
+    :root { 
+        --ci-primary: #31C1D7; 
+        --ci-bg: #F8F9FA; 
+        --ci-text: #2d3436;
+        --sidebar-width: 260px;
+        --sidebar-width-collapsed: 80px;
+    }
+    body { font-family: 'Sarabun', sans-serif; background-color: var(--ci-bg); color: var(--ci-text); overflow-x: hidden; }
+
+    /* --- Sidebar (Consistent) --- */
+    .sidebar {
+        height: 100vh; width: var(--sidebar-width); position: fixed; top: 0; left: 0;
+        background-color: #ffffff; box-shadow: 4px 0 15px rgba(0,0,0,0.03); transition: all 0.3s ease;
+        z-index: 1000; display: flex; flex-direction: column; border-right: 1px solid #f0f0f0;
+    }
+    .sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+    .sidebar-header { padding: 20px; display: flex; align-items: center; justify-content: center; height: 80px; border-bottom: 1px solid #f8f9fa; }
+    .logo-box { min-width: 40px; height: 40px; background: linear-gradient(135deg, var(--ci-primary), #25a0b5); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+    .brand-text { margin-left: 10px; font-weight: 700; font-size: 1.1rem; color: #2d3436; transition: opacity 0.2s; }
+    .sidebar.collapsed .brand-text { display: none; }
+    
+    .sidebar-menu { padding: 20px 10px; list-style: none; margin: 0; flex-grow: 1; overflow-y: auto; }
+    .sidebar-menu li { margin-bottom: 8px; }
+    .nav-link-custom { display: flex; align-items: center; padding: 12px 15px; color: #636e72; text-decoration: none; border-radius: 12px; transition: all 0.2s; font-weight: 500; margin-bottom: 5px; }
+    .nav-link-custom:hover { background-color: #f1f3f5; color: var(--ci-primary); transform: translateX(3px); }
+    .sidebar.collapsed .nav-link-custom { justify-content: center; padding: 12px 0; }
+    .sidebar.collapsed .nav-link-custom span { display: none; }
+    .sidebar.collapsed .nav-link-custom:hover { transform: none; }
+    .nav-link-custom.active { background-color: rgba(49, 193, 215, 0.1); color: var(--ci-primary); font-weight: 600; }
+    .nav-icon { min-width: 24px; font-size: 1.1rem; text-align: center; margin-right: 15px; }
+    .sidebar.collapsed .nav-icon { margin-right: 0; }
+    
+    /* --- Main Content --- */
+    .main-content { margin-left: var(--sidebar-width); padding: 20px 30px; transition: all 0.3s ease; min-height: 100vh; }
+    .main-content.expanded { margin-left: var(--sidebar-width-collapsed); }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px dashed #e9ecef; }
+    .toggle-btn { background: none; border: none; font-size: 1.2rem; color: #636e72; cursor: pointer; padding: 5px; }
+    
+    /* Card & Tab Styles */
+    .card-dashboard { border: none; border-radius: 16px; box-shadow: var(--ci-shadow); overflow: hidden; background: white; }
+    .nav-tabs { border-bottom: 1px solid #f0f0f0; padding: 10px 20px 0; }
+    .nav-link { color: #6c757d; font-weight: 600; border: none; border-bottom: 3px solid transparent; padding: 1rem 1.5rem; transition: all 0.2s; margin-bottom: -1px; }
+    .nav-link:hover { color: var(--ci-primary); background: transparent; }
+    .nav-link.active { color: var(--ci-primary); background: transparent; border-bottom-color: var(--ci-primary); }
+    
+    .badge-maid { background-color: #e3f2fd; color: #0d6efd; border: 1px solid #b6d4fe; padding: 4px 10px; border-radius: 6px; font-weight: 600; }
+    .table th { background-color: #f9fbfd; color: #555; font-weight: 600; white-space: nowrap; border-bottom: 2px solid #edf2f9; padding: 15px; }
+    .table td { vertical-align: middle; padding: 12px 15px; color: #555; }
+    
+    /* Checklist Group */
+    .checklist-group { background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #eef2f5; }
+    .form-select:focus, .form-control:focus { border-color: var(--ci-primary); box-shadow: 0 0 0 0.25rem rgba(49, 193, 215, 0.15); }
+    
+    .btn-primary-theme { background-color: var(--ci-primary); border-color: var(--ci-primary); color: white; font-weight: 600; }
+    .btn-primary-theme:hover { background-color: #29a8bb; color: white; }
+
+    /* Summary Styles */
+    .summary-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #eee; }
+    .summary-label { font-weight: 600; color: #666; font-size: 0.85rem; display: block; }
+    .summary-value { color: #333; font-size: 0.95rem; }
+
+    /* Star Rating */
+    .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+    .star-rating input { display: none; }
+    .star-rating label { font-size: 2rem; color: #ddd; cursor: pointer; padding: 0 5px; transition: color 0.2s; }
+    .star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #ffc107; }
+
+    /* Status Badges */
+    .status-badge { font-size: 0.8rem; padding: 5px 12px; border-radius: 20px; font-weight: 500; }
+    .status-wait-job { background-color: #fff3cd; color: #856404; }
+    .status-wait-call { background-color: #cff4fc; color: #055160; }
+    .status-call-done { background-color: #e2e3e5; color: #383d41; }
+    .status-complete { background-color: #d1e7dd; color: #0f5132; }
+
+    /* Soft Buttons (Minimal) */
+    .btn-icon { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; border: none; transition: all 0.2s; }
+    .btn-icon:hover { transform: translateY(-2px); }
+    .btn-icon.btn-soft-primary { background-color: rgba(49, 193, 215, 0.15); color: var(--ci-primary); }
+    .btn-icon.btn-soft-success { background-color: rgba(25, 135, 84, 0.15); color: #198754; }
+    .btn-icon.btn-soft-info { background-color: rgba(13, 202, 240, 0.15); color: #0dcaf0; }
+    .btn-icon.btn-soft-warning { background-color: rgba(255, 193, 7, 0.15); color: #ffc107; }
+    .btn-icon.btn-soft-secondary { background-color: rgba(108, 117, 125, 0.15); color: #6c757d; }
+
+    /* History Log */
+    .history-log-item { position: relative; padding-left: 20px; margin-bottom: 15px; border-left: 2px solid #e9ecef; }
+    .history-log-item::before { content: ''; position: absolute; left: -5px; top: 6px; width: 8px; height: 8px; background: var(--ci-primary); border-radius: 50%; }
+    .history-date { font-size: 0.75rem; color: #888; }
+    .history-text { font-size: 0.85rem; color: #444; white-space: pre-wrap; }
+
+    /* Checklist Cards */
+    .question-card { background-color: #fff; border: 1px solid #e9ecef; border-radius: 10px; padding: 12px; height: 100%; transition: transform 0.2s; }
+    .question-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: var(--ci-primary); }
+    .q-label { font-weight: 600; font-size: 0.85rem; color: #495057; margin-bottom: 8px; display: block; }
+    .section-header { font-size: 1rem; font-weight: 700; color: var(--ci-primary); padding-bottom: 10px; margin-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+
+    /* Mobile Overlay */
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; backdrop-filter: blur(2px); }
+    .overlay.active { display: block; }
+    @media (max-width: 768px) { .sidebar { margin-left: calc(var(--sidebar-width) * -1); } .sidebar.active { margin-left: 0; } .main-content { margin-left: 0 !important; padding: 15px; } }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+          <div class="logo-box"><i class="fas fa-bolt"></i></div>
+          <div class="brand-text ms-2">Partner Relation<br><small class="fw-light">Support</small></div>
+      </div>
+      <ul class="sidebar-menu">
+          <li><a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="nav-link-custom"><i class="fas fa-home nav-icon"></i><span>หน้าหลัก (Master)</span></a></li>
+          <li><a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="nav-link-custom"><i class="fas fa-user-check nav-icon"></i><span>Onboard System</span></a></li>
+          <li><a href="javascript:void(0)" class="nav-link-custom active"><i class="fas fa-briefcase nav-icon"></i><span>ติดตามงานแรก</span></a></li>
+          <li><a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="nav-link-custom"><i class="fas fa-calendar-check nav-icon"></i><span>ตรวจประวัติรายปี</span></a></li>
+          <li><a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="nav-link-custom d-none" id="nav-config"><i class="fas fa-cogs nav-icon"></i><span>ตั้งค่าระบบ</span></a></li>
+      </ul>
+  </div>
+
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    <div class="top-bar">
+        <div class="d-flex align-items-center">
+            <button class="toggle-btn me-3" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            <div>
+                <h4 class="mb-0 fw-bold text-secondary">ติดตามงานแรก (First Job)</h4>
+                <p class="text-muted small mb-0">เฉพาะแม่บ้านกลุ่ม A</p>
+            </div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+             <button class="btn btn-primary-theme btn-sm rounded-pill px-3 shadow-sm fw-bold" onclick="exportReport()">
+                <i class="fas fa-file-excel me-2"></i> Report
+             </button>
+             <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="btn btn-outline-info btn-sm rounded-pill px-3"><i class="fas fa-arrow-left me-1"></i> กลับหน้า Onboard</a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="row mb-4 justify-content-end">
+        <div class="col-md-4">
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="ค้นหาชื่อ, รหัส, เบอร์..." onkeyup="renderTables()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card card-dashboard">
+        <div class="card-header bg-white p-0 border-bottom-0">
+            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item"><button class="nav-link active" id="before-tab" data-bs-toggle="tab" data-bs-target="#before-pane" type="button"><i class="fas fa-hourglass-start me-2"></i>ก่อนเริ่มงานแรก <span class="badge bg-warning text-dark ms-2 rounded-pill" id="countBefore">0</span></button></li>
+                <li class="nav-item"><button class="nav-link" id="after-tab" data-bs-toggle="tab" data-bs-target="#after-pane" type="button"><i class="fas fa-check-circle me-2"></i>หลังจบงานแรก <span class="badge bg-success ms-2 rounded-pill" id="countAfter">0</span></button></li>
+            </ul>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="tab-content">
+                <!-- Tab 1: Before First Job -->
+                <div class="tab-pane fade show active" id="before-pane">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="5%" class="text-center">#</th>
+                                    <th width="12%">รหัสแม่บ้าน</th>
+                                    <th width="18%">ชื่อ-นามสกุล</th>
+                                    <th width="10%">ศูนย์</th>
+                                    <th width="10%">เบอร์โทร</th>
+                                    <th width="12%">รหัสการจอง</th>
+                                    <th width="13%">วันทำความสะอาด</th>
+                                    <th width="10%" class="text-center">สถานะ</th>
+                                    <th width="10%" class="text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBefore"></tbody>
+                        </table>
+                    </div>
+                    <div id="noDataBefore" class="text-center py-5 text-muted d-none"><i class="fas fa-inbox fa-3x mb-3 opacity-25"></i><br>ไม่มีรายการที่ต้องติดตาม</div>
+                </div>
+                <!-- Tab 2: After First Job -->
+                <div class="tab-pane fade" id="after-pane">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="5%" class="text-center">#</th>
+                                    <th width="10%">รหัส</th>
+                                    <th width="15%">ชื่อ-นามสกุล</th>
+                                    <th width="10%">เบอร์โทร</th>
+                                    <th width="10%">Booking</th>
+                                    <th width="12%">วันทำงาน</th>
+                                    <th width="8%">รีวิว</th>
+                                    <th width="12%">คอมเม้น</th>
+                                    <th width="10%">รหัสปัญหา</th>
+                                    <th width="8%" class="text-center">จัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableAfter"></tbody>
+                        </table>
+                    </div>
+                    <div id="noDataAfter" class="text-center py-5 text-muted d-none"><i class="fas fa-check-double fa-3x mb-3 opacity-25"></i><br>ยังไม่มีรายการที่จบงานแล้ว</div>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Modal: Job Details & Follow Up -->
+  <div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white border-bottom-0">
+          <h5 class="modal-title fw-bold" id="modalTitleText">จัดการข้อมูล</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+           <form id="actionForm">
+              <input type="hidden" id="fj_id"><input type="hidden" id="fj_mode">
+              
+              <div class="card border-0 shadow-sm mb-4">
+                  <div class="card-body d-flex align-items-center">
+                      <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary me-3"><i class="fas fa-user-circle fa-2x"></i></div>
+                      <div><h6 class="fw-bold mb-1 text-dark" id="displayMaidName">Name</h6><div class="text-muted small" id="displayMaidDetails">Details</div></div>
+                      <div class="ms-auto text-end">
+                          <div class="text-muted small">เบอร์โทรศัพท์</div>
+                          <h3 class="fw-bold text-primary mb-0" id="displayPhone">0XX-XXX-XXXX</h3>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Assign Mode -->
+              <div id="jobDetailsSection" class="card border-0 shadow-sm mb-4 d-none">
+                  <div class="card-header bg-white fw-bold text-primary border-bottom-0 pt-3"><i class="fas fa-info-circle me-2"></i>ข้อมูลงานแรก</div>
+                  <div class="card-body pt-0">
+                      <div class="row g-3">
+                          <div class="col-md-6"><label class="form-label small fw-bold text-muted">รหัสการจอง</label><input type="text" class="form-control" id="fj_bookingCode" placeholder="#xxxxxx"></div>
+                          <div class="col-md-6"><label class="form-label small fw-bold text-muted">รหัสงาน (Job ID)</label><input type="text" class="form-control" id="fj_jobId"></div>
+                          <div class="col-md-6"><label class="form-label small fw-bold text-muted">วันที่กดรับงาน</label><input type="text" class="form-control datepicker" id="fj_acceptDate"></div>
+                          <div class="col-md-6"><label class="form-label small fw-bold text-muted">วันที่/เวลา ทำความสะอาด</label><input type="text" class="form-control" id="fj_cleanDate" placeholder="เช่น 14 ม.ค. 2026 (08:30)"></div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Checklist -->
+              <div id="checklistSection" class="d-none">
+                  <div id="preCallResultSection" class="card border-0 shadow-sm mb-4 d-none">
+                       <div class="card-body">
+                           <label class="form-label fw-bold text-primary">ผลการโทรเยี่ยม</label>
+                           <select class="form-select" id="fj_callResult" onchange="onCallResultChange()">
+                               <option value="" selected disabled>-- กรุณาเลือก --</option>
+                               <option value="contacted">ติดต่อได้ / สะดวกคุย</option>
+                               <option value="ไม่รับสาย">ไม่รับสาย</option>
+                               <option value="ไม่สะดวกคุย">ไม่สะดวกคุย</option>
+                               <option value="ติดต่อไม่ได้">ติดต่อไม่ได้/ปิดเครื่อง</option>
+                               <option value="อื่นๆ">อื่นๆ</option>
+                           </select>
+                       </div>
+                  </div>
+
+                  <div id="checklistForm" class="d-none">
+                      <div class="section-header"><i class="fas fa-mobile-alt me-2"></i> 1. ประสบการณ์ใช้แอปพลิเคชัน</div>
+                      <div class="row g-3 mb-4">
+                          <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">1.1 การกดรับงาน</span><select class="form-select bg-light" id="fj_c1_1"><option value="" selected>-- เลือก --</option><option value="มีงานขึ้นปกติ">มีงานขึ้นปกติ</option><option value="มีงานขึ้นแต่น้อย">มีงานขึ้นแต่น้อย</option><option value="งานไม่ขึ้น">งานไม่ขึ้น</option></select></div></div>
+                          <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">1.2 การโทรยืนยัน</span><select class="form-select bg-light" id="fj_c1_2"><option value="" selected>-- เลือก --</option><option value="โทรยืนยันแล้ว">โทรยืนยันแล้ว</option><option value="ไม่ได้โทรยืนยัน">ไม่ได้โทรยืนยัน</option><option value="ติดต่อลูกค้าไม่ได้">ติดต่อลูกค้าไม่ได้</option></select></div></div>
+                          <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">1.3 ระยะทาง</span><select class="form-select bg-light" id="fj_c1_3"><option value="" selected>-- เลือก --</option><option value="สามารถเดินทางได้">สามารถเดินทางได้</option><option value="ค่อนข้างไกล">ค่อนข้างไกล</option><option value="ไกล">ไกล</option><option value="หลงทาง/ปักหมุดผิด">หลงทาง/ปักหมุดผิด</option></select></div></div>
+                          <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">1.4 ปัญหาการใช้แอพ</span><select class="form-select bg-light" id="fj_c1_4"><option value="" selected>-- เลือก --</option><option value="ใช้งานได้ปกติ">ใช้งานได้ปกติ</option><option value="ใช้งานค่อนข้างยาก">ใช้งานค่อนข้างยาก</option><option value="ใช้งานไม่ได้เลย">ใช้งานไม่ได้เลย</option></select></div></div>
+                          <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">1.5 การเตรียมอุปกรณ์</span><select class="form-select bg-light" id="fj_c1_5"><option value="" selected>-- เลือก --</option><option value="อุปกรณ์ครบ">อุปกรณ์ครบ</option><option value="ขาดบางอย่าง">ขาดบางอย่าง</option><option value="ไม่มีอุปกรณ์">ไม่มีอุปกรณ์</option></select></div></div>
+                          <div class="col-md-4 col-lg-3 post-call-only"><div class="question-card"><span class="q-label">1.6 ถ่ายรูป Check-in</span><select class="form-select bg-light" id="fj_c1_6"><option value="" selected>-- เลือก --</option><option value="ผ่านปกติ">ผ่านปกติ</option><option value="ไม่สามารถทำได้">ไม่สามารถทำได้</option><option value="ผ่านแต่ค้าง">ผ่านแต่ค้าง</option></select></div></div>
+                          <div class="col-md-4 col-lg-3 post-call-only"><div class="question-card"><span class="q-label">1.7 AI Feature</span><select class="form-select bg-light" id="fj_c1_7"><option value="" selected>-- เลือก --</option><option value="เข้าใจ">เข้าใจ</option><option value="ไม่เข้าใจ">ไม่เข้าใจ</option><option value="ไม่ได้แจ้ง">ไม่ได้แจ้ง</option></select></div></div>
+                      </div>
+                      
+                      <div class="post-call-only">
+                          <div class="section-header"><i class="fas fa-broom me-2"></i> 2. ประสบการณ์การให้บริการ</div>
+                          <div class="row g-3 mb-4">
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.1 ประเมินหน้างาน</span><select class="form-select bg-light" id="fj_c2_1"><option value="" selected>-- เลือก --</option><option value="งานตรงปก">งานตรงปก</option><option value="งานไม่ตรงปก">งานไม่ตรงปก</option></select></div></div>
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.2 งานรีโนเวท</span><select class="form-select bg-light" id="fj_c2_2"><option value="" selected>-- เลือก --</option><option value="ไม่พบ">ไม่พบ</option><option value="พบเจอ">พบเจอ</option><option value="แจ้งในใบงานแล้ว">แจ้งในใบงานแล้ว</option></select></div></div>
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.3 งานเกินขอบเขต</span><select class="form-select bg-light" id="fj_c2_3"><option value="" selected>-- เลือก --</option><option value="ไม่พบ">ไม่พบ</option><option value="พบเจอ">พบเจอ</option><option value="แจ้งในใบงานแล้ว">แจ้งในใบงานแล้ว</option></select></div></div>
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.4 การจัดการงานเกิน</span><select class="form-select bg-light" id="fj_c2_4"><option value="" selected>-- เลือก --</option><option value="คุยกับลูกค้าเรียบร้อย">คุยกับลูกค้าเรียบร้อย</option><option value="ไม่พบ/ลูกค้าไม่อยู่">ไม่พบ/ลูกค้าไม่อยู่</option></select></div></div>
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.5 สัตว์เลี้ยง</span><select class="form-select bg-light" id="fj_c2_5"><option value="" selected>-- เลือก --</option><option value="ไม่พบ">ไม่พบ</option><option value="พบเจอ">พบเจอ</option><option value="แจ้งในใบงานแล้ว">แจ้งในใบงานแล้ว</option></select></div></div>
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.6 อุปกรณ์หน้างาน</span><select class="form-select bg-light" id="fj_c2_6"><option value="" selected>-- เลือก --</option><option value="ครบ/เพียงพอ">ครบ/เพียงพอ</option><option value="ไม่ครบ">ไม่ครบ</option><option value="ชำรุด">ชำรุด</option></select></div></div>
+                              <div class="col-md-4 col-lg-3"><div class="question-card"><span class="q-label">2.7 ปัญหาที่พบ</span><select class="form-select bg-light" id="fj_c2_7"><option value="" selected>-- เลือก --</option><option value="ไม่พบ">ไม่พบ</option><option value="พบเจอ">พบเจอ</option><option value="แจ้งในใบงานแล้ว">แจ้งในใบงานแล้ว</option></select></div></div>
+                              <div class="col-12"><div class="question-card h-auto"><span class="q-label">2.8 อื่นๆ / ข้อเสนอแนะ</span><textarea class="form-control bg-light" id="fj_c2_8" rows="1"></textarea></div></div>
+                          </div>
+                      
+                          <div class="card bg-light border-0 p-3 mb-3">
+                              <h6 class="fw-bold text-dark mb-3">Feedback &amp; Issues</h6>
+                              <div class="row g-3">
+                                 <div class="col-md-4">
+                                     <label class="form-label small fw-bold text-muted">คะแนนรีวิว</label>
+                                     <div class="star-rating">
+                                          <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+                                          <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                                          <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                                          <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                                          <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+                                     </div>
+                                 </div>
+                                 <div class="col-md-8"><label class="form-label small fw-bold">คอมเม้นลูกค้า</label><textarea class="form-control" id="fj_customerComment" rows="1"></textarea></div>
+                                 <div class="col-md-12"><label class="form-label small fw-bold text-danger">รหัสปัญหา (ถ้ามี)</label><input type="text" class="form-control" id="fj_problemId" placeholder="เช่น 43493"></div>
+                              </div>
+                          </div>
+                      </div>
+                      
+                      <div class="mb-3">
+                          <label class="form-label small fw-bold text-primary">คำแนะนำ (รอบโทรเยี่ยม)</label>
+                          <div id="preCallAdviceDisplay" class="p-2 bg-white border rounded text-muted small mb-2" style="min-height: 40px;">- ไม่มีข้อมูล -</div>
+                          
+                          <label class="form-label small fw-bold text-dark mt-2">คำแนะนำเพิ่มเติม (รอบนี้)</label>
+                          <textarea class="form-control" id="fj_advice" rows="2" placeholder="ระบุคำแนะนำใหม่..."></textarea>
+                      </div>
+                  </div>
+              </div>
+           </form>
+        </div>
+        <div class="modal-footer border-top-0 bg-white">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Modal -->
+  <div class="modal fade" id="summaryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-success text-white border-bottom-0">
+          <h5 class="modal-title fw-bold"><i class="fas fa-file-alt me-2"></i>สรุปผลการติดตามงานแรก</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+             <div class="card border-0 shadow-sm mb-3">
+                 <div class="card-body">
+                     <h6 class="fw-bold text-primary mb-2">ข้อมูลแม่บ้าน</h6>
+                     <div class="d-flex justify-content-between mb-1"><span class="text-muted small">ชื่อ-นามสกุล:</span><span id="sum_name" class="fw-bold"></span></div>
+                     <div class="d-flex justify-content-between mb-1"><span class="text-muted small">รหัส:</span><span id="sum_code" class="fw-bold"></span></div>
+                     <div class="d-flex justify-content-between"><span class="text-muted small">ศูนย์:</span><span id="sum_center"></span></div>
+                 </div>
+             </div>
+             
+             <div class="bg-white rounded p-3 shadow-sm border">
+                 <div class="summary-item"><span class="summary-label">1. การกดรับงาน</span><span class="summary-value" id="s_check1">-</span></div>
+                 <div class="summary-item"><span class="summary-label">2. การโทรยืนยัน</span><span class="summary-value" id="s_check2">-</span></div>
+                 <div class="summary-item"><span class="summary-label">3. ระยะทาง</span><span class="summary-value" id="s_check3">-</span></div>
+                 <div class="summary-item"><span class="summary-label">4. ปัญหาการใช้แอพ</span><span class="summary-value" id="s_check4">-</span></div>
+                 <div class="summary-item"><span class="summary-label">5. การเตรียมอุปกรณ์</span><span class="summary-value" id="s_check5">-</span></div>
+                 <div class="summary-item border-0 mb-0 pb-0"><span class="summary-label">คำแนะนำเพิ่มเติม</span><span class="summary-value text-break" id="s_advice">-</span></div>
+                 <hr class="my-3">
+                 <div class="summary-item"><span class="summary-label">คะแนนรีวิว</span><span class="summary-value text-warning" id="s_review">-</span></div>
+                 <div class="summary-item"><span class="summary-label">คอมเม้นลูกค้า</span><span class="summary-value text-break" id="s_comment">-</span></div>
+                 <div class="summary-item"><span class="summary-label">รหัสปัญหา</span><span class="summary-value text-break" id="s_problemId">-</span></div>
+                 <div class="text-end mt-3 border-top pt-2"><button class="btn btn-sm btn-outline-secondary rounded-pill me-2" onclick="editFromSummary()"><i class="fas fa-edit me-1"></i> แก้ไขผล</button><small class="text-muted" style="font-size: 0.75rem;">บันทึกโดย: <span id="s_officer"></span> | <span id="s_time"></span></small></div>
+             </div>
+             
+             <!-- History -->
+             <div class="mt-4">
+                 <h6 class="fw-bold text-secondary mb-3 ps-2 border-start border-4 border-info">ประวัติการบันทึก (History)</h6>
+                 <div id="historyTimeline" style="max-height: 200px; overflow-y: auto;"></div>
+             </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
+  <script>
+    let rawData = [];
+    let currentUser = "";
+    let isUserAdmin = false;
+    let actionModal, summaryModal;
+    let currentViewingId = null;
+
+    window.onload = function() {
+        actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+        summaryModal = new bootstrap.Modal(document.getElementById('summaryModal'));
+        flatpickr(".datepicker", { dateFormat: "d/m/Y", locale: "th" });
+        loadData();
+        google.script.run.withSuccessHandler(res => { isUserAdmin = res.isAdmin; if(isUserAdmin && document.getElementById('nav-config')) document.getElementById('nav-config').classList.remove('d-none'); }).getClientConfig();
+    };
+
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const overlay = document.getElementById('overlay');
+        if (window.innerWidth <= 768) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } 
+        else { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded'); }
+    }
+
+    function loadData() {
+        Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        google.script.run.withSuccessHandler(res => {
+            Swal.close();
+            rawData = res.data || [];
+            currentUser = res.currentUser;
+            if(document.getElementById('userEmail')) document.getElementById('userEmail').textContent = currentUser;
+            renderTables();
+        }).withFailureHandler(err => { Swal.fire('Error', err.message, 'error'); }).getFirstBkData();
+    }
+
+    function renderTables() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = rawData.filter(item => {
+            const name = String(item.name || "").toLowerCase();
+            const code = String(item.maidCode || "").toLowerCase();
+            const phone = String(item.phone || "");
+            return (name.includes(searchText) || code.includes(searchText) || phone.includes(searchText));
+        });
+
+        const listBefore = filtered.filter(item => item.tab === 'before');
+        const listAfter = filtered.filter(item => item.tab === 'after');
+
+        renderTableBody('tableBefore', listBefore, 'before');
+        renderTableBody('tableAfter', listAfter, 'after');
+
+        document.getElementById('countBefore').textContent = listBefore.length;
+        document.getElementById('countAfter').textContent = listAfter.length;
+        toggleNoData('noDataBefore', listBefore.length);
+        toggleNoData('noDataAfter', listAfter.length);
+    }
+
+    function renderTableBody(elementId, list, type) {
+        const tbody = document.getElementById(elementId);
+        tbody.innerHTML = '';
+        list.forEach((item, index) => {
+            // Helper for XSS
+            const safe = (txt) => txt ? String(txt).replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+            
+            let bookingDisplay = '-';
+            if (item.bookingCode) {
+                if (item.jobId) bookingDisplay = `<a href="https://admin-test.beneat.co/order/${item.jobId}/edit" target="_blank" class="fw-bold text-primary text-decoration-none"><i class="fas fa-link me-1 small"></i>${item.bookingCode}</a>`;
+                else bookingDisplay = item.bookingCode;
+            }
+            
+            // Link to Maid Profile
+            let maidCode = item.maidCode || '-';
+            let idDisplay = maidCode !== '-' 
+                ? `<a href="https://admin-test.beneat.co/professional/${maidCode}/profile" target="_blank" class="badge badge-maid text-decoration-none">${maidCode}</a>` 
+                : `<span class="badge badge-maid">${maidCode}</span>`;
+            
+            let center = item.center || '-';
+
+            if (type === 'before') {
+                let statusBadge = '';
+                let actionBtn = '';
+
+                if (!item.bookingCode) {
+                    statusBadge = '<span class="status-badge status-wait-job">รอรับงานแรก</span>';
+                    actionBtn = `<button class="btn btn-primary-theme rounded-pill px-3 fw-bold btn-sm" onclick="openModal('${item.id}', 'assign')"><i class="fas fa-plus me-1"></i> เพิ่มงาน</button>`;
+                } else if (!item.isPreCallDone) {
+                    statusBadge = '<span class="status-badge status-wait-call">รอโทรเยี่ยม</span>';
+                    actionBtn = `<div class="d-flex justify-content-center gap-2"><button class="btn btn-icon btn-soft-info" onclick="openModal('${item.id}', 'precall')" title="โทรเยี่ยม"><i class="fas fa-phone-alt"></i></button><button class="btn btn-icon btn-soft-warning" onclick="openModal('${item.id}', 'assign')" title="แก้ไขข้อมูลงาน"><i class="fas fa-pen"></i></button><button class="btn btn-icon btn-soft-secondary" onclick="viewSummary('${item.id}')" title="ดูประวัติ"><i class="fas fa-history"></i></button></div>`;
+                } else {
+                    statusBadge = '<span class="status-badge status-call-done">โทรเยี่ยมเรียบร้อย</span>';
+                    actionBtn = `<div class="d-flex justify-content-center gap-2"><button class="btn btn-icon btn-soft-warning" onclick="openModal('${item.id}', 'assign')" title="แก้ไขข้อมูลงาน"><i class="fas fa-pen"></i></button><button class="btn btn-icon btn-soft-primary" onclick="viewSummary('${item.id}')" title="ดูสรุป"><i class="fas fa-file-alt"></i></button></div>`;
+                }
+
+                let cleanDateDisplay = item.cleanDate ? item.cleanDate : '-';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center text-muted">${index + 1}</td>
+                        <td>${idDisplay}</td>
+                        <td class="fw-bold text-secondary">${item.name}</td>
+                        <td>${center}</td>
+                        <td>${item.phone || '-'}</td>
+                        <td>${bookingDisplay}</td>
+                        <td>${cleanDateDisplay}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center">${actionBtn}</td>
+                    </tr>
+                `;
+            } else {
+                let statusBadge = item.isPostCallDone 
+                   ? '<span class="status-badge status-complete">จบงานสมบูรณ์</span>' 
+                   : '<span class="badge bg-danger rounded-pill">รอติดตามผล</span>';
+                
+                let actionBtn = '';
+                if (!item.isPostCallDone) {
+                     actionBtn = `<div class="d-flex justify-content-center gap-1"><button class="btn btn-icon btn-soft-success" onclick="openModal('${item.id}', 'postcall')" title="ติดตามผล/แก้ไข"><i class="fas fa-clipboard-check"></i></button><button class="btn btn-icon btn-soft-primary" onclick="viewSummary('${item.id}')" title="ดูสรุป"><i class="fas fa-eye"></i></button></div>`;
+                } else {
+                     actionBtn = `<div class="d-flex justify-content-center align-items-center gap-2">
+                                     <button class="btn btn-sm btn-light border rounded-pill px-3 fw-bold" onclick="viewSummary('${item.id}')"><i class="fas fa-eye text-primary me-1"></i> ดูสรุป</button>
+                                  </div>`;
+                }
+
+                let stars = '-';
+                if(item.checklist && item.checklist.reviewScore) {
+                    const score = parseInt(item.checklist.reviewScore);
+                    stars = '';
+                    for(let i=0; i<score; i++) stars += '<i class="fas fa-star text-warning"></i>';
+                }
+                
+                let comment = item.checklist?.customerComment || '-';
+                let commentDisplay = comment.length > 15 ? `<span title="${safe(comment)}">${safe(comment).substring(0,15)}...</span>` : safe(comment);
+                let cleanDateDisplay = item.cleanDate ? item.cleanDate : '-';
+                
+                let problemLink = '-';
+                if(item.checklist && item.checklist.problemId) {
+                     problemLink = `<a href="https://admin-test.beneat.co/report-problems/${item.checklist.problemId}/edit" target="_blank" class="fw-bold text-danger text-decoration-none"><i class="fas fa-exclamation-circle me-1"></i>${item.checklist.problemId}</a>`;
+                }
+
+                tbody.innerHTML += `<tr><td class="text-center text-muted">${index + 1}</td><td>${idDisplay}</td><td class="fw-bold text-secondary">${item.name}</td><td>${center}</td><td>${item.phone || '-'}</td><td>${bookingDisplay}</td><td>${cleanDateDisplay}</td><td class="text-center">${stars}</td><td>${commentDisplay}</td><td class="text-center">${problemLink}</td><td class="text-center">${actionBtn}</td></tr>`;
+            }
+        });
+    }
+    
+    function toggleNoData(elId, count) { const el = document.getElementById(elId); if (count === 0) el.classList.remove('d-none'); else el.classList.add('d-none'); }
+
+    // --- Modal Logic ---
+    function openModal(id, mode) {
+        const item = rawData.find(x => String(x.id) === String(id)); if(!item) return;
+
+        document.getElementById('fj_id').value = item.id;
+        document.getElementById('fj_mode').value = mode;
+        
+        document.getElementById('displayMaidName').textContent = item.name;
+        document.getElementById('displayMaidDetails').textContent = `รหัส: ${item.maidCode}`;
+        document.getElementById('displayPhone').textContent = item.phone; 
+
+        document.getElementById('jobDetailsSection').classList.add('d-none');
+        document.getElementById('checklistSection').classList.add('d-none');
+        document.getElementById('preCallResultSection').classList.add('d-none');
+        document.getElementById('checklistForm').classList.add('d-none');
+        document.querySelectorAll('.post-call-only').forEach(el => el.classList.add('d-none'));
+
+        document.getElementById('fj_bookingCode').value = item.bookingCode || ""; 
+        document.getElementById('fj_jobId').value = item.jobId || "";
+        if (item.acceptDate) document.getElementById('fj_acceptDate')._flatpickr.setDate(item.acceptDate); else document.getElementById('fj_acceptDate')._flatpickr.setDate(new Date());
+        document.getElementById('fj_cleanDate').value = item.cleanDate || ""; 
+
+        const titleText = document.getElementById('modalTitleText');
+
+        if (mode === 'assign') {
+            titleText.textContent = "บันทึกข้อมูลงานแรก";
+            document.getElementById('jobDetailsSection').classList.remove('d-none');
+        } else {
+            titleText.textContent = mode === 'precall' ? "โทรเยี่ยมก่อนเริ่มงาน" : "ติดตามผลหลังจบงาน";
+            document.getElementById('checklistSection').classList.remove('d-none');
+            
+            // Get Previous Advice (Fixed)
+            let prevAdvice = "- ไม่มีข้อมูล -";
+            if (item.history) {
+                 // Try to find advice from previous logs
+                 for (let h of item.history) {
+                    if (h.note && h.note.includes('Note:')) {
+                        prevAdvice = h.note.split('Note:')[1].split('\n')[0].trim();
+                        break; // Get the latest one
+                    }
+                 }
+            }
+            document.getElementById('preCallAdviceDisplay').textContent = prevAdvice;
+
+            if(mode === 'precall') {
+                document.getElementById('preCallResultSection').classList.remove('d-none');
+                document.getElementById('fj_callResult').value = ""; 
+                resetChecklist(item.checklist, false); 
+            } else {
+                document.getElementById('checklistForm').classList.remove('d-none');
+                document.querySelectorAll('.post-call-only').forEach(el => el.classList.remove('d-none'));
+                resetChecklist(item.checklist, true); // Disable Part 1
+            }
+        }
+        actionModal.show();
+    }
+    
+    function onCallResultChange() {
+        const val = document.getElementById('fj_callResult').value;
+        const checklistForm = document.getElementById('checklistForm');
+        if(val === 'contacted') {
+            checklistForm.classList.remove('d-none');
+        } else {
+            checklistForm.classList.add('d-none');
+        }
+    }
+    
+    function resetChecklist(data, disablePart1) {
+        // Safe Reset: Loop through IDs and check existence
+        const ids = ['fj_c1_1','fj_c1_2','fj_c1_3','fj_c1_4','fj_c1_5','fj_c1_6','fj_c1_7',
+                     'fj_c2_1','fj_c2_2','fj_c2_3','fj_c2_4','fj_c2_5','fj_c2_6','fj_c2_7'];
+        
+        ids.forEach(id => { 
+            const el = document.getElementById(id); 
+            if(el) { el.value = ""; el.disabled = false; }
+        });
+        
+        const textIds = ['fj_c2_8', 'fj_advice', 'fj_customerComment', 'fj_problemId'];
+        textIds.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+        
+        document.querySelectorAll('input[name="rating"]').forEach(el => el.checked = false);
+
+        if(data) {
+             for(let key in data) {
+                 const el = document.getElementById('fj_' + key);
+                 // Match 'c1_1' etc.
+                 if(el) el.value = data[key];
+             }
+             if(data.reviewScore) {
+                 const radio = document.querySelector(`input[name="rating"][value="${data.reviewScore}"]`);
+                 if(radio) radio.checked = true;
+             }
+        }
+        
+        if(disablePart1) {
+            ['fj_c1_1','fj_c1_2','fj_c1_3','fj_c1_4','fj_c1_5'].forEach(id => {
+                const el = document.getElementById(id); if(el) el.disabled = true;
+            });
+        }
+    }
+    
+    function viewSummary(id) {
+        currentViewingId = id; const item = rawData.find(x => String(x.id) === String(id)); if(!item) return;
+        const c = item.checklist || {};
+        document.getElementById('sum_name').textContent = item.name; 
+        document.getElementById('sum_code').textContent = item.maidCode; 
+        document.getElementById('sum_center').textContent = item.center || '-';
+
+        document.getElementById('s_check1').textContent = c.c1_1 || '-'; 
+        document.getElementById('s_check2').textContent = c.c1_2 || '-'; 
+        document.getElementById('s_check3').textContent = c.c1_3 || '-'; 
+        document.getElementById('s_check4').textContent = c.c1_4 || '-'; 
+        document.getElementById('s_check5').textContent = c.c1_5 || '-'; 
+        document.getElementById('s_advice').textContent = c.advice || '-';
+        
+        let stars = '-';
+        if(c.reviewScore) {
+            stars = ''; for(let i=0; i<parseInt(c.reviewScore); i++) stars += '★';
+            stars = `<span class="text-warning fs-5">${stars}</span>`;
+        }
+        document.getElementById('s_review').innerHTML = stars; 
+        document.getElementById('s_comment').textContent = c.customerComment || '-';
+        
+        let probDisplay = '-';
+        if(c.problemId) {
+             probDisplay = `<a href="https://admin-test.beneat.co/report-problems/${c.problemId}/edit" target="_blank" class="fw-bold text-danger text-decoration-none"><i class="fas fa-exclamation-circle me-1"></i>${c.problemId}</a>`;
+        }
+        document.getElementById('s_problemId').innerHTML = probDisplay;
+
+        const container = document.getElementById('historyTimeline'); 
+        container.innerHTML = "";
+        if (item.history && item.history.length > 0) { 
+            item.history.forEach(log => { 
+                container.innerHTML += `<div class="history-log-item"><div class="history-date">${log.date} - ${log.by}</div><div class="history-text">${log.note}</div></div>`; 
+            }); 
+        } else { 
+            container.innerHTML = '<div class="text-muted small">ไม่มีประวัติ</div>'; 
+        }
+        
+        summaryModal.show();
+    }
+    
+    function editFromSummary() { if(currentViewingId) { summaryModal.hide(); openModal(currentViewingId, 'postcall'); } }
+    
+    function parseThaiDate(str) { const months = { 'ม.ค.': '01', 'ก.พ.': '02', 'มี.ค.': '03', 'เม.ย.': '04', 'พ.ค.': '05', 'มิ.ย.': '06', 'ก.ค.': '07', 'ส.ค.': '08', 'ก.ย.': '09', 'ต.ค.': '10', 'พ.ย.': '11', 'ธ.ค.': '12' }; const match = str.match(/^(\d{1,2})\s+(.*?)\s+(\d{4})\s+\((.*?)\)$/); if (match) { let d = match[1].padStart(2, '0'); let mStr = match[2]; let y = match[3]; let time = match[4]; let m = months[mStr]; if (m) return `${y}-${m}-${d} ${time}`; } return str; }
+
+    function saveData() {
+        const mode = document.getElementById('fj_mode').value; const form = { id: document.getElementById('fj_id').value, officer: currentUser };
+
+        if (mode === 'assign') {
+            form.bookingCode = document.getElementById('fj_bookingCode').value;
+            form.jobId = document.getElementById('fj_jobId').value;
+            form.acceptDate = document.getElementById('fj_acceptDate').value;
+            
+            let cleanRaw = document.getElementById('fj_cleanDate').value.trim();
+            form.cleanDate = parseThaiDate(cleanRaw); 
+
+            if(!form.bookingCode || !form.cleanDate) {
+                Swal.fire('เตือน', 'ระบุข้อมูลให้ครบ', 'warning');
+                return;
+            }
+
+            Swal.fire({ title: 'บันทึก...', didOpen: () => Swal.showLoading() });
+            google.script.run.withSuccessHandler(res => {
+                if(res.success) { actionModal.hide(); Swal.fire({ icon:'success', title:'เรียบร้อย', showConfirmButton: false, timer: 1500 }); loadData(); } 
+                else { Swal.fire('Error', res.message, 'error'); }
+            }).saveFirstJobDetails(form);
+
+        } else {
+            // Checklist Mode
+            form.type = mode; 
+            
+            if (mode === 'precall') {
+                const callRes = document.getElementById('fj_callResult').value;
+                form.callResult = callRes;
+                if(!callRes) { Swal.fire('เตือน', 'ระบุผลการโทร', 'warning'); return; }
+                
+                // If not contacted, save just log
+                if (callRes !== 'contacted') {
+                      Swal.fire({ title: 'บันทึก...', didOpen: () => Swal.showLoading() });
+                      google.script.run.withSuccessHandler(res => {
+                          if(res.success) { actionModal.hide(); Swal.fire({ icon:'success', title:'เรียบร้อย', showConfirmButton: false, timer: 1500 }); loadData(); } 
+                          else { Swal.fire('Error', res.message, 'error'); }
+                      }).saveFirstJobChecklist(form);
+                      return;
+                }
+            }
+
+            // Collect Data
+            for(let i=1; i<=7; i++) { 
+                const el = document.getElementById(`fj_c1_${i}`); 
+                if(el) form[`c1_${i}`] = el.value; 
+            }
+            for(let i=1; i<=7; i++) { 
+                const el = document.getElementById(`fj_c2_${i}`); 
+                if(el) form[`c2_${i}`] = el.value; 
+            }
+            if(document.getElementById('fj_c2_8')) form.c2_8 = document.getElementById('fj_c2_8').value;
+            
+            form.advice = document.getElementById('fj_advice').value;
+
+            if(mode === 'postcall') {
+                const ratingEl = document.querySelector('input[name="rating"]:checked');
+                form.reviewScore = ratingEl ? ratingEl.value : "";
+                form.customerComment = document.getElementById('fj_customerComment').value;
+                form.problemId = document.getElementById('fj_problemId').value;
+            }
+            
+            // Basic Validation
+            if (!form.c1_1 || !form.c1_2) { Swal.fire('เตือน', 'กรุณาตอบแบบสอบถาม', 'warning'); return; }
+
+            Swal.fire({ title: 'บันทึก...', didOpen: () => Swal.showLoading() });
+            google.script.run.withSuccessHandler(res => {
+                if(res.success) { actionModal.hide(); Swal.fire({ icon:'success', title:'เรียบร้อย', showConfirmButton: false, timer: 1500 }); loadData(); } 
+                else { Swal.fire('Error', res.message, 'error'); }
+            }).saveFirstJobChecklist(form);
+        }
+    }
+    
+    function exportReport() {
+        Swal.fire({ title: 'สร้างรายงาน...', didOpen: () => Swal.showLoading() });
+        google.script.run.withSuccessHandler(res => {
+             Swal.close();
+             if(res.count > 0) downloadCSV(res.content, res.filename);
+             else Swal.fire('ไม่พบข้อมูล', '', 'info');
+        }).exportFirstBkReport();
+    }
+    
+    function downloadCSV(csvContent, filename) {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    }
+  </script>
+</body>
+</html>

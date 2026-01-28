@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>System Configuration</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SortableJS Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    :root { 
+        --ci-primary: #31C1D7; 
+        --ci-bg: #F8F9FA; 
+        --ci-text: #2d3436;
+        --ci-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        --sidebar-width: 260px;
+        --sidebar-width-collapsed: 80px;
+    }
+    body { font-family: 'Sarabun', sans-serif; background-color: var(--ci-bg); color: var(--ci-text); overflow-x: hidden; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+        height: 100vh;
+        width: var(--sidebar-width);
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: #ffffff;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #f0f0f0;
+    }
+    
+    .sidebar.collapsed {
+        width: var(--sidebar-width-collapsed);
+    }
+    
+    .sidebar-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 80px;
+        border-bottom: 1px solid #f8f9fa;
+        justify-content: center;
+    }
+    
+    .logo-box {
+        min-width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--ci-primary), #25a0b5);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 10px rgba(49, 193, 215, 0.3);
+    }
+    
+    .brand-text {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #2d3436;
+        transition: opacity 0.2s;
+        margin-left: 10px;
+    }
+    .sidebar.collapsed .brand-text { display: none; }
+
+    .sidebar-menu {
+        padding: 20px 10px;
+        list-style: none;
+        margin: 0;
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    
+    .sidebar-menu li { margin-bottom: 8px; }
+    
+    .nav-link-custom {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #636e72;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.2s;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    
+    .sidebar.collapsed .nav-link-custom {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .sidebar.collapsed .nav-link-custom span { display: none; }
+    
+    .nav-link-custom:hover {
+        background-color: #f1f3f5;
+        color: var(--ci-primary);
+        transform: translateX(3px);
+    }
+    .sidebar.collapsed .nav-link-custom:hover { transform: none; background-color: #f1f3f5; }
+    
+    .nav-link-custom.active {
+        background-color: rgba(49, 193, 215, 0.1);
+        color: var(--ci-primary);
+        font-weight: 600;
+    }
+    
+    .nav-icon {
+        min-width: 24px;
+        font-size: 1.1rem;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .sidebar.collapsed .nav-icon { margin-right: 0; }
+
+    .user-section {
+        padding: 15px;
+        border-top: 1px solid #f8f9fa;
+        background-color: #fff;
+    }
+
+    .user-card {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .sidebar.collapsed .user-card { justify-content: center; padding: 10px 0; }
+    .sidebar.collapsed .user-text { display: none; }
+    
+    /* --- Main Content --- */
+    .main-content {
+        margin-left: var(--sidebar-width);
+        padding: 20px 30px;
+        transition: all 0.3s ease;
+        min-height: 100vh;
+    }
+    
+    .main-content.expanded { margin-left: var(--sidebar-width-collapsed); }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px dashed #e9ecef;
+    }
+
+    .toggle-btn {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #636e72;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background 0.2s;
+    }
+    .toggle-btn:hover { background-color: #e9ecef; }
+
+    /* Config Specific Styles */
+    .card-header { background-color: #31C1D7; color: white; font-weight: 600; }
+    .btn-primary-theme { background-color: #31C1D7; border-color: #31C1D7; color: white; }
+    .btn-primary-theme:hover { background-color: #29a8bb; color: white; }
+    
+    .list-group-item { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      transition: background-color 0.2s;
+      cursor: grab; /* เปลี่ยนเคอร์เซอร์เป็นมือจับทั้งแถว */
+    }
+    .list-group-item:active {
+      cursor: grabbing; /* เปลี่ยนเป็นมือกำเมื่อคลิกค้าง */
+    }
+    
+    /* Drag Handle Style - ปรับเป็นแค่ Visual cue */
+    .drag-handle {
+      color: #adb5bd;
+      padding: 0 10px;
+    }
+    .list-group-item:hover .drag-handle {
+      color: #31C1D7;
+    }
+    
+    /* Sortable classes */
+    .sortable-ghost {
+      background-color: #e9ecef;
+      opacity: 0.5;
+    }
+    .sortable-drag {
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    /* Mobile Overlay */
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; backdrop-filter: blur(2px); }
+    .overlay.active { display: block; }
+    
+    @media (max-width: 768px) {
+        .sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        .sidebar.active { margin-left: 0; }
+        .main-content { margin-left: 0 !important; padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+          <div class="logo-box"><i class="fas fa-bolt"></i></div>
+          <div class="brand-text">Partner Relation<br><small class="fw-light">Support</small></div>
+      </div>
+      
+      <ul class="sidebar-menu">
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="nav-link-custom">
+                  <i class="fas fa-th-large nav-icon"></i>
+                  <span>หน้าแรก</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="nav-link-custom">
+                  <i class="fas fa-user-check nav-icon"></i>
+                  <span>ติดตามเปิดระบบ</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=firstbk" class="nav-link-custom">
+                  <i class="fas fa-briefcase nav-icon"></i>
+                  <span>ติดตามรับงานแรก</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="nav-link-custom">
+                  <i class="fas fa-file-signature nav-icon"></i>
+                  <span>ตรวจประวัติใหม่</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="nav-link-custom">
+                  <i class="fas fa-calendar-check nav-icon"></i>
+                  <span>ตรวจประวัติรายปี</span>
+              </a>
+          </li>
+          <li>
+              <a href="javascript:void(0)" class="nav-link-custom active">
+                  <i class="fas fa-cogs nav-icon"></i>
+                  <span>ตั้งค่า</span>
+              </a>
+          </li>
+      </ul>
+
+      <div class="user-section">
+          <div class="user-card" title="ข้อมูลผู้ใช้">
+              <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 35px; height: 35px; min-width: 35px;">
+                  <i class="fas fa-user"></i>
+              </div>
+              <div class="ms-2 user-text overflow-hidden">
+                  <div class="small fw-bold text-truncate" id="userEmail">Loading...</div>
+                  <div class="text-muted" style="font-size: 0.7rem;">Officer</div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="d-flex align-items-center">
+            <button class="toggle-btn me-3" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h4 class="mb-0 fw-bold text-secondary">ตั้งค่าระบบ (System Configuration)</h4>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+               <i class="fas fa-home me-1"></i> กลับหน้าแรก
+            </a>
+        </div>
+    </div>
+
+    <!-- Config Content -->
+    <div class="row g-4 mb-4">
+      <!-- Admin Management -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-header"><i class="fas fa-user-shield"></i> จัดการผู้ดูแลระบบ (Admin)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="email" id="newAdmin" class="form-control" placeholder="ระบุ Email (Google Account)">
+              <button class="btn btn-primary-theme" onclick="addConfig('admin')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="adminList"></ul>
+            <small class="text-muted mt-2 d-block">* ผู้ที่มีรายชื่อในนี้จะสามารถ ลบข้อมูล และ เข้าหน้านี้ได้</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Management -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-header"><i class="fas fa-building"></i> จัดการรายชื่อศูนย์ (Centers)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newCenter" class="form-control" placeholder="ระบุชื่อศูนย์">
+              <button class="btn btn-primary-theme" onclick="addConfig('center')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="centerList"></ul>
+            <small class="text-muted mt-2 d-block"><i class="fas fa-arrows-alt-v me-1"></i> ลากวางเพื่อจัดเรียงลำดับได้</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- New: Master Types -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-success text-white"><i class="fas fa-briefcase"></i> ประเภทงาน (Master Types)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newMasterType" class="form-control" placeholder="ประเภท (เช่น ช่างแอร์)">
+              <button class="btn btn-success" onclick="addConfig('masterType')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="masterTypeList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result Management -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-header"><i class="fas fa-poll"></i> ผลการตรวจสอบ (Results)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newResult" class="form-control" placeholder="ระบุผลตรวจ">
+              <button class="btn btn-primary-theme" onclick="addConfig('result')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="resultList"></ul>
+            <small class="text-muted mt-2 d-block"><i class="fas fa-arrows-alt-v me-1"></i> ลากวางเพื่อจัดเรียงลำดับได้</small>
+          </div>
+        </div>
+      </div>
+      
+       <!-- FT Status Management -->
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-header"><i class="fas fa-flag"></i> สถานะ FT (Status)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newFtStatus" class="form-control" placeholder="ระบุสถานะ">
+              <button class="btn btn-primary-theme" onclick="addConfig('ftStatus')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="ftStatusList"></ul>
+            <small class="text-muted mt-2 d-block"><i class="fas fa-arrows-alt-v me-1"></i> ลากวางเพื่อจัดเรียงลำดับได้</small>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Row 2: Onboard Config -->
+    <h5 class="mb-3 text-secondary border-bottom pb-2">ตั้งค่า Onboard</h5>
+    <div class="row g-4">
+      <!-- Onboard Center Config -->
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-warning text-dark"><i class="fas fa-map-marker-alt"></i> ศูนย์เทรน (Onboard Centers)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newOnboardCenter" class="form-control" placeholder="ชื่อศูนย์เทรน (เช่น BKK01)">
+              <button class="btn btn-warning" onclick="addConfig('onboardCenter')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="onboardCenterList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-warning text-dark"><i class="fas fa-users-cog"></i> Onboard: กลุ่ม (Groups)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newOnboardGroup" class="form-control" placeholder="ชื่อกลุ่ม (เช่น A, 0)">
+              <button class="btn btn-warning" onclick="addConfig('onboardGroup')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="onboardGroupList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-warning text-dark"><i class="fas fa-tags"></i> Onboard: ประเภท (Types)</div>
+          <div class="card-body">
+            <div class="input-group mb-3">
+              <input type="text" id="newOnboardType" class="form-control" placeholder="ชื่อประเภท (เช่น เปิดระบบ)">
+              <button class="btn btn-warning" onclick="addConfig('onboardType')"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul class="list-group small" id="onboardTypeList"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let configData = { admin: [], center: [], result: [], ftStatus: [], onboardGroup: [], onboardType: [], masterType: [], onboardCenter: [] };
+
+    window.onload = function() { 
+        loadConfigs(); 
+        
+        // Show current user email
+        google.script.run.withSuccessHandler(res => {
+            document.getElementById('userEmail').textContent = res.userEmail;
+        }).getClientConfig();
+    };
+    
+    // --- Sidebar Toggle ---
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const overlay = document.getElementById('overlay');
+        
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        } else {
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+    }
+
+    function loadConfigs() {
+      google.script.run.withSuccessHandler(renderConfigs).getClientConfig();
+    }
+
+    function renderConfigs(data) {
+      configData.admin = data.admins || [];
+      configData.center = data.centers || [];
+      configData.result = data.results || [];
+      configData.ftStatus = data.ftStatuses || [];
+      configData.onboardGroup = data.onboardGroups || [];
+      configData.onboardType = data.onboardTypes || [];
+      configData.masterType = data.masterTypes || [];
+      configData.onboardCenter = data.onboardCenters || [];
+
+      renderList('adminList', configData.admin, 'admin');
+      renderList('centerList', configData.center, 'center');
+      renderList('resultList', configData.result, 'result');
+      renderList('ftStatusList', configData.ftStatus, 'ftStatus');
+      renderList('onboardGroupList', configData.onboardGroup, 'onboardGroup');
+      renderList('onboardTypeList', configData.onboardType, 'onboardType');
+      renderList('masterTypeList', configData.masterType, 'masterType');
+      renderList('onboardCenterList', configData.onboardCenter, 'onboardCenter');
+      
+      initSortable();
+    }
+
+    function renderList(elementId, items, type) {
+        const ul = document.getElementById(elementId);
+        ul.innerHTML = "";
+        if(items.length === 0) { ul.innerHTML = '<li class="list-group-item text-muted text-center p-2">ไม่มีข้อมูล</li>'; return; }
+        
+        items.forEach((item) => {
+            const safeItem = item.replace(/'/g, "\\'");
+            
+            ul.innerHTML += `
+                <li class="list-group-item" data-value="${item}">
+                  <div class="d-flex align-items-center w-100">
+                      <i class="fas fa-grip-vertical drag-handle" title="ลากเพื่อย้าย"></i>
+                      <span class="ms-2 flex-grow-1 text-break">${item}</span>
+                  </div>
+                  <button class="btn btn-sm btn-outline-danger" onclick="removeConfig('${type}', '${safeItem}')" title="ลบรายการ">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </li>
+            `;
+        });
+    }
+
+    // *** Initialize SortableJS ***
+    function initSortable() {
+        const lists = ['adminList', 'centerList', 'resultList', 'ftStatusList', 'onboardGroupList', 'onboardTypeList', 'masterTypeList', 'onboardCenterList'];
+        const types = ['admin', 'center', 'result', 'ftStatus', 'onboardGroup', 'onboardType', 'masterType', 'onboardCenter'];
+        
+        lists.forEach((id, idx) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            
+            new Sortable(el, {
+                animation: 150,
+                filter: '.btn', // ป้องกันการลากเมื่อกดปุ่มลบ
+                ghostClass: 'sortable-ghost', 
+                dragClass: 'sortable-drag',
+                onEnd: function (evt) {
+                    saveOrder(types[idx], el);
+                },
+            });
+        });
+    }
+    
+    function saveOrder(type, ulElement) {
+        const items = [];
+        ulElement.querySelectorAll('li').forEach(li => {
+            const val = li.getAttribute('data-value') || li.querySelector('span').textContent.trim();
+            if(val) items.push(val);
+        });
+        
+        google.script.run.withSuccessHandler(res => {
+            if(!res.success) {
+                Swal.fire('Error', 'บันทึกการจัดเรียงไม่สำเร็จ', 'error');
+            }
+        }).saveConfigOrder(type, items);
+    }
+
+    function addConfig(type) {
+      let inputId;
+      if(type==='admin') inputId='newAdmin';
+      else if(type==='center') inputId='newCenter';
+      else if(type==='result') inputId='newResult';
+      else if(type==='ftStatus') inputId='newFtStatus';
+      else if(type==='onboardGroup') inputId='newOnboardGroup';
+      else if(type==='onboardType') inputId='newOnboardType';
+      else if(type==='masterType') inputId='newMasterType';
+      else if(type==='onboardCenter') inputId='newOnboardCenter';
+
+      const value = document.getElementById(inputId).value.trim();
+      if (!value) return;
+
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          document.getElementById(inputId).value = "";
+          loadConfigs(); 
+          Swal.fire({
+             icon: 'success',
+             title: 'สำเร็จ',
+             text: 'เพิ่มข้อมูลเรียบร้อย',
+             timer: 1000,
+             showConfirmButton: false
+          });
+        } else {
+          Swal.fire('Error', res.message, 'error');
+        }
+      }).addConfigItem(type, value);
+    }
+
+    function removeConfig(type, value) {
+      Swal.fire({
+        title: 'ยืนยันการลบ?', text: `ต้องการลบ ${value} ออกจากระบบ?`, icon: 'warning',
+        showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบ'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          google.script.run.withSuccessHandler(() => {
+            loadConfigs();
+            Swal.fire({
+               icon: 'success',
+               title: 'ลบแล้ว',
+               timer: 1000,
+               showConfirmButton: false
+            });
+          }).removeConfigItem(type, value);
+        }
+      });
+    }
+    
+    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+  </script>
+</body>
+</html>

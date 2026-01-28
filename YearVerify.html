@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Annual Verification</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SheetJS for Import Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
+
+  <style>
+    :root { 
+        --ci-primary: #31C1D7; 
+        --ci-bg: #F8F9FA; 
+        --ci-text: #2d3436;
+        --ci-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        --sidebar-width: 260px;
+        --sidebar-width-collapsed: 80px;
+    }
+    body { font-family: 'Sarabun', sans-serif; background-color: var(--ci-bg); color: var(--ci-text); overflow-x: hidden; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+        height: 100vh;
+        width: var(--sidebar-width);
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: #ffffff;
+        box-shadow: 4px 0 15px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #f0f0f0;
+    }
+    
+    .sidebar.collapsed { width: var(--sidebar-width-collapsed); }
+    
+    .sidebar-header {
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 80px;
+        border-bottom: 1px solid #f8f9fa;
+        justify-content: center;
+    }
+    
+    .logo-box {
+        min-width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--ci-primary), #25a0b5);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 10px rgba(49, 193, 215, 0.3);
+    }
+    
+    .brand-text {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #2d3436;
+        transition: opacity 0.2s;
+        margin-left: 10px;
+    }
+    .sidebar.collapsed .brand-text { display: none; }
+
+    .sidebar-menu {
+        padding: 20px 10px;
+        list-style: none;
+        margin: 0;
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .sidebar-menu li { margin-bottom: 8px; }
+    
+    .nav-link-custom {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #636e72;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.2s;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    .sidebar.collapsed .nav-link-custom { justify-content: center; padding: 12px 0; }
+    .sidebar.collapsed .nav-link-custom span { display: none; }
+    
+    .nav-link-custom:hover {
+        background-color: #f1f3f5;
+        color: var(--ci-primary);
+        transform: translateX(3px);
+    }
+    .sidebar.collapsed .nav-link-custom:hover { transform: none; background-color: #f1f3f5; }
+    
+    .nav-link-custom.active {
+        background-color: rgba(49, 193, 215, 0.1);
+        color: var(--ci-primary);
+        font-weight: 600;
+    }
+    
+    .nav-icon {
+        min-width: 24px;
+        font-size: 1.1rem;
+        text-align: center;
+        margin-right: 15px;
+    }
+    .sidebar.collapsed .nav-icon { margin-right: 0; }
+
+    .user-section {
+        padding: 15px;
+        border-top: 1px solid #f8f9fa;
+        background-color: #fff;
+    }
+    .user-card {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+    .sidebar.collapsed .user-card { justify-content: center; padding: 10px 0; }
+    .sidebar.collapsed .user-text { display: none; }
+    
+    /* --- Main Content --- */
+    .main-content {
+        margin-left: var(--sidebar-width);
+        padding: 20px 30px;
+        transition: all 0.3s ease;
+        min-height: 100vh;
+    }
+    .main-content.expanded { margin-left: var(--sidebar-width-collapsed); }
+
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px dashed #e9ecef;
+    }
+    .toggle-btn {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #636e72;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background 0.2s;
+    }
+    .toggle-btn:hover { background-color: #e9ecef; }
+
+    /* Soft Buttons */
+    .btn-soft-primary { background-color: rgba(49, 193, 215, 0.15); color: var(--ci-primary); border: none; font-weight: 600; }
+    .btn-soft-primary:hover { background-color: var(--ci-primary); color: white; transform: translateY(-2px); }
+    .btn-soft-success { background-color: rgba(25, 135, 84, 0.15); color: #198754; border: none; font-weight: 600; }
+    .btn-soft-success:hover { background-color: #198754; color: white; transform: translateY(-2px); }
+    
+    .btn-primary-theme { background-color: var(--ci-primary); border-color: var(--ci-primary); color: white; font-weight: 600; }
+    .btn-primary-theme:hover { background-color: #29a8bb; color: white; }
+    
+    /* Table & Components */
+    .table-container { background: #fff; border-radius: 16px; padding: 25px; margin-top: 20px; overflow-x: auto; box-shadow: var(--ci-shadow); border: 1px solid #f0f0f0; }
+    .badge-status { padding: 6px 12px; border-radius: 30px; font-size: 0.75rem; font-weight: 600; }
+    .flatpickr-input[readonly] { background-color: #fff !important; cursor: pointer; }
+    .table th { white-space: nowrap; background-color: #f8fbfb; color: #2d3436; font-weight: 600; border-bottom: 2px solid #eef2f5; padding-top: 15px; padding-bottom: 15px; }
+    .table td { vertical-align: middle; padding: 12px 15px; color: #555; }
+    .w-fit { width: 1%; white-space: nowrap; }
+    .note-input { border: 1px solid #dee2e6; border-radius: 8px; padding: 4px 8px; font-size: 0.85rem; min-width: 200px; background-color: #f8f9fa; }
+    .note-input:focus { border-color: var(--ci-primary); outline: none; background-color: #fff; }
+
+    /* Badge Link Style */
+    .badge-maid { 
+        background-color: #e3f2fd; 
+        color: #0d6efd; 
+        border: 1px solid #b6d4fe; 
+        padding: 4px 10px; 
+        border-radius: 6px; 
+        font-weight: 600; 
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.2s;
+    }
+    a.badge-maid:hover {
+        background-color: #0d6efd;
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    /* Custom Badges */
+    .badge-group-A { background-color: #198754; color: white; } 
+    .badge-group-fired { background-color: #dc3545; color: white; } 
+    .badge-group-default { background-color: #6c757d; color: white; }
+    .badge-import-new { background-color: #0d6efd; color: white; margin-left: 5px; font-size: 0.7rem; }
+    .badge-import-update { background-color: #fd7e14; color: white; margin-left: 5px; font-size: 0.7rem; }
+    
+    /* Mobile Overlay */
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; backdrop-filter: blur(2px); }
+    .overlay.active { display: block; }
+    
+    @media (max-width: 768px) {
+        .sidebar { margin-left: calc(var(--sidebar-width) * -1); }
+        .sidebar.active { margin-left: 0; }
+        .main-content { margin-left: 0 !important; padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+          <div class="logo-box"><i class="fas fa-bolt"></i></div>
+          <div class="brand-text">Partner Relation<br><small class="fw-light">Support</small></div>
+      </div>
+      
+      <ul class="sidebar-menu">
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="nav-link-custom">
+                  <i class="fas fa-th-large nav-icon"></i>
+                  <span>หน้าแรก</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="nav-link-custom">
+                  <i class="fas fa-user-check nav-icon"></i>
+                  <span>ติดตามเปิดระบบ</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=firstbk" class="nav-link-custom">
+                  <i class="fas fa-briefcase nav-icon"></i>
+                  <span>ติดตามรับงานแรก</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="nav-link-custom">
+                  <i class="fas fa-file-signature nav-icon"></i>
+                  <span>ตรวจประวัติใหม่</span>
+              </a>
+          </li>
+          <li>
+              <a href="javascript:void(0)" class="nav-link-custom active">
+                  <i class="fas fa-calendar-check nav-icon"></i>
+                  <span>ตรวจประวัติรายปี</span>
+              </a>
+          </li>
+          <li>
+              <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="nav-link-custom d-none" id="nav-config">
+                  <i class="fas fa-cogs nav-icon"></i>
+                  <span>ตั้งค่า</span>
+              </a>
+          </li>
+      </ul>
+
+      <div class="user-section">
+          <div class="user-card" title="ข้อมูลผู้ใช้">
+              <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 35px; height: 35px; min-width: 35px;">
+                  <i class="fas fa-user"></i>
+              </div>
+              <div class="ms-2 user-text overflow-hidden">
+                  <div class="small fw-bold text-truncate" id="userEmail">Loading...</div>
+                  <div class="text-muted" style="font-size: 0.7rem;">Officer</div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- Mobile Overlay -->
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Main Content -->
+  <div class="main-content" id="mainContent">
+    
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="d-flex align-items-center">
+            <button class="toggle-btn me-3" onclick="toggleSidebar()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div>
+                <h4 class="mb-0 fw-bold text-secondary">ระบบตรวจประวัติรายปี</h4>
+                <div id="lastImportDisplay" class="text-danger small fw-bold mt-1" style="font-size: 0.75rem;"></div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="btn btn-outline-secondary btn-sm rounded-pill px-3 d-flex align-items-center gap-2 text-decoration-none">
+               <i class="fas fa-home"></i> <span class="d-none d-md-inline">หน้าหลัก</span>
+            </a>
+            <button class="btn btn-soft-primary btn-sm rounded-pill px-3 d-flex align-items-center gap-2 fw-bold" onclick="openExportModal()">
+                <i class="fas fa-file-export"></i> <span class="d-none d-md-inline">Export CSV</span>
+            </button>
+            <button class="btn btn-soft-success btn-sm rounded-pill px-3 d-flex align-items-center gap-2 fw-bold" onclick="exportAnnualReport()">
+                <i class="fas fa-file-excel"></i> <span class="d-none d-md-inline">Report</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Controls -->
+    <div class="row g-3 mb-4 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label small text-muted fw-bold text-uppercase">เดือนที่ตรวจสอบ</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="far fa-calendar-alt text-primary"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" id="monthFilter" placeholder="เลือกเดือน..." readonly>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label small text-muted fw-bold text-uppercase">ค้นหา</label>
+        <div class="input-group shadow-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="ชื่อ, รหัส, เลขบัตร..." onkeyup="filterTable()">
+        </div>
+      </div>
+      <div class="col-md-4 text-end">
+        <div class="d-flex gap-2 justify-content-end">
+            <input type="file" id="importFile" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleFileSelect(this)">
+            
+            <button class="btn btn-success text-white shadow-sm rounded-pill fw-bold" onclick="document.getElementById('importFile').click()">
+              <i class="fas fa-file-import me-2"></i> นำเข้าไฟล์
+            </button>
+            <button class="btn btn-primary-theme shadow-sm rounded-pill fw-bold" onclick="openAddModal()">
+              <i class="fas fa-plus me-2"></i> เพิ่มรายการ
+            </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Cards -->
+    <div class="d-flex gap-3 flex-wrap mb-4 align-items-stretch">
+        <!-- Import Filter -->
+        <div class="card flex-grow-1 shadow-sm border-0" style="min-width: 250px;">
+             <div class="card-body p-2 d-flex align-items-center justify-content-between">
+                 <span class="small fw-bold text-muted ms-2 text-nowrap"><i class="fas fa-history me-1"></i> ผลการนำเข้า</span>
+                 <div class="btn-group btn-group-sm ms-2" role="group">
+                    <input type="radio" class="btn-check" name="importFilter" id="btnImportAll" autocomplete="off" checked onchange="filterTable()">
+                    <label class="btn btn-outline-secondary border-0 rounded-pill me-1 fw-bold px-3" for="btnImportAll">ทั้งหมด</label>
+
+                    <input type="radio" class="btn-check" name="importFilter" id="btnImportNew" autocomplete="off" onchange="filterTable()">
+                    <label class="btn btn-outline-primary border-0 rounded-pill me-1 fw-bold px-3" for="btnImportNew">ใหม่</label>
+
+                    <input type="radio" class="btn-check" name="importFilter" id="btnImportUpdated" autocomplete="off" onchange="filterTable()">
+                    <label class="btn btn-outline-warning text-dark border-0 rounded-pill fw-bold px-3" for="btnImportUpdated">อัปเดต</label>
+                 </div>
+             </div>
+        </div>
+
+        <!-- Group Filter -->
+        <div class="card shadow-sm border-0" style="min-width: 180px;">
+             <div class="card-body p-2 d-flex align-items-center gap-2">
+                 <span class="small fw-bold text-muted ms-2 text-nowrap"><i class="fas fa-users me-1"></i> กลุ่ม</span>
+                 <select class="form-select form-select-sm border-0 bg-light fw-bold text-primary" id="groupFilter" onchange="filterTable()">
+                    <option value="">ทั้งหมด</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                    <option value="H">H</option>
+                    <option value="ถูกปลดแล้ว">ถูกปลดแล้ว</option>
+                 </select>
+             </div>
+        </div>
+
+        <!-- Deduction Filter -->
+        <div class="card shadow-sm border-0" style="min-width: 200px;">
+             <div class="card-body p-2 d-flex align-items-center gap-2">
+                 <span class="small fw-bold text-muted ms-2 text-nowrap"><i class="fas fa-money-bill-wave me-1"></i> การชำระ</span>
+                 <select class="form-select form-select-sm border-0 bg-light fw-bold text-success" id="deductionFilter" onchange="filterTable()">
+                    <option value="all">ทั้งหมด</option>
+                    <option value="paid">ชำระครบ</option>
+                    <option value="outstanding">ค้างชำระ</option>
+                 </select>
+             </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th class="w-fit text-center">#</th>
+            <th class="w-fit">รหัส</th>
+            <th>ชื่อ-นามสกุล</th>
+            <th class="w-fit text-center">กลุ่ม</th>
+            <th>เลขบัตร</th>
+            <th class="w-fit">เบอร์โทร</th>
+            <th>ยินยอมฯ</th>
+            <th class="w-fit text-end">ยอดเงิน</th>
+            <th class="w-fit text-end">ค้างชำระ</th>
+            <th>สถานะหัก</th>
+            <th>ช่องทาง</th>
+            <th>สถานะส่ง</th>
+            <th>วันรับผล</th>
+            <th style="min-width: 250px;">หมายเหตุ (แก้ไขได้)</th>
+            <th class="text-center w-fit">Export</th>
+            <th class="w-fit text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="noData" class="text-center py-5 text-muted" style="display:none;">
+          <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i><br>ไม่พบข้อมูล
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add/Edit Annual -->
+  <div class="modal fade" id="formModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-primary text-white border-bottom-0">
+          <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-edit me-2"></i>บันทึกตรวจประวัติรายปี</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-4">
+          
+          <!-- Search Section (Autocomplete) -->
+          <div id="searchSection" class="mb-4 p-3 bg-light rounded border border-primary border-opacity-25">
+             <label class="form-label fw-bold text-primary"><i class="fas fa-search me-1"></i> ค้นหาผู้ให้บริการ</label>
+             <div class="input-group">
+                <input class="form-control" list="providerOptions" id="searchProviderInput" placeholder="พิมพ์รหัส / ชื่อ / เลขบัตร เพื่อค้นหา..." onchange="onProviderSelect()">
+                <datalist id="providerOptions">
+                    <!-- JS Populated -->
+                </datalist>
+                <button class="btn btn-outline-secondary" onclick="document.getElementById('searchProviderInput').value='';" type="button">Clear</button>
+             </div>
+             <small class="text-muted ms-1">ระบบจะดึงข้อมูลให้อัตโนมัติเมื่อเลือกรายการ</small>
+          </div>
+
+          <form id="dataForm">
+            <input type="hidden" id="recordId">
+            
+            <div class="row g-3 mb-4">
+               <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted">รหัสคุณแม่บ้าน</label>
+                  <input type="text" class="form-control bg-light" id="refCode">
+               </div>
+               <div class="col-md-5">
+                  <label class="form-label small fw-bold text-muted">ชื่อคุณแม่บ้าน <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control fw-bold bg-light" id="name" required>
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">กลุ่ม (Group) <span class="text-danger">*</span></label>
+                  <select class="form-select" id="group" required>
+                      <option value="" selected disabled>เลือกกลุ่ม...</option>
+                      <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="H">H</option>
+                      <option value="ถูกปลดแล้ว">ถูกปลดแล้ว</option>
+                  </select>
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">เลขที่บัตรประชาชน</label>
+                  <input type="text" class="form-control" id="idCard" maxlength="13">
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">วันเกิด</label>
+                  <input type="text" class="form-control datepicker" id="birthDate">
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">เบอร์โทร</label>
+                  <input type="text" class="form-control" id="phone">
+               </div>
+            </div>
+
+            <div class="p-3 bg-light rounded mb-4 border">
+                <h6 class="text-secondary fw-bold mb-3">ข้อมูลการชำระเงิน</h6>
+                <div class="row g-3">
+                   <div class="col-md-3">
+                      <label class="form-label small">ยินยอมให้หักเงิน?</label>
+                      <select class="form-select" id="consentStatus">
+                          <option value="">- ระบุ -</option><option value="ยินยอม">ยินยอม</option><option value="ไม่ยินยอม">ไม่ยินยอม</option><option value="รอตรวจสอบ">รอตรวจสอบ</option>
+                      </select>
+                   </div>
+                   <div class="col-md-3">
+                      <label class="form-label small">ยอดเงินตรวจ</label>
+                      <input type="number" class="form-control" id="amount" placeholder="0.00">
+                   </div>
+                   <div class="col-md-3">
+                      <label class="form-label small text-danger">ยอดค้างชำระ</label>
+                      <input type="number" class="form-control border-danger" id="outstanding" placeholder="0.00">
+                   </div>
+                   <div class="col-md-3">
+                      <label class="form-label small">สถานะการหักเงิน</label>
+                      <select class="form-select fw-bold" id="deductionStatus">
+                          <option value="">- ระบุ -</option><option value="ชำระครบ">ชำระครบ</option><option value="ค้างชำระ">ค้างชำระ</option>
+                          <option value="หักสำเร็จ">หักสำเร็จ</option><option value="หักไม่สำเร็จ">หักไม่สำเร็จ</option><option value="รอหัก">รอหัก</option>
+                      </select>
+                   </div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">ช่องทางการตรวจ</label>
+                  <select class="form-select" id="channel" onchange="updateStatusOptions()">
+                      <option value="" selected disabled>เลือกช่องทาง...</option>
+                      <option value="App Man">App Man</option><option value="ตรวจเอง">ตรวจเอง</option>
+                  </select>
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">สถานะการส่งตรวจ</label>
+                  <select class="form-select" id="statusProcess">
+                      <option value="" selected disabled>กรุณาเลือกช่องทางก่อน...</option>
+                  </select>
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">วันที่รับผล</label>
+                  <input type="text" class="form-control datepicker" id="resultDate">
+               </div>
+               
+               <div class="col-md-12">
+                  <label class="form-label small fw-bold text-muted">หมายเหตุ</label>
+                  <textarea class="form-control" id="note" rows="2" placeholder="ระบุหมายเหตุ..."></textarea>
+               </div>
+               
+               <!-- Hidden Fields -->
+               <div class="d-none">
+                  <input type="text" id="officerEmail"><input type="text" class="form-control datepicker" id="submitDate">
+               </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-top-0 bg-white">
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึกข้อมูล</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Modal (Select Group) -->
+  <div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center pb-5">
+          <i class="fas fa-file-csv display-4 mb-3" style="color: var(--ci-primary);"></i>
+          <h4>Export CSV</h4>
+          <p class="text-muted">รายการที่จะ Export ต้องมีสถานะ "ผลตรวจออกแล้ว"</p>
+          <p class="small mb-4 text-primary fw-bold" id="exportYearDisplay"></p>
+          <div class="d-grid gap-2 col-10 mx-auto">
+            <button class="btn btn-success p-3 text-start shadow-sm border-0" onclick="previewExport('ALL')">
+              <div class="d-flex justify-content-between align-items-center">
+                  <span><i class="fas fa-check-circle me-2"></i> Export ผลตรวจที่ออกแล้ว</span>
+                  <i class="fas fa-download"></i>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Preview Modal -->
+  <div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-light">
+          <h5 class="modal-title">ตรวจสอบรายการ Export (รายปี)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <table class="table table-sm table-bordered"><thead class="table-light"><tr><th>Code</th><th>ชื่อ-นามสกุล</th><th>เลขบัตร</th><th>สถานะส่ง</th></tr></thead><tbody id="previewTableBody"></tbody></table>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" class="btn btn-primary-theme" id="confirmExportBtn" onclick="confirmExport()">ยืนยัน Download CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+
+  <script>
+    let globalData = [];
+    let providerList = []; 
+    let resultList = [], ftStatusList = [];
+    let currentUser = "";
+    let isUserAdmin = false;
+    let formModal, exportModal, previewModal;
+    let currentExportType = "";
+    let monthPickerInstance;
+    let lastImportAdded = [], lastImportUpdated = [];
+
+    window.onload = function() {
+        formModal = new bootstrap.Modal(document.getElementById('formModal'));
+        exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+        previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+        
+        flatpickr(".datepicker", { dateFormat: "Y-m-d", altInput: true, altFormat: "j F Y", locale: "th" });
+        
+        const today = new Date();
+        monthPickerInstance = flatpickr("#monthFilter", {
+          plugins: [ new monthSelectPlugin({ shorthand: true, dateFormat: "Y-m", altFormat: "F Y", theme: "light" }) ],
+          locale: "th", defaultDate: today,
+          onChange: function(selectedDates, dateStr) { loadData(); }
+        });
+        
+        loadData();
+        loadProviderOptions(); 
+        loadLastImportInfo();
+        
+        // Check Admin
+        google.script.run.withSuccessHandler(res => {
+            isUserAdmin = res.isAdmin;
+            if(isUserAdmin && document.getElementById('nav-config')) {
+                document.getElementById('nav-config').classList.remove('d-none');
+            }
+        }).getClientConfig();
+    };
+
+    // --- Sidebar Toggle ---
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const overlay = document.getElementById('overlay');
+        
+        if (window.innerWidth <= 768) {
+            sidebar.classList.toggle('active'); overlay.classList.toggle('active');
+        } else {
+            sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded');
+        }
+    }
+    
+    function loadLastImportInfo() {
+        google.script.run.withSuccessHandler(msg => {
+            if(msg) {
+                document.getElementById('lastImportDisplay').innerHTML = `<i class="fas fa-history me-1"></i>นำเข้าล่าสุด: ${msg}`;
+            }
+        }).getLastImportLog();
+    }
+
+    function excelDateToJSDate(serial) { 
+       if (!serial) return ""; 
+       if (typeof serial === 'string' && serial.includes('-')) return serial;
+       if (isNaN(serial)) return serial; 
+       let date = new Date((serial - (25567 + 2)) * 86400 * 1000); 
+       return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`; 
+    }
+
+    function handleFileSelect(input) {
+      if (!input.files || input.files.length === 0) return;
+      const file = input.files[0];
+      
+      const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      let monthOpts = ""; thaiMonths.forEach((m, i) => { monthOpts += `<option value="${i+1}" ${i===currentMonth?'selected':''}>${m}</option>`; });
+      let yearOpts = ""; for(let y=currentYear-1; y<=currentYear+1; y++) { yearOpts += `<option value="${y}" ${y===currentYear?'selected':''}>${y+543}</option>`; }
+
+      Swal.fire({
+          title: 'ระบุเดือน/ปี สำหรับข้อมูลชุดนี้',
+          html: `<div class="d-flex gap-2 justify-content-center"><select id="swal-month" class="form-select">${monthOpts}</select><select id="swal-year" class="form-select">${yearOpts}</select></div>`,
+          showCancelButton: true, confirmButtonText: 'นำเข้าข้อมูล', cancelButtonText: 'ยกเลิก',
+          preConfirm: () => {
+              const m = document.getElementById('swal-month').value.padStart(2, '0');
+              const y = document.getElementById('swal-year').value;
+              return `${y}-${m}-01`; 
+          }
+      }).then((result) => {
+          if (result.isConfirmed) {
+              const selectedDate = result.value; 
+              if(monthPickerInstance) monthPickerInstance.setDate(selectedDate);
+              processFile(file, selectedDate);
+          } else {
+              input.value = ""; 
+          }
+      });
+    }
+
+    function processFile(file, selectedDate) {
+      const reader = new FileReader();
+      Swal.fire({ title: 'กำลังอ่านไฟล์...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+        
+        if (jsonData.length < 1) { Swal.fire('Error', 'ไฟล์ไม่มีข้อมูล', 'error'); return; }
+
+        const records = [];
+        for(let i=1; i<jsonData.length; i++) { // Start from row 1 (Skip header)
+            const row = jsonData[i];
+            if(!row[0] && !row[3]) continue; 
+            
+            let outstandingVal = row[8];
+            let derivedDeductionStatus = "ค้างชำระ"; 
+            if (outstandingVal===undefined || outstandingVal===null || outstandingVal==="" || String(outstandingVal).trim()==="-" || Number(outstandingVal)===0) { 
+                derivedDeductionStatus = "ชำระครบ"; 
+            }
+            
+            records.push({
+               refCode: row[0]||"", name: row[1]||"", group: row[2]||"A", idCard: String(row[3]||""),
+               birthDate: excelDateToJSDate(row[4]), phone: row[5]||"", consentStatus: row[6]||"",
+               amount: row[7]||"", outstanding: row[8]||"", deductionStatus: derivedDeductionStatus,
+               channel: row[10]||"App Man", statusProcess: row[11]||"ส่งลิ้งค์แล้วรอกรอกข้อมูล",
+               resultDate: excelDateToJSDate(row[12]), result: row[13]||"", note: row[14] || "",
+               officerEmail: currentUser, submitDate: selectedDate 
+            });
+        }
+        
+        google.script.run.withSuccessHandler(res => {
+            if(res.success) { 
+                Swal.fire('สำเร็จ', `นำเข้าเรียบร้อย: ${res.updated} แก้ไข, ${res.added} ใหม่`, 'success'); 
+                lastImportAdded = res.addedIds || [];
+                lastImportUpdated = res.updatedIds || [];
+                loadData();
+                loadLastImportInfo();
+            } 
+            else { Swal.fire('Error', res.message, 'error'); }
+            document.getElementById('importFile').value = ""; 
+        }).importAnnualData(records, selectedDate);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    
+    function saveInlineNote(id, newNote) {
+        let finalNote = newNote.trim();
+        if (finalNote) {
+             const now = new Date();
+             const timeStr = `(${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')})`;
+             if (!finalNote.includes('(')) { finalNote = `${timeStr} ${finalNote}`; }
+        }
+        const btn = document.getElementById(`btn-save-${id}`);
+        if(btn) { btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true; }
+
+        google.script.run.withSuccessHandler(() => {
+             if(btn) { btn.innerHTML = '<i class="fas fa-check text-success"></i>'; setTimeout(() => { btn.innerHTML = '<i class="fas fa-save"></i>'; btn.disabled = false; }, 1000); }
+             const row = globalData.find(r => r.id === id); if(row) row.note = finalNote;
+        }).updateAnnualNote(id, finalNote);
+    }
+
+    function loadData() {
+        const filterVal = document.getElementById('monthFilter').value;
+        Swal.showLoading();
+        google.script.run.withSuccessHandler(res => {
+            Swal.close(); globalData = res.data; resultList = res.results||[]; ftStatusList = res.ftStatuses||[]; currentUser = res.currentUser; isUserAdmin = res.isAdmin;
+            
+            document.getElementById('userEmail').textContent = currentUser;
+            
+            if(document.getElementById('ftStatus') && ftStatusList.length > 0) {
+                 const ftSelect = document.getElementById('ftStatus');
+                 ftSelect.innerHTML = '<option value="">- รอระบุ -</option>';
+                 ftStatusList.forEach(s => ftSelect.add(new Option(s, s)));
+            }
+            
+            // Show Config menu if Admin
+            const navConfig = document.getElementById('nav-config');
+            if (navConfig) {
+                if (isUserAdmin) navConfig.classList.remove('d-none');
+                else navConfig.classList.add('d-none');
+            }
+
+            renderTable(globalData);
+        }).getAnnualData(filterVal);
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
+        if(data.length === 0) { document.getElementById('noData').style.display = 'block'; return; }
+        document.getElementById('noData').style.display = 'none';
+
+        data.forEach((row, index) => {
+            let tr = document.createElement('tr');
+            let exportIcon = row.exportStatus ? '<i class="fas fa-file-export text-success fs-5"></i>' : '<span class="text-muted">-</span>';
+            let amount = row.amount ? Number(row.amount).toLocaleString() : '-';
+            let outstanding = row.outstanding ? Number(row.outstanding).toLocaleString() : '-';
+            let deductClass = row.deductionStatus==='ชำระครบ'||row.deductionStatus==='หักสำเร็จ'?'text-success fw-bold':(row.deductionStatus==='ค้างชำระ'?'text-danger fw-bold':'');
+            
+            let groupBadge = 'badge-group-default';
+            if(row.group === 'A') groupBadge = 'badge-group-A';
+            else if(row.group === 'ถูกปลดแล้ว') groupBadge = 'badge-group-fired';
+
+            let importBadge = "";
+            let cleanIdCard = (row.idCard || "").replace(/'/g, "").trim();
+            if (lastImportAdded.includes(cleanIdCard)) importBadge = `<span class="badge badge-import-new">NEW</span>`;
+            else if (lastImportUpdated.includes(cleanIdCard)) importBadge = `<span class="badge badge-import-update">UPDATED</span>`;
+
+            // Updated Ref Code Link
+            let refCodeDisplay = row.refCode 
+                ? `<a href="https://admin-test.beneat.co/professional/${row.refCode}/profile" target="_blank" class="badge badge-maid text-decoration-none">${row.refCode}</a>` 
+                : '-';
+            
+            // Delete button logic
+            let deleteBtn = isUserAdmin ? 
+               `<button class="btn btn-sm btn-outline-danger" onclick="deleteItem('${row.id}')"><i class="fas fa-trash-alt"></i></button>` : '';
+
+            tr.innerHTML = `
+                <td class="text-center">${index + 1}</td>
+                <td class="fw-bold text-primary w-fit">${refCodeDisplay}</td>
+                <td>${row.name||'-'} ${importBadge}</td>
+                <td class="text-center w-fit"><span class="badge ${groupBadge}">${row.group||'-'}</span></td>
+                <td>${row.idCard||'-'}</td>
+                <td class="w-fit">${row.phone||'-'}</td>
+                <td>${row.consentStatus||'-'}</td>
+                <td class="text-end w-fit">${amount}</td>
+                <td class="text-end w-fit text-danger">${outstanding}</td>
+                <td class="${deductClass}">${row.deductionStatus||'-'}</td>
+                <td><span class="badge bg-light text-dark border">${row.channel||'-'}</span></td>
+                <td>${row.statusProcess||'-'}</td>
+                <td>${formatDate(row.resultDate)}</td>
+                <td style="min-width: 200px;">
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control note-input" value="${row.note||''}" id="note-${row.id}" onkeydown="if(event.key==='Enter') saveInlineNote('${row.id}', this.value)">
+                        <button class="btn btn-outline-secondary" type="button" id="btn-save-${row.id}" onclick="saveInlineNote('${row.id}', document.getElementById('note-${row.id}').value)">
+                           <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                </td>
+                <td class="text-center w-fit">${exportIcon}</td>
+                <td class="w-fit text-center">
+                    <div class="d-flex justify-content-center gap-1">
+                        <button class="btn btn-sm btn-outline-info" onclick='openEditModal(${JSON.stringify(row)})'><i class="fas fa-edit"></i></button>
+                        ${deleteBtn}
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterTable() {
+        const txt = document.getElementById('searchInput').value.toLowerCase();
+        let importFilter = "all";
+        if (document.getElementById('btnImportNew').checked) importFilter = "new";
+        if (document.getElementById('btnImportUpdated').checked) importFilter = "updated";
+        const deductFilter = document.getElementById('deductionFilter').value;
+        const groupFilter = document.getElementById('groupFilter').value;
+
+        const filtered = globalData.filter(x => {
+            const matchText = (x.name && x.name.toLowerCase().includes(txt)) || 
+                              (x.refCode && x.refCode.toLowerCase().includes(txt)) || 
+                              (x.idCard && x.idCard.includes(txt));
+            
+            let matchImport = true;
+            let cleanId = (x.idCard || "").replace(/'/g, "").trim();
+            if (importFilter === "new") matchImport = lastImportAdded.includes(cleanId);
+            else if (importFilter === "updated") matchImport = lastImportUpdated.includes(cleanId);
+            
+            let matchDeduct = true;
+            if (deductFilter === "paid") matchDeduct = (x.deductionStatus === "ชำระครบ");
+            else if (deductFilter === "outstanding") matchDeduct = (x.deductionStatus === "ค้างชำระ");
+            
+            let matchGroup = true;
+            if (groupFilter !== "") matchGroup = (x.group === groupFilter);
+
+            return matchText && matchImport && matchDeduct && matchGroup;
+        });
+        renderTable(filtered);
+    }
+
+    function openAddModal() { document.getElementById('dataForm').reset(); document.getElementById('recordId').value = ""; document.getElementById('modalTitle').textContent = "บันทึกข้อมูลใหม่ (รายปี)"; document.getElementById('searchSection').style.display = 'block'; document.getElementById('searchProviderInput').value = ""; document.getElementById('officerEmail').value = currentUser; document.getElementById('submitDate')._flatpickr.setDate(new Date()); updateStatusOptions(); formModal.show(); }
+    function openEditModal(item) { document.getElementById('modalTitle').textContent = "แก้ไขข้อมูล"; document.getElementById('searchSection').style.display = 'none'; document.getElementById('recordId').value = item.id; document.getElementById('refCode').value = item.refCode; document.getElementById('name').value = item.name; document.getElementById('group').value = item.group; document.getElementById('idCard').value = item.idCard; setFlatpickrValue('birthDate', item.birthDate); document.getElementById('phone').value = item.phone; document.getElementById('consentStatus').value = (item.consentStatus||"").trim(); document.getElementById('amount').value = item.amount; document.getElementById('outstanding').value = item.outstanding; document.getElementById('deductionStatus').value = item.deductionStatus; document.getElementById('channel').value = item.channel; updateStatusOptions(); document.getElementById('statusProcess').value = item.statusProcess; setFlatpickrValue('resultDate', item.resultDate); document.getElementById('officerEmail').value = item.officerEmail; setFlatpickrValue('submitDate', item.submitDate); document.getElementById('note').value = item.note||""; if(document.getElementById('ftStatus')) document.getElementById('ftStatus').value = item.ftStatus; formModal.show(); }
+    function updateStatusOptions() { const channel = document.getElementById('channel').value; const statusSelect = document.getElementById('statusProcess'); const currentVal = statusSelect.value; statusSelect.innerHTML = '<option value="" selected disabled>เลือกสถานะ...</option>'; let options = []; if (channel === 'App Man') { options = ['ส่งลิ้งค์แล้วรอกรอกข้อมูล', 'รอผลตรวจ', 'ผลตรวจออกแล้ว']; } else if (channel === 'ตรวจเอง') { options = ['รอส่งผลตรวจให้เรา(ตรวจเอง)', 'ผลตรวจออกแล้ว']; } options.forEach(opt => { statusSelect.add(new Option(opt, opt)); }); if(options.includes(currentVal)) statusSelect.value = currentVal; }
+    function saveData() { const rawNote = document.getElementById('note').value.trim(); let finalNote = rawNote; if (rawNote) { const now = new Date(); const timeStr = `(${now.getDate()}/${now.getMonth()+1}/${now.getFullYear()+543} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')})`; if (!rawNote.includes('(')) { finalNote = `${timeStr} ${rawNote}`; } } const form = { id: document.getElementById('recordId').value, refCode: document.getElementById('refCode').value, name: document.getElementById('name').value, group: document.getElementById('group').value, idCard: document.getElementById('idCard').value, birthDate: document.getElementById('birthDate').value, phone: document.getElementById('phone').value, consentStatus: document.getElementById('consentStatus').value, amount: document.getElementById('amount').value, outstanding: document.getElementById('outstanding').value, deductionStatus: document.getElementById('deductionStatus').value, channel: document.getElementById('channel').value, statusProcess: document.getElementById('statusProcess').value, resultDate: document.getElementById('resultDate').value, result: "", lastFollowup: "", officerEmail: document.getElementById('officerEmail').value, submitDate: document.getElementById('submitDate').value, note: finalNote, ftStatus: document.getElementById('ftStatus') ? document.getElementById('ftStatus').value : "" }; if(!form.name || !form.group) { return Swal.fire('ข้อมูลไม่ครบ', 'กรุณากรอกชื่อและกลุ่ม', 'warning'); } Swal.showLoading(); google.script.run.withSuccessHandler(res => { if(res.success) { formModal.hide(); Swal.fire('สำเร็จ', 'บันทึกข้อมูลเรียบร้อย', 'success'); loadData(); } else { Swal.fire('Error', res.message, 'error'); } }).saveAnnualData(form); }
+    function deleteItem(id) { Swal.fire({ title: 'ยืนยันลบ?', text: 'ต้องการลบข้อมูลนี้หรือไม่', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then(res => { if(res.isConfirmed) { Swal.showLoading(); google.script.run.withSuccessHandler(() => { Swal.fire('ลบแล้ว', '', 'success'); loadData(); }).deleteAnnualData(id); } }); }
+    function openExportModal() { const monthVal = document.getElementById('monthFilter').value; const dateObj = new Date(monthVal + '-01'); let displayText = "เดือน: " + monthVal; if(monthVal && !isNaN(dateObj.getTime())) { displayText = "เดือน: " + dateObj.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }); } document.getElementById('exportYearDisplay').textContent = displayText; exportModal.show(); }
+    function previewExport(groupType) { currentExportType = groupType; const year = document.getElementById('monthFilter').value; Swal.showLoading(); google.script.run.withSuccessHandler(showPreviewModal).withFailureHandler(onFailure).exportAnnualCSV(groupType, year, true); }
+    function showPreviewModal(data) { Swal.close(); if (!data || data.length === 0) { Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลใหม่สำหรับ Export ในกลุ่มนี้', 'info'); return; } const tbody = document.getElementById('previewTableBody'); tbody.innerHTML = ""; data.forEach(row => { let tr = document.createElement('tr'); tr.innerHTML = `<td>${row.refCode}</td><td>${row.name}</td><td>${row.idCard}</td><td>${row.ftStatus}</td>`; tbody.appendChild(tr); }); exportModal.hide(); previewModal.show(); }
+    function confirmExport() { const year = document.getElementById('monthFilter').value; if (!currentExportType) return; previewModal.hide(); Swal.showLoading(); google.script.run.withSuccessHandler(result => { if (result.count > 0) { downloadCSV(result.content, result.filename); Swal.fire('สำเร็จ', `Export เรียบร้อย ${result.count} รายการ`, 'success'); loadData(); } else { Swal.fire('Error', 'เกิดข้อผิดพลาดในการ Export', 'error'); } }).withFailureHandler(onFailure).exportAnnualCSV(currentExportType, year, false); }
+    function exportAnnualReport() { const year = document.getElementById('monthFilter').value; Swal.showLoading(); google.script.run.withSuccessHandler(res => { if(res.count > 0) { downloadCSV(res.content, res.filename); Swal.fire('สำเร็จ', `Download Report เรียบร้อย ${res.count} รายการ`, 'success'); } else { Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลในปีนี้', 'info'); } }).exportAnnualReport(year); }
+    function downloadCSV(csvContent, filename) { const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a"); if (link.download !== undefined) { const url = URL.createObjectURL(blob); link.setAttribute("href", url); link.setAttribute("download", filename); link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link); } }
+    function formatDate(dateStr) { if(!dateStr) return "-"; if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) { const [y, m, d] = dateStr.split('-'); return `${d}/${m}/${y}`; } if (dateStr.match(/^\d{4}-\d{2}-\d{2}T/)) { let date = new Date(dateStr); let d = date.getDate().toString().padStart(2, '0'); let m = (date.getMonth() + 1).toString().padStart(2, '0'); let y = date.getFullYear(); return `${d}/${m}/${y}`; } return dateStr; }
+    function setFlatpickrValue(id, val) { const el = document.getElementById(id); if(el && el._flatpickr) { if(!val) { el._flatpickr.clear(); return; } if(val.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) { const [d, m, y] = val.split('/'); val = `${y}-${m}-${d}`; } el._flatpickr.setDate(val); } }
+    function loadProviderOptions() { google.script.run.withSuccessHandler(data => { providerList = data; const dl = document.getElementById('providerOptions'); dl.innerHTML = ""; data.forEach(p => { const op = document.createElement('option'); op.value = p.code; op.label = `${p.name} (${p.idCard})`; dl.appendChild(op); }); }).getAllProviderOptions(); }
+    function onProviderSelect() { const val = document.getElementById('searchProviderInput').value; if(!val) return; const found = providerList.find(p => p.code === val || p.name === val || p.idCard === val); if(found) { document.getElementById('refCode').value = found.code; document.getElementById('name').value = found.name; document.getElementById('idCard').value = found.idCard; } }
+
+    function onFailure(error) { Swal.close(); Swal.fire('Error', 'เกิดข้อผิดพลาด: ' + error.message, 'error'); }
+  </script>
+</body>
+</html>

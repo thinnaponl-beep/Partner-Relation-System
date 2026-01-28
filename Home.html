@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Partner Relation Support</title>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root { 
+        --ci-primary: #31C1D7; 
+        --ci-bg: #F8F9FA; 
+        --ci-text: #2d3436;
+    }
+    body { 
+        font-family: 'Sarabun', sans-serif; 
+        background-color: var(--ci-bg); 
+        color: var(--ci-text); 
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Navbar */
+    .navbar {
+        background: #ffffff;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        padding: 0.8rem 0;
+    }
+    .brand-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--ci-text);
+    }
+    .brand-icon {
+        width: 45px;
+        height: 45px;
+        background: linear-gradient(135deg, var(--ci-primary), #25a0b5);
+        color: white;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        box-shadow: 0 4px 10px rgba(49, 193, 215, 0.3);
+    }
+    .brand-text h5 { margin: 0; font-weight: 700; font-size: 1.1rem; }
+    .brand-text span { font-size: 0.8rem; color: #888; }
+
+    /* User Profile */
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f1f3f5;
+        padding: 6px 15px;
+        border-radius: 30px;
+    }
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--ci-primary);
+    }
+
+    /* Menu Grid */
+    .menu-container {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+    .menu-card {
+        background: #ffffff;
+        border: none;
+        border-radius: 20px;
+        padding: 30px;
+        text-align: center;
+        text-decoration: none;
+        color: var(--ci-text);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .menu-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(49, 193, 215, 0.15);
+        border-bottom: 5px solid var(--ci-primary);
+    }
+    .menu-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        transition: transform 0.3s;
+    }
+    .menu-card:hover .menu-icon {
+        transform: scale(1.1) rotate(5deg);
+    }
+    
+    /* Card Colors */
+    .card-onboard .menu-icon { background: rgba(13, 202, 240, 0.1); color: #0dcaf0; }
+    .card-firstbk .menu-icon { background: rgba(49, 193, 215, 0.1); color: #31C1D7; }
+    .card-master .menu-icon { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+    .card-annual .menu-icon { background: rgba(25, 135, 84, 0.1); color: #198754; }
+    .card-config .menu-icon { background: rgba(108, 117, 125, 0.1); color: #6c757d; }
+
+    .menu-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 5px; color: #2d3436; }
+    .menu-desc { font-size: 0.85rem; color: #636e72; }
+    
+    .footer {
+        text-align: center;
+        padding: 20px;
+        color: #adb5bd;
+        font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar fixed-top">
+    <div class="container px-4">
+      <a class="brand-logo" href="#">
+        <div class="brand-icon"><i class="fas fa-bolt"></i></div>
+        <div class="brand-text">
+          <h5>Partner Relation</h5>
+          <span>Support System</span>
+        </div>
+      </a>
+      
+      <div class="user-profile">
+          <div class="user-avatar"><i class="fas fa-user"></i></div>
+          <small class="fw-bold" id="userEmail">Loading...</small>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Menu -->
+  <div class="menu-container">
+      <div class="container">
+          <div class="text-center mb-5">
+              <h2 class="fw-bold text-secondary">ยินดีต้อนรับเข้าสู่ระบบ</h2>
+              <p class="text-muted">กรุณาเลือกเมนูที่ต้องการใช้งาน</p>
+          </div>
+
+          <div class="row g-4 justify-content-center">
+              
+              <!-- 1. Onboard -->
+              <div class="col-md-6 col-lg-4 col-xl-3">
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="menu-card card-onboard">
+                      <div class="menu-icon"><i class="fas fa-user-check"></i></div>
+                      <div class="menu-title">ติดตามเปิดระบบ</div>
+                      <div class="menu-desc">ตรวจสอบสถานะและติดตาม<br>คุณแม่บ้านใหม่ (Onboard)</div>
+                  </a>
+              </div>
+
+              <!-- 2. First Job -->
+              <div class="col-md-6 col-lg-4 col-xl-3">
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=firstbk" class="menu-card card-firstbk">
+                      <div class="menu-icon"><i class="fas fa-briefcase"></i></div>
+                      <div class="menu-title">ติดตามรับงานแรก</div>
+                      <div class="menu-desc">ดูแลและติดตามผลการทำงาน<br>งานแรกของกลุ่มเป้าหมาย</div>
+                  </a>
+              </div>
+
+              <!-- 3. Master Data (Index) -->
+              <div class="col-md-6 col-lg-4 col-xl-3">
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="menu-card card-master">
+                      <div class="menu-icon"><i class="fas fa-file-signature"></i></div>
+                      <div class="menu-title">ตรวจประวัติใหม่</div>
+                      <div class="menu-desc">จัดการข้อมูลและส่งตรวจประวัติ<br>สำหรับคุณแม่บ้านใหม่</div>
+                  </a>
+              </div>
+
+              <!-- 4. Year Verify -->
+              <div class="col-md-6 col-lg-4 col-xl-3">
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="menu-card card-annual">
+                      <div class="menu-icon"><i class="fas fa-calendar-check"></i></div>
+                      <div class="menu-title">ตรวจประวัติรายปี</div>
+                      <div class="menu-desc">ตรวจสอบและอัปเดตสถานะ<br>ประวัติอาชญากรรมรายปี</div>
+                  </a>
+              </div>
+
+              <!-- 5. Config (Admin Only) -->
+              <div class="col-md-6 col-lg-4 col-xl-3 d-none" id="menu-config">
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="menu-card card-config">
+                      <div class="menu-icon"><i class="fas fa-cogs"></i></div>
+                      <div class="menu-title">ตั้งค่าระบบ</div>
+                      <div class="menu-desc">จัดการตัวเลือกและสิทธิ์<br>ผู้ใช้งาน (Admin Only)</div>
+                  </a>
+              </div>
+
+          </div>
+      </div>
+  </div>
+
+  <div class="footer">
+      &copy; 2024 Partner Relation Support. All rights reserved.
+  </div>
+
+  <script>
+    window.onload = function() {
+       // Get User Info & Admin Status
+       google.script.run.withSuccessHandler(res => {
+           document.getElementById('userEmail').textContent = res.userEmail;
+           
+           if(res.isAdmin) {
+               document.getElementById('menu-config').classList.remove('d-none');
+           }
+       }).getClientConfig();
+    };
+  </script>
+
+</body>
+</html>
