@@ -5,26 +5,28 @@ const ONBOARD_SHEET_NAME = "Database_Onboard";
 const FIRSTBK_SHEET_NAME = "Database_Firstbk"; 
 const CONFIG_SHEET_NAME = "Config";
 
-// --- Routing ---
+// ==========================================
+// --- 1. CORE & ROUTING ---
+// ==========================================
+
 function doGet(e) {
-  let page = e.parameter.page || 'home'; // *** เปลี่ยน Default เป็น 'home' ***
+  let page = e.parameter.page || 'home'; 
   let html;
   const user = Session.getActiveUser().getEmail();
 
-  // กำหนดเส้นทาง
   if (page === 'home') {
-    html = HtmlService.createTemplateFromFile('Home'); // หน้า Landing Page ใหม่
+    html = HtmlService.createTemplateFromFile('Home'); 
   } else if (page === 'onboard') { 
-    html = HtmlService.createTemplateFromFile('Onboard'); // ติดตามคุณแม่บ้านเปิดระบบ
+    html = HtmlService.createTemplateFromFile('Onboard');
   } else if (page === 'firstbk') { 
-    html = HtmlService.createTemplateFromFile('Firstbk'); // ติดตามรับงานแรก
+    html = HtmlService.createTemplateFromFile('Firstbk');
   } else if (page === 'index') {
-    html = HtmlService.createTemplateFromFile('index'); // ตรวจประวัติคุณแม่บ้านใหม่ (หน้า Master เดิม)
+    html = HtmlService.createTemplateFromFile('index');
   } else if (page === 'year_verify') {
-    html = HtmlService.createTemplateFromFile('YearVerify'); // ตรวจประวัติรายปี
+    html = HtmlService.createTemplateFromFile('YearVerify');
   } else if (page === 'config') {
     if (!isUserAdmin(user)) return HtmlService.createHtmlOutput("<h3>Access Denied / คุณไม่มีสิทธิ์เข้าถึงหน้านี้</h3><p>กรุณาติดต่อผู้ดูแลระบบ</p>");
-    html = HtmlService.createTemplateFromFile('Config'); // ตั้งค่า
+    html = HtmlService.createTemplateFromFile('Config');
   } else {
     html = HtmlService.createTemplateFromFile('Home');
   }
@@ -35,7 +37,7 @@ function doGet(e) {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// Helper: เชื่อมต่อ Sheet (Auto-expand applied)
+// Helper: Connect to Sheet (Auto-expand applied)
 function getSheet(name) {
   let ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(name);
@@ -61,36 +63,36 @@ function getSheet(name) {
         "ID", "Training Date", "Maid Code", "Name", "Group", 
         "Phone", "ID Card", "Type", "Latest Followup", "Date 2 (Unused)", "Date 3 (Unused)", 
         "Open Date", "Call Status", "First Job", "Job ID", 
-        "Trainer", "History Data (JSON)", "FastTrack Status", "Center", "Skip FastTrack", "Master Type"
+        "Trainer", "History Data (JSON)", "FastTrack Status", "Center", "Skip FastTrack", "Master Type", "Tags"
       ]);
     } else {
         const currentCols = sheet.getMaxColumns();
-        if (currentCols < 21) {
-           sheet.insertColumnsAfter(currentCols, 21 - currentCols);
-           if(currentCols < 19) sheet.getRange(1, 19).setValue("Center");
+        if (currentCols < 22) {
+           sheet.insertColumnsAfter(currentCols, 22 - currentCols);
            if(currentCols < 20) sheet.getRange(1, 20).setValue("Skip FastTrack");
            if(currentCols < 21) sheet.getRange(1, 21).setValue("Master Type");
+           if(currentCols < 22) sheet.getRange(1, 22).setValue("Tags");
         }
     }
   }
 
-  // *** Database_Firstbk Structure ***
   if (name === FIRSTBK_SHEET_NAME) {
     if (!sheet) {
       sheet = ss.insertSheet(FIRSTBK_SHEET_NAME);
-      // Added History(22) + Extended checklist cols
       sheet.appendRow([
         "Onboard ID", "Maid Code", "Name", "Phone", "Center", 
         "Booking Code", "Job ID", "Clean Date", "Accept Date", "Status",
         "Check_1_1", "Check_1_2", "Check_1_3", "Check_1_4", "Check_1_5", 
         "Advice", "Officer", "Timestamp", "ReviewScore", "CustomerComment", "ProblemID", "History",
         "Check_1_6", "Check_1_7", 
-        "Check_2_1", "Check_2_2", "Check_2_3", "Check_2_4", "Check_2_5", "Check_2_6", "Check_2_7", "Check_2_8"
+        "Check_2_1", "Check_2_2", "Check_2_3", "Check_2_4", "Check_2_5", "Check_2_6", "Check_2_7", "Check_2_8", "WorkHours", "Clean Time"
       ]);
     } else {
         const currentCols = sheet.getMaxColumns();
-        if (currentCols < 35) {
-            sheet.insertColumnsAfter(currentCols, 35 - currentCols);
+        if (currentCols < 34) {
+            sheet.insertColumnsAfter(currentCols, 34 - currentCols);
+            if(currentCols < 33) sheet.getRange(1, 33).setValue("WorkHours");
+            if(currentCols < 34) sheet.getRange(1, 34).setValue("Clean Time");
         }
     }
   }
@@ -253,7 +255,10 @@ function saveConfigOrder(type, newList) {
   }
 }
 
-// --- MASTER DATA LOGIC ---
+// ==========================================
+// --- 2. MASTER DATA LOGIC ---
+// ==========================================
+
 function getInitialData(filterVal) {
   const sheet = getSheet(SHEET_NAME);
   const lastRow = sheet.getLastRow();
@@ -343,7 +348,6 @@ function deleteData(id) {
   finally { lock.releaseLock(); }
 }
 
-// *** MASTER EXPORT ***
 function exportMasterCSV(ftStatus, filterVal, isPreview) {
   const sheet = getSheet(SHEET_NAME);
   const lastRow = sheet.getLastRow();
@@ -391,10 +395,6 @@ function exportMasterCSV(ftStatus, filterVal, isPreview) {
   return { content: "\uFEFF" + csvContent.trim(), count: count, filename: `Master_Export_${ftStatus}_${getDateStr()}.csv` };
 }
 
-// ==========================================
-// --- ANNUAL VERIFICATION LOGIC ---
-// ==========================================
-
 function getAllProviderOptions() {
   const sheet = getSheet(SHEET_NAME);
   const lastRow = sheet.getLastRow();
@@ -405,7 +405,10 @@ function getAllProviderOptions() {
   })).filter(item => item.code && item.name);
 }
 
-// 2. Get Annual Data
+// ==========================================
+// --- 3. ANNUAL VERIFICATION LOGIC ---
+// ==========================================
+
 function getAnnualData(filterVal) { 
   const sheet = getSheet(ANNUAL_SHEET_NAME);
   const lastRow = sheet.getLastRow();
@@ -454,7 +457,6 @@ function getAnnualData(filterVal) {
   return { currentUser: currentUser, isAdmin: configs.isAdmin, results: configs.results, ftStatuses: configs.ftStatuses, data: data };
 }
 
-// 3. Import Annual Data
 function importAnnualData(records, selectedDateStr) {
   const sheet = getSheet(ANNUAL_SHEET_NAME);
   const lock = LockService.getScriptLock();
@@ -718,7 +720,7 @@ function exportAnnualReport(filterVal) {
 }
 
 // ==========================================
-// --- ONBOARD DATA LOGIC ---
+// --- 4. ONBOARD DATA LOGIC ---
 // ==========================================
 
 function getOnboardData(filterVal) {
@@ -727,7 +729,6 @@ function getOnboardData(filterVal) {
   const currentUser = Session.getActiveUser().getEmail();
   let data = [];
 
-  // Lookup Master Status Logic
   const masterSheet = getSheet(SHEET_NAME);
   const masterLastRow = masterSheet.getLastRow();
   let masterStatusMap = new Map();
@@ -736,27 +737,16 @@ function getOnboardData(filterVal) {
       const masterData = masterSheet.getRange(2, 1, masterLastRow - 1, 12).getValues();
       masterData.forEach(r => {
           let cleanId = String(r[3]).replace(/'/g, "").trim(); 
-          let submitDate = r[6];
           let status = r[11];
-          if (cleanId) {
-              if (!masterStatusMap.has(cleanId)) {
-                  masterStatusMap.set(cleanId, { status: status, date: submitDate });
-              } else {
-                  let current = masterStatusMap.get(cleanId);
-                  let currDate = current.date instanceof Date ? current.date : new Date(0);
-                  let newDate = submitDate instanceof Date ? submitDate : new Date(0);
-                  if (newDate > currDate) {
-                      masterStatusMap.set(cleanId, { status: status, date: submitDate });
-                  }
-              }
-          }
+          let submitDate = r[6];
+          if (cleanId) masterStatusMap.set(cleanId, { status: status, date: submitDate });
       });
   }
 
   if (lastRow > 1) {
     const maxCols = sheet.getLastColumn();
-    // Ensure we read enough columns (Up to 29 now due to checklists)
-    const colsToRead = maxCols < 29 ? maxCols : 29;
+    // Read up to Col 22 (Tags)
+    const colsToRead = maxCols < 22 ? maxCols : 22;
     const values = sheet.getRange(2, 1, lastRow - 1, colsToRead).getDisplayValues();
 
     data = values.reduce((acc, row, index) => {
@@ -764,36 +754,17 @@ function getOnboardData(filterVal) {
       if (filterVal && !isDateMatchFilter(row[1], filterVal)) return acc;
       
       let history = [];
-      try {
-         if (row[16] && row[16].startsWith('[')) {
-             history = JSON.parse(row[16]);
-         }
-      } catch (e) {}
+      try { if (row[16] && row[16].startsWith('[')) history = JSON.parse(row[16]); } catch (e) {}
+
+      let tags = [];
+      try { if (row.length > 21 && row[21]) tags = JSON.parse(row[21]); } catch(e) { if(row[21]) tags = [row[21]]; }
 
       let cleanObId = String(row[6]).replace(/'/g, "").trim(); 
       let lookup = masterStatusMap.get(cleanObId); 
-      let realStatus = "";
-      let isExpired = false;
-
-      if (lookup) {
-          if (lookup.date instanceof Date) {
-             const sixMonthsAgo = new Date();
-             sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-             if (lookup.date < sixMonthsAgo) {
-                 isExpired = true;
-             }
-          }
-          if (!isExpired) {
-             realStatus = lookup.status;
-          }
-      }
-
-      if (!lookup && !realStatus && row.length > 17 && row[17]) {
-          realStatus = row[17]; 
-      }
+      let realStatus = (lookup) ? lookup.status : (row.length > 17 ? row[17] : "");
       
       const centerVal = row.length > 18 ? row[18] : "";
-      const skipVal = row.length > 19 ? row[19] : "";
+      const verificationMethod = row.length > 19 ? row[19] : "";
       const masterTypeVal = row.length > 20 ? row[20] : "";
 
       acc.push({
@@ -808,15 +779,13 @@ function getOnboardData(filterVal) {
         type: row[7],
         latestFollowup: convertToStandardDate(row[8]), 
         openDate: convertToStandardDate(row[11]),
-        callStatus: row[12],
-        firstJob: row[13],
-        jobId: row[14],
         trainer: row[15],
         history: history, 
         fastTrackStatus: realStatus, 
         center: centerVal, 
-        skipFastTrack: skipVal, 
-        masterType: masterTypeVal 
+        verificationMethod: verificationMethod, 
+        masterType: masterTypeVal,
+        tags: tags
       });
       return acc;
     }, []);
@@ -828,7 +797,6 @@ function getOnboardData(filterVal) {
     currentUser: currentUser, 
     isAdmin: configs.isAdmin, 
     groups: configs.onboardGroups, 
-    types: configs.onboardTypes,
     masterTypes: configs.masterTypes, 
     onboardCenters: configs.onboardCenters, 
     data: data 
@@ -837,6 +805,10 @@ function getOnboardData(filterVal) {
 
 function saveOnboardData(form) {
   const sheet = getSheet(ONBOARD_SHEET_NAME);
+  if (sheet.getLastColumn() < 22) {
+      sheet.getRange(1, 22).setValue("Tags");
+  }
+
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -874,10 +846,12 @@ function saveOnboardData(form) {
     let historyJson = "";
     let latestFollowupDate = "";
     if (form.history && form.history.length > 0) {
-        form.history.sort((a, b) => parseDateForSort(b.date) - parseDateForSort(a.date));
         historyJson = JSON.stringify(form.history);
         latestFollowupDate = formatDateForSheet(form.history[0].date); 
     }
+    
+    let tagsJson = "";
+    if (form.tags && form.tags.length > 0) tagsJson = JSON.stringify(form.tags);
 
     const rowData = [
         newId, 
@@ -892,15 +866,14 @@ function saveOnboardData(form) {
         "", 
         "", 
         formatDateForSheet(form.openDate),
-        form.callStatus ? "✓" : "", 
-        form.firstJob ? "✓" : "", 
-        form.jobId,
+        "", "", "", // Removed cols
         form.trainer,
         historyJson, 
         currentFastTrackStatus,
         form.center, 
-        form.skipFastTrack ? "TRUE" : "", 
-        form.masterType 
+        form.verificationMethod, 
+        form.masterType,
+        tagsJson
     ];
 
     sheet.getRange(rowNumber, 1, 1, 21).setValues([rowData]); 
@@ -1017,34 +990,17 @@ function exportOnboardReport(filterVal) {
   let csvContent = "วันที่อบรม,ID,ชื่อ-นามสกุล,กลุ่ม,ศูนย์,เบอร์โทร,เลขบัตร ปชช.,สถานะ(Onboard),ประเภท(Master),วันเปิดระบบ,ผู้ดูแล,สถานะ FT,ติดตามล่าสุด\n";
   let count = 0;
   
-  // Sort by Training Date
   values.sort((a, b) => parseDateForSort(b[1]) - parseDateForSort(a[1]));
 
   for (let i = 0; i < values.length; i++) {
       const row = values[i];
-      // Reuse the same filter logic as display
       if (filterVal && !isDateMatchFilter(row[1], filterVal)) continue;
       
       count++;
       
-      // Map columns based on structure
-      const trainingDate = row[1];
-      const maidCode = row[2];
-      const name = row[3];
-      const group = row[4];
-      const center = row[18];
-      const phone = row[5];
-      const idCard = row[6];
-      const statusOnboard = row[7];
-      const masterType = row[20];
-      const openDate = row[11];
-      const trainer = row[15];
-      const ftStatus = row[17];
-      const latestFollowup = row[8];
-
       const rowString = [
-          trainingDate, maidCode, name, group, center, `"${phone}"`, `"${idCard}"`, 
-          statusOnboard, masterType, openDate, trainer, ftStatus, latestFollowup
+          row[1], row[2], row[3], row[4], row[18], `"${row[5]}"`, `"${row[6]}"`, 
+          row[7], row[20], row[11], row[15], row[17], row[8]
       ].map(f => `"${String(f || "").replace(/"/g, '""')}"`).join(",");
       
       csvContent += rowString + "\n";
@@ -1055,44 +1011,40 @@ function exportOnboardReport(filterVal) {
 }
 
 // ==========================================
-// --- FIRST JOB TRACKING LOGIC (SEPARATE SHEET) ---
+// --- 5. FIRST JOB TRACKING LOGIC ---
 // ==========================================
 
-// *** UPDATED: Get First Job Tracking Data (Include Checklist) ***
+// *** UPDATED: Get First Job Tracking Data ***
 function getFirstBkData() {
   const onboardSheet = getSheet(ONBOARD_SHEET_NAME);
   const firstBkSheet = getSheet(FIRSTBK_SHEET_NAME);
   const currentUser = Session.getActiveUser().getEmail();
   let data = [];
   
-  const now = new Date().getTime(); 
-
   const lastRow = onboardSheet.getLastRow();
   if (lastRow > 1) {
     const obValues = onboardSheet.getRange(2, 1, lastRow - 1, 21).getDisplayValues();
     
-    // Read FirstBk Data Map (Read extended columns up to 32)
+    // Read FirstBk Data Map (Read extended columns up to 34)
     let fbMap = new Map();
     const fbLastRow = firstBkSheet.getLastRow();
     if (fbLastRow > 1) {
-        // Read up to col 32 (Check_2_8)
-        const fbData = firstBkSheet.getRange(2, 1, fbLastRow - 1, 32).getDisplayValues(); 
+        // Read up to col 34 (Clean Time)
+        const fbData = firstBkSheet.getRange(2, 1, fbLastRow - 1, 34).getDisplayValues(); 
         fbData.forEach(r => {
              let history = [];
              try { if (r[21] && r[21].startsWith('[')) history = JSON.parse(r[21]); } catch(e) {}
 
              fbMap.set(String(r[0]), { 
                  bookingCode: r[5], jobId: r[6], cleanDate: r[7], acceptDate: r[8], status: r[9],
-                 // Checklist 1.1 - 1.5
                  c1_1: r[10], c1_2: r[11], c1_3: r[12], c1_4: r[13], c1_5: r[14],
                  advice: r[15], officer: r[16], timestamp: r[17],
                  reviewScore: r[18], customerComment: r[19], problemId: r[20],
                  history: history,
-                 // Checklist 1.6 - 1.7
                  c1_6: r[22], c1_7: r[23],
-                 // Checklist 2.1 - 2.8
                  c2_1: r[24], c2_2: r[25], c2_3: r[26], c2_4: r[27], 
-                 c2_5: r[28], c2_6: r[29], c2_7: r[30], c2_8: r[31]
+                 c2_5: r[28], c2_6: r[29], c2_7: r[30], c2_8: r[31],
+                 workHours: r[32], cleanTime: r[33]
              });
         });
     }
@@ -1102,56 +1054,71 @@ function getFirstBkData() {
        const statusOnboard = String(row[7]).trim();
        const id = String(row[0]);
        
-       if (group === 'A') {
+       if (group === 'A' || fbMap.has(id)) {
           const fbRecord = fbMap.get(id);
           const bookingCode = fbRecord ? fbRecord.bookingCode : "";
           const jobId = fbRecord ? fbRecord.jobId : "";
-          const cleanDateStr = fbRecord ? fbRecord.cleanDate : "";
-          const status = fbRecord ? fbRecord.status : ""; 
+          const acceptDate = fbRecord ? fbRecord.acceptDate : ""; 
+          
+          const rawStatus = fbRecord ? String(fbRecord.status) : "";
+          let status = rawStatus;
+          if (rawStatus === "โทรเยี่ยมแล้ว") status = "PreCallDone";
+          if (rawStatus === "จบงานสมบูรณ์") status = "Done";
 
-          let cleanTime = 0;
-          if (cleanDateStr) cleanTime = parseDateForSort(cleanDateStr);
+          let cleanDateStr = "";
+          let cleanTimestamp = 0; // NEW: Send clean timestamp to frontend for reliable sorting/filtering
 
-          let tab = 'before';
-          if (cleanTime > 0 && now > cleanTime) {
-              tab = 'after';
+          if (fbRecord && fbRecord.cleanDate) {
+              const d = new Date(fbRecord.cleanDate); 
+              if (!isNaN(d.getTime())) {
+                  const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+                  const day = d.getDate();
+                  const month = thaiMonths[d.getMonth()];
+                  const year = d.getFullYear(); 
+                  
+                  cleanDateStr = `${day} ${month} ${year}`;
+                  if (fbRecord.cleanTime) {
+                      cleanDateStr += ` (${fbRecord.cleanTime})`;
+                      
+                      // Combine for timestamp
+                      const [h, m] = fbRecord.cleanTime.split(':');
+                      d.setHours(h, m, 0, 0);
+                  }
+                  cleanTimestamp = d.getTime();
+              } else {
+                   cleanDateStr = fbRecord.cleanDate; 
+              }
           }
-          if (status === 'Done') tab = 'after';
 
           let processStatus = "รอรับงานแรก";
           if (bookingCode) {
               if (status === 'PreCallDone') processStatus = "โทรเยี่ยมเรียบร้อย";
+              else if (status === 'Done') processStatus = "จบงานสมบูรณ์";
               else processStatus = "รอโทรเยี่ยม";
           }
-          if (status === 'Done') processStatus = "จบงานสมบูรณ์";
-          
-          const isPreCallDone = status === 'PreCallDone' || status === 'Done';
-          const isPostCallDone = status === 'Done';
-
-          const checklist = fbRecord ? {
-              // 1.1-1.5
-              c1_1: fbRecord.c1_1, c1_2: fbRecord.c1_2, c1_3: fbRecord.c1_3, c1_4: fbRecord.c1_4, c1_5: fbRecord.c1_5,
-              // 1.6-1.7
-              c1_6: fbRecord.c1_6, c1_7: fbRecord.c1_7,
-              // 2.1-2.8
-              c2_1: fbRecord.c2_1, c2_2: fbRecord.c2_2, c2_3: fbRecord.c2_3, c2_4: fbRecord.c2_4,
-              c2_5: fbRecord.c2_5, c2_6: fbRecord.c2_6, c2_7: fbRecord.c2_7, c2_8: fbRecord.c2_8,
-              
-              advice: fbRecord.advice,
-              officer: fbRecord.officer,
-              timestamp: fbRecord.timestamp,
-              reviewScore: fbRecord.reviewScore,
-              customerComment: fbRecord.customerComment,
-              problemId: fbRecord.problemId
-          } : null;
 
           if (statusOnboard === 'เปิดระบบ' || bookingCode) {
+             const checklist = fbRecord ? {
+                 c1_1: fbRecord.c1_1, c1_2: fbRecord.c1_2, c1_3: fbRecord.c1_3, c1_4: fbRecord.c1_4, c1_5: fbRecord.c1_5,
+                 c1_6: fbRecord.c1_6, c1_7: fbRecord.c1_7,
+                 c2_1: fbRecord.c2_1, c2_2: fbRecord.c2_2, c2_3: fbRecord.c2_3, c2_4: fbRecord.c2_4,
+                 c2_5: fbRecord.c2_5, c2_6: fbRecord.c2_6, c2_7: fbRecord.c2_7, c2_8: fbRecord.c2_8,
+                 reviewScore: fbRecord.reviewScore, customerComment: fbRecord.customerComment, problemId: fbRecord.problemId,
+                 advice: fbRecord.advice, timestamp: fbRecord.timestamp
+             } : null;
+
              acc.push({
                 id: id, maidCode: row[2], name: row[3], phone: row[5], center: row[18],
-                bookingCode: bookingCode, jobId: jobId, cleanDate: cleanDateStr,
+                bookingCode: bookingCode, jobId: jobId, cleanDate: cleanDateStr, cleanTimestamp: cleanTimestamp, // NEW
+                acceptDate: acceptDate,
                 processStatus: processStatus,
-                isPreCallDone: isPreCallDone, isPostCallDone: isPostCallDone,
-                tab: tab, checklist: checklist, history: fbRecord ? fbRecord.history : []
+                isPreCallDone: status === 'PreCallDone' || status === 'Done',
+                isPostCallDone: status === 'Done',
+                checklist: checklist,
+                history: fbRecord ? fbRecord.history : [],
+                workHours: fbRecord ? fbRecord.workHours : "",
+                rawCleanDate: fbRecord ? fbRecord.cleanDate : "", // Raw YYYY-MM-DD
+                rawCleanTime: fbRecord ? fbRecord.cleanTime : ""  // Raw HH:MM
              });
           }
        }
@@ -1159,10 +1126,10 @@ function getFirstBkData() {
     }, []);
   }
 
-  return { currentUser: currentUser, data: data };
+  const configs = getClientConfig();
+  return { currentUser: currentUser, isAdmin: configs.isAdmin, onboardCenters: configs.onboardCenters, data: data };
 }
 
-// *** Save Job Details (Step 1 - Assign) ***
 function saveFirstJobDetails(form) {
   const firstBkSheet = getSheet(FIRSTBK_SHEET_NAME);
   const onboardSheet = getSheet(ONBOARD_SHEET_NAME);
@@ -1170,7 +1137,6 @@ function saveFirstJobDetails(form) {
   try {
     lock.waitLock(10000);
     
-    // Check if exists in FirstBk
     const lastRow = firstBkSheet.getLastRow();
     let rowIndex = -1;
     
@@ -1180,16 +1146,47 @@ function saveFirstJobDetails(form) {
         if (found !== -1) rowIndex = found + 2;
     }
     
+    // Parse Date & Time
+    let formattedCleanDate = form.cleanDate;
+    let dbTime = "";
+    
+    const thaiMonths = { 'ม.ค.': '01', 'ก.พ.': '02', 'มี.ค.': '03', 'เม.ย.': '04', 'พ.ค.': '05', 'มิ.ย.': '06', 'ก.ค.': '07', 'ส.ค.': '08', 'ก.ย.': '09', 'ต.ค.': '10', 'พ.ย.': '11', 'ธ.ค.': '12' };
+    const match = form.cleanDate.match(/^(\d{1,2})\s+(.*?)\s+(\d{4})(?:\s+\((.*?)\))?$/);
+
+    if (match) {
+        let d = match[1].padStart(2, '0');
+        let mStr = match[2];
+        let y = match[3];
+        let time = match[4] || "";
+        let m = thaiMonths[mStr];
+        
+        if (m) {
+            formattedCleanDate = `${y}-${m}-${d}`;
+            dbTime = time;
+        }
+    } else {
+         // Fallback
+         const ts = parseDateForSort(form.cleanDate);
+         if (ts > 0) {
+            const d = new Date(ts);
+            const y = d.getFullYear();
+            const m = (d.getMonth() + 1).toString().padStart(2, '0');
+            const day = d.getDate().toString().padStart(2, '0');
+            formattedCleanDate = `${y}-${m}-${day}`;
+         }
+    }
+
     const status = "Assigned";
     const timestamp = formatDateForSheet(new Date());
-    const logEntry = { date: timestamp, note: `[Assign Job] จ่ายงานแรก: ${form.bookingCode} (Clean: ${form.cleanDate})`, by: form.officer };
+    const logEntry = { date: timestamp, note: `[Assign Job] จ่ายงานแรก: ${form.bookingCode} (Clean: ${formattedCleanDate} ${dbTime})`, by: form.officer };
 
     if (rowIndex !== -1) {
-        // Update
         firstBkSheet.getRange(rowIndex, 6).setValue(form.bookingCode);
         firstBkSheet.getRange(rowIndex, 7).setValue(form.jobId);
-        firstBkSheet.getRange(rowIndex, 8).setValue(form.cleanDate);
+        firstBkSheet.getRange(rowIndex, 8).setValue(formattedCleanDate);     
+        firstBkSheet.getRange(rowIndex, 34).setValue(dbTime);     
         firstBkSheet.getRange(rowIndex, 9).setValue(form.acceptDate);
+        firstBkSheet.getRange(rowIndex, 33).setValue(form.workHours); 
         
         const currStatus = firstBkSheet.getRange(rowIndex, 10).getValue();
         if(!currStatus) firstBkSheet.getRange(rowIndex, 10).setValue(status);
@@ -1201,22 +1198,19 @@ function saveFirstJobDetails(form) {
         history.unshift(logEntry);
         historyCell.setValue(JSON.stringify(history));
     } else {
-        // Insert New - Need Maid Details from Onboard
         const obLastRow = onboardSheet.getLastRow();
         const obIds = onboardSheet.getRange(2, 1, obLastRow - 1, 1).getDisplayValues().flat();
         const obIndex = obIds.indexOf(String(form.id));
         if (obIndex === -1) throw new Error("ไม่พบข้อมูลใน Onboard");
         
         const obData = onboardSheet.getRange(obIndex + 2, 1, 1, 21).getValues()[0];
-        
-        // Initial History
         const historyJson = JSON.stringify([logEntry]);
 
         const newRow = [
             String(form.id), obData[2], obData[3], "'" + obData[5], obData[18],
-            form.bookingCode, form.jobId, form.cleanDate, form.acceptDate, status,
+            form.bookingCode, form.jobId, formattedCleanDate, form.acceptDate, status,
             "", "", "", "", "", "", form.officer, timestamp, "", "", "", historyJson,
-            "", "", "", "", "", "", "", "", "", "" // Pad empty for new cols
+            "", "", "", "", "", "", "", "", "", "", "", "", form.workHours, dbTime
         ];
         firstBkSheet.appendRow(newRow);
     }
@@ -1229,10 +1223,9 @@ function saveFirstJobDetails(form) {
   }
 }
 
-// *** Save Checklist (Step 2 & 3) ***
 function saveFirstJobChecklist(form) {
   const firstBkSheet = getSheet(FIRSTBK_SHEET_NAME);
-  const onboardSheet = getSheet(ONBOARD_SHEET_NAME); // To update Master Onboard flag
+  const onboardSheet = getSheet(ONBOARD_SHEET_NAME); 
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(10000);
@@ -1243,7 +1236,7 @@ function saveFirstJobChecklist(form) {
     if (index === -1) throw new Error("ไม่พบข้อมูลงาน (ต้องบันทึกงานก่อน)");
     const rowNumber = index + 2;
 
-    const historyCell = firstBkSheet.getRange(rowNumber, 22); // Col 22 = History
+    const historyCell = firstBkSheet.getRange(rowNumber, 22); 
     let history = [];
     try {
         const val = historyCell.getValue();
@@ -1254,71 +1247,81 @@ function saveFirstJobChecklist(form) {
     let isComplete = false;
     let noteContent = "";
 
+    // Determine Call Status based on Result
+    let callStatusText = "";
+    if (form.callResult === 'contacted') callStatusText = "ติดต่อได้/สะดวกคุย";
+    else if (form.callResult === 'ไม่รับสาย') callStatusText = "ไม่รับสาย";
+    else if (form.callResult === 'ไม่สะดวกคุย') callStatusText = "ไม่สะดวกคุย";
+    else if (form.callResult === 'ติดต่อไม่ได้') callStatusText = "ติดต่อไม่ได้/ปิดเครื่อง";
+    else callStatusText = form.callResult || "อื่นๆ";
+
     if (form.type === 'precall') {
+        logTitle = `[Pre-Call] ${callStatusText}`;
+        
         if (form.callResult === 'contacted') {
-            logTitle = "[Pre-Call] โทรเยี่ยม (ติดต่อได้/สะดวกคุย)";
-            isComplete = true; 
-            firstBkSheet.getRange(rowNumber, 10).setValue("PreCallDone");
+            // *** FIX: Write "PreCallDone" in English so getFirstBkData reads it correctly ***
+            firstBkSheet.getRange(rowNumber, 10).setValue("PreCallDone"); 
             
+            const preData = [form.c1_1, form.c1_2, form.c1_3, form.c1_4, form.c1_5];
+            firstBkSheet.getRange(rowNumber, 11, 1, 5).setValues([preData]);
+
             noteContent = `${logTitle}\n` +
               `1.1 รับงาน: ${form.c1_1}\n` +
               `1.2 โทรยืนยัน: ${form.c1_2}\n` +
               `1.3 ระยะทาง: ${form.c1_3}\n` +
               `1.4 แอพ: ${form.c1_4}\n` +
               `1.5 อุปกรณ์: ${form.c1_5}`;
-
-            // Save Pre-Call Data (Cols 11-15)
-            const preData = [form.c1_1, form.c1_2, form.c1_3, form.c1_4, form.c1_5];
-            firstBkSheet.getRange(rowNumber, 11, 1, 5).setValues([preData]);
-            
         } else {
-            const reason = form.callResult || "ไม่ระบุ";
-            logTitle = `[Pre-Call] โทรไม่ติด (${reason})`;
             noteContent = logTitle;
-            isComplete = false; 
         }
     } else {
         // Post-Call
-        logTitle = "[Post-Call] ติดตามหลังจบงาน";
-        isComplete = true;
-        firstBkSheet.getRange(rowNumber, 10).setValue("Done");
+        logTitle = `[Post-Call] ${callStatusText}`;
         
-        // Also mark Onboard Sheet as First Job Done
-        const obLastRow = onboardSheet.getLastRow();
-        const obIds = onboardSheet.getRange(2, 1, obLastRow - 1, 1).getDisplayValues().flat();
-        const obIndex = obIds.indexOf(String(form.id));
-        if (obIndex !== -1) {
-            onboardSheet.getRange(obIndex + 2, 14).setValue("✓"); 
+        if (form.reviewScore) {
+             isComplete = true;
+             firstBkSheet.getRange(rowNumber, 10).setValue("Done");
+             
+             const obLastRow = onboardSheet.getLastRow();
+             const obIds = onboardSheet.getRange(2, 1, obLastRow - 1, 1).getDisplayValues().flat();
+             const obIndex = obIds.indexOf(String(form.id));
+             if (obIndex !== -1) {
+                 onboardSheet.getRange(obIndex + 2, 14).setValue("✓"); 
+             }
         }
         
-        noteContent = `${logTitle}\n` +
-              `-- ส่วนที่ 1 (ต่อ) --\n` +
+        if (form.callResult === 'contacted') {
+            noteContent = `${logTitle}\n` +
               `1.6 ถ่ายรูป: ${form.c1_6}\n` +
               `1.7 AI: ${form.c1_7}\n` +
-              `-- ส่วนที่ 2 --\n` +
               `2.1 ประเมิน: ${form.c2_1}\n` +
-              `2.7 ปัญหา: ${form.c2_7}\n` +
-              `Review: ${form.reviewScore || '-'}`;
+              `2.7 ปัญหา: ${form.c2_7}`;
               
-        // Save Post-Call Data (Cols 23-32)
-        const postData = [
-            form.c1_6, form.c1_7,
-            form.c2_1, form.c2_2, form.c2_3, form.c2_4, form.c2_5, form.c2_6, form.c2_7, form.c2_8
-        ];
-        // Col 23 starts at W
-        firstBkSheet.getRange(rowNumber, 23, 1, 10).setValues([postData]);
+            const postData = [
+                form.c1_6, form.c1_7,
+                form.c2_1, form.c2_2, form.c2_3, form.c2_4, form.c2_5, form.c2_6, form.c2_7, form.c2_8
+            ];
+            firstBkSheet.getRange(rowNumber, 23, 1, 10).setValues([postData]);
+        } else {
+            noteContent = logTitle; 
+        }
         
-        // Also save Review, Comment, ProblemID (Cols 19-21)
         firstBkSheet.getRange(rowNumber, 19).setValue(form.reviewScore);
         firstBkSheet.getRange(rowNumber, 20).setValue(form.customerComment);
         firstBkSheet.getRange(rowNumber, 21).setValue(form.problemId);
+        
+        if (form.reviewScore) {
+             let reviewText = form.reviewScore === "NO_REVIEW" ? "ไม่ได้รับรีวิว" : `${form.reviewScore} ดาว`;
+             noteContent += `\n[Feedback] ${reviewText}`;
+             if(form.customerComment) noteContent += `\nComment: ${form.customerComment}`;
+        }
     }
     
-    // Save Advice & Officer (Cols 16-17)
     if(form.advice) {
         firstBkSheet.getRange(rowNumber, 16).setValue(form.advice);
         noteContent += `\nNote: ${form.advice}`;
     }
+    
     firstBkSheet.getRange(rowNumber, 17).setValue(form.officer);
     firstBkSheet.getRange(rowNumber, 18).setValue(formatDateForSheet(new Date()));
 
@@ -1331,7 +1334,7 @@ function saveFirstJobChecklist(form) {
     history.unshift(logEntry);
     historyCell.setValue(JSON.stringify(history));
 
-    return { success: true, message: isComplete ? "บันทึกผลเรียบร้อย" : "บันทึกการโทรเรียบร้อย" };
+    return { success: true, message: isComplete ? "บันทึกและจบงานเรียบร้อย" : "บันทึกผลการติดตามเรียบร้อย" };
   } catch(e) {
     return { success: false, message: e.toString() };
   } finally {
@@ -1339,14 +1342,54 @@ function saveFirstJobChecklist(form) {
   }
 }
 
-// *** Export First Job Report (Updated Columns) ***
+function returnFirstJob(id, reason, officer, problemId) {
+  const sheet = getSheet(FIRSTBK_SHEET_NAME);
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    const ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues().flat();
+    const index = ids.indexOf(String(id));
+    if (index === -1) return { success: false, message: "ไม่พบข้อมูล" };
+    
+    const row = index + 2;
+    const historyCell = sheet.getRange(row, 22);
+    let history = [];
+    try { const val = historyCell.getValue(); if (val && String(val).startsWith('[')) history = JSON.parse(val); } catch(e) {}
+    
+    const timestamp = formatDateForSheet(new Date());
+    
+    let noteText = `[Returned] คืนงานเนื่องจาก: ${reason}`;
+    if (problemId) {
+        noteText += `<br>Problem ID: <a href="https://admin-test.beneat.co/report-problems/${problemId}/edit" target="_blank">${problemId}</a>`;
+    }
+    
+    history.unshift({ date: timestamp, note: noteText, by: officer });
+    
+    // Clear Assignment
+    sheet.getRange(row, 6, 1, 5).clearContent(); 
+    sheet.getRange(row, 33).clearContent();
+    sheet.getRange(row, 34).clearContent();
+    // Clear Checklist
+    sheet.getRange(row, 11, 1, 5).clearContent(); 
+    sheet.getRange(row, 23, 1, 10).clearContent();
+    sheet.getRange(row, 10).clearContent(); // Clear status too
+    
+    historyCell.setValue(JSON.stringify(history));
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function exportFirstBkReport() {
   const sheet = getSheet(FIRSTBK_SHEET_NAME);
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return { content: "", count: 0 };
 
-  const values = sheet.getRange(2, 1, lastRow - 1, 32).getDisplayValues();
-  let csvContent = "รหัสแม่บ้าน,ชื่อ-นามสกุล,ศูนย์,เบอร์โทร,รหัสการจอง,JobID,วันทำความสะอาด,สถานะ," + 
+  const values = sheet.getRange(2, 1, lastRow - 1, 34).getDisplayValues();
+  let csvContent = "รหัสแม่บ้าน,ชื่อ-นามสกุล,ศูนย์,เบอร์โทร,รหัสการจอง,JobID,วันทำความสะอาด,เวลา,จำนวนชั่วโมง,สถานะ," + 
                    "1.1รับงาน,1.2โทรยืนยัน,1.3ระยะทาง,1.4แอพ,1.5อุปกรณ์,1.6ถ่ายรูป,1.7AI," +
                    "2.1ประเมิน,2.2รีโนเวท,2.3เกินขอบเขต,2.4จัดการเกิน,2.5สัตว์เลี้ยง,2.6อุปกรณ์หน้างาน,2.7ปัญหา,2.8อื่นๆ," + 
                    "คำแนะนำ,ผู้ติดตาม,รีวิว,คอมเม้น,รหัสปัญหา\n";
@@ -1355,26 +1398,43 @@ function exportFirstBkReport() {
   for (let i = 0; i < values.length; i++) {
       const row = values[i];
       count++;
-      
       const rowString = [
-          row[1], row[2], row[4], `"${row[3]}"`, row[5], row[6], row[7], row[9],
-          row[10], row[11], row[12], row[13], row[14], row[22], row[23], // 1.x
-          row[24], row[25], row[26], row[27], row[28], row[29], row[30], row[31], // 2.x
-          row[15], row[16], row[18], row[19], row[20] // Info
+          row[1], row[2], row[4], `"${row[3]}"`, row[5], row[6], row[7], row[33], row[32], 
+          row[9],
+          row[10], row[11], row[12], row[13], row[14], row[22], row[23], 
+          row[24], row[25], row[26], row[27], row[28], row[29], row[30], row[31], 
+          row[15], row[16], row[18], row[19], row[20]
       ].map(f => `"${String(f || "").replace(/"/g, '""')}"`).join(",");
-      
       csvContent += rowString + "\n";
   }
-  
   return { content: "\uFEFF" + csvContent, count: count, filename: `FirstJob_Report_${getDateStr()}.csv` };
 }
 
-// --- Utilities ---
+// ==========================================
+// --- UTILITIES ---
+// ==========================================
+
 function parseDateForSort(dateStr) {
   if (!dateStr) return 0;
   dateStr = String(dateStr).trim();
-  
-  // Support DD/MM/YYYY HH:mm
+
+  // Thai format: 14 ม.ค. 2026 (08:30)
+  const thaiMonths = { 'ม.ค.': 0, 'ก.พ.': 1, 'มี.ค.': 2, 'เม.ย.': 3, 'พ.ค.': 4, 'มิ.ย.': 5, 'ก.ค.': 6, 'ส.ค.': 7, 'ก.ย.': 8, 'ต.ค.': 9, 'พ.ย.': 10, 'ธ.ค.': 11 };
+  const thaiMatch = dateStr.match(/^(\d{1,2})\s+([^\s]+)\s+(\d{4})(?:\s+\((\d{1,2}):(\d{2})\))?/);
+  if (thaiMatch) {
+      const d = parseInt(thaiMatch[1]);
+      const mStr = thaiMatch[2];
+      const y = parseInt(thaiMatch[3]);
+      const hr = thaiMatch[4] ? parseInt(thaiMatch[4]) : 0;
+      const min = thaiMatch[5] ? parseInt(thaiMatch[5]) : 0;
+      
+      if (thaiMonths.hasOwnProperty(mStr)) {
+          let year = y > 2400 ? y - 543 : y;
+          return new Date(year, thaiMonths[mStr], d, hr, min).getTime();
+      }
+  }
+
+  // Standard format
   if (dateStr.match(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}/)) {
       const [dPart, tPart] = dateStr.split(' ');
       const [d, m, y] = dPart.split('/').map(Number);
@@ -1383,27 +1443,19 @@ function parseDateForSort(dateStr) {
       return new Date(year, m - 1, d, hr, min).getTime();
   }
   
-  if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
+  let cleanStr = dateStr;
+  if (cleanStr.includes(' ') && !cleanStr.match(/^[^\d]/)) { 
+      cleanStr = cleanStr.split(' ')[0];
+  }
   
-  // YYYY-MM-DD
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-     const parts = dateStr.split('-');
+  if (cleanStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+     const parts = cleanStr.split('-');
      return new Date(parts[0], parts[1]-1, parts[2]).getTime();
   }
   
-  let parts = dateStr.split(/[-/]/);
-  if (parts.length === 3) {
-      if (parts[0].length === 4) {
-           let y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
-           if (y > 2400) y -= 543;
-           return new Date(y, m, d).getTime();
-      }
-      let d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
-      if (y > 2400) y -= 543;
-      return new Date(y, m, d).getTime();
-  }
   return 0;
 }
+
 function formatDateForSheet(dateStr) {
   if (!dateStr) return "";
   if (Object.prototype.toString.call(dateStr) === '[object Date]') {
@@ -1415,24 +1467,16 @@ function formatDateForSheet(dateStr) {
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) { const [year, month, day] = dateStr.split('-'); let y = parseInt(year); if (y > 2400) y -= 543; return `${day}/${month}/${y}`; } 
   return dateStr; 
 }
-function parseYearFromDate(dateStr) {
-    if(!dateStr) return "";
-    let parts = String(dateStr).split(/[-/]/);
-    let y;
-    if (parts.length === 3) {
-        if(parts[0].length === 4) y = parseInt(parts[0]); else if(parts[2].length === 4) y = parseInt(parts[2]);
-    }
-    if(y) return y > 2400 ? y : y + 543; 
-    return "";
-}
+
 function getDateStr() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmm"); }
 
-// *** Generic Date Matcher ***
 function isDateMatchFilter(dateStr, filterVal) {
   if (!dateStr || !filterVal) return false;
   dateStr = String(dateStr);
   
-  if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
+  if (dateStr.includes(' ')) {
+      dateStr = dateStr.split(' ')[0];
+  }
 
   let separator = null;
   if (filterVal.includes(" to ")) separator = " to ";
@@ -1443,50 +1487,33 @@ function isDateMatchFilter(dateStr, filterVal) {
       const [startStr, endStr] = filterVal.split(separator);
       const rowTime = parseDateForSort(dateStr);
       const startTime = parseDateForSort(startStr);
-      const endTime = parseDateForSort(endStr);
+      const endTime = parseDateForSort(endStr) + (24 * 60 * 60 * 1000) - 1; // Include end of day
       
       if (rowTime === 0 || startTime === 0 || endTime === 0) return false;
       return rowTime >= startTime && rowTime <= endTime;
   }
-  
-  if (filterVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const rowTime = parseDateForSort(dateStr);
-      const filterTime = parseDateForSort(filterVal);
-      if (rowTime === 0) return false; 
-      return rowTime === filterTime;
-  }
-  
   return isDateInMonth(dateStr, filterVal);
 }
 
 function isDateInMonth(dateStr, filter) {
   if (!dateStr || !filter) return false;
-  dateStr = String(dateStr);
   
-  if (dateStr.includes(' ')) {
-      dateStr = dateStr.split(' ')[0];
-  }
-
+  // Use robust parser first
+  const ts = parseDateForSort(dateStr);
+  if (ts === 0) return false;
+  
+  const d = new Date(ts);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  
   let filterYear, filterMonth;
-  if (filter.indexOf('-') > -1) { [filterYear, filterMonth] = filter.split('-'); } else { filterYear = filter; }
-  
-  if (dateStr.startsWith(filter)) return true;
-  
-  let parts = dateStr.split(/[-/]/); 
-  if (parts.length === 3) {
-      let y, m;
-      if (parts[0].length === 4) { y = parts[0]; m = parts[1]; } 
-      else if (parts[2].length === 4) { y = parts[2]; m = parts[1]; } 
-      
-      if (y && m) {
-        if (parseInt(y) > 2400) y = (parseInt(y) - 543).toString();
-        m = m.toString().padStart(2, '0');
-        
-        if (filterMonth) return y === filterYear && m === filterMonth; 
-        else return y === filterYear;
-      }
+  if (filter.indexOf('-') > -1) { 
+      [filterYear, filterMonth] = filter.split('-').map(Number);
+      return year === filterYear && month === filterMonth;
+  } else { 
+      filterYear = Number(filter);
+      return year === filterYear;
   }
-  return false;
 }
 
 function convertToStandardDate(dateStr) {
