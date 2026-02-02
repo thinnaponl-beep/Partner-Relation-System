@@ -876,7 +876,7 @@ function saveOnboardData(form) {
         tagsJson
     ];
 
-    sheet.getRange(rowNumber, 1, 1, 21).setValues([rowData]); 
+    sheet.getRange(rowNumber, 1, 1, 22).setValues([rowData]); 
     return { success: true, message: "บันทึกข้อมูลเรียบร้อย" };
   } catch(e) { return { success: false, message: e.toString() }; }
   finally { lock.releaseLock(); }
@@ -1453,6 +1453,17 @@ function parseDateForSort(dateStr) {
      return new Date(parts[0], parts[1]-1, parts[2]).getTime();
   }
   
+  let parts = cleanStr.split(/[-/]/);
+  if (parts.length === 3) {
+      if (parts[0].length === 4) {
+           let y = parseInt(parts[0]), m = parseInt(parts[1]) - 1, d = parseInt(parts[2]);
+           if (y > 2400) y -= 543;
+           return new Date(y, m, d).getTime();
+      }
+      let d = parseInt(parts[0]), m = parseInt(parts[1]) - 1, y = parseInt(parts[2]);
+      if (y > 2400) y -= 543;
+      return new Date(y, m, d).getTime();
+  }
   return 0;
 }
 
