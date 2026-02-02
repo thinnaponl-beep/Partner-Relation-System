@@ -63,13 +63,13 @@ function getSheet(name) {
         "ID", "Training Date", "Maid Code", "Name", "Group", 
         "Phone", "ID Card", "Type", "Latest Followup", "Date 2 (Unused)", "Date 3 (Unused)", 
         "Open Date", "Call Status", "First Job", "Job ID", 
-        "Trainer", "History Data (JSON)", "FastTrack Status", "Center", "Skip FastTrack", "Master Type", "Tags"
+        "Trainer", "History Data (JSON)", "FastTrack Status", "Center", "Verification Method", "Master Type", "Tags"
       ]);
     } else {
         const currentCols = sheet.getMaxColumns();
         if (currentCols < 22) {
            sheet.insertColumnsAfter(currentCols, 22 - currentCols);
-           if(currentCols < 20) sheet.getRange(1, 20).setValue("Skip FastTrack");
+           if(currentCols < 20) sheet.getRange(1, 20).setValue("Verification Method");
            if(currentCols < 21) sheet.getRange(1, 21).setValue("Master Type");
            if(currentCols < 22) sheet.getRange(1, 22).setValue("Tags");
         }
@@ -799,6 +799,7 @@ function getOnboardData(filterVal) {
     groups: configs.onboardGroups, 
     masterTypes: configs.masterTypes, 
     onboardCenters: configs.onboardCenters, 
+    ftStatuses: configs.ftStatuses, // ADDED: Return ftStatuses for manual result dropdown
     data: data 
   };
 }
@@ -838,9 +839,17 @@ function saveOnboardData(form) {
        rowNumber = lastRow + 1;
     }
     
+    // Logic for FastTrack Status (Column 18)
     let currentFastTrackStatus = "";
     if (form.id) {
         currentFastTrackStatus = sheet.getRange(rowNumber, 18).getValue();
+    }
+    
+    // If Verification Method is "Self Check" (ตรวจเอง/ตรวจประวัติด้วยตนเอง), allow overwriting status from form
+    if (form.verificationMethod === 'ตรวจเอง' || form.verificationMethod === 'ตรวจประวัติด้วยตนเอง') {
+         if (form.fastTrackStatus !== undefined) {
+             currentFastTrackStatus = form.fastTrackStatus;
+         }
     }
 
     let historyJson = "";
@@ -1151,7 +1160,7 @@ function saveFirstJobDetails(form) {
     let dbTime = "";
     
     const thaiMonths = { 'ม.ค.': '01', 'ก.พ.': '02', 'มี.ค.': '03', 'เม.ย.': '04', 'พ.ค.': '05', 'มิ.ย.': '06', 'ก.ค.': '07', 'ส.ค.': '08', 'ก.ย.': '09', 'ต.ค.': '10', 'พ.ย.': '11', 'ธ.ค.': '12' };
-    const match = form.cleanDate.match(/^(\d{1,2})\s+(.*?)\s+(\d{4})(?:\s+\((.*?)\))?$/);
+    const match = form.cleanDate.match(/^(\d{1,2})\s+(.*?)\s+(\d{4})(?:\s+\((\d{1,2}):(\d{2})\))?$/);
 
     if (match) {
         let d = match[1].padStart(2, '0');
