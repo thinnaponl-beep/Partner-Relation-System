@@ -1,0 +1,26 @@
+<div class="d-flex justify-content-between align-items-center mb-4 sticky-top bg-white p-3 rounded-4 shadow-sm" style="top: 20px; z-index: 900;">
+    <div class="d-flex align-items-center">
+        <!-- ปุ่ม Toggle Sidebar: แสดงเฉพาะ Mobile (d-lg-none) -->
+        <button class="btn btn-light rounded-circle me-3 shadow-sm border-0 d-lg-none" onclick="toggleSidebar()" title="เปิดเมนู">
+            <i class="fas fa-bars text-primary"></i>
+        </button>
+        
+        <!-- Page Title & Subtitle -->
+        <div>
+            <h5 class="mb-0 fw-bold text-dark" id="pageTitle">Partner Relation Support</h5>
+            <small class="text-muted" id="pageSubtitle">ระบบจัดการผู้ให้บริการ</small>
+        </div>
+    </div>
+    
+    <!-- User Profile Section -->
+    <div class="d-flex align-items-center gap-3">
+        <div class="d-none d-md-block text-end">
+            <div class="fw-bold text-dark" style="font-size: 0.9rem;" id="userEmailDisplay">Loading...</div>
+            <div class="text-muted" style="font-size: 0.75rem;">Officer</div>
+        </div>
+        <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-primary shadow-sm" 
+             style="width: 45px; height: 45px; font-size: 1.2rem;">
+            <i class="fas fa-user-shield"></i>
+        </div>
+    </div>
+</div>
