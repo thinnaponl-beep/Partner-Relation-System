@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Account Verification</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts (Sarabun) -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- SheetJS for Import Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <?!= include('_Styles'); ?>
+
+  <style>
+    /* Minimal Upload Area (ปรับให้เล็กลง) */
+    .upload-area {
+        border: 1px dashed #ced4da;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        background-color: #fff;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        color: #6c757d;
+    }
+    .upload-area:hover {
+        border-color: var(--ci-primary);
+        background-color: #f0fbff;
+        color: var(--ci-primary);
+    }
+    .upload-icon { 
+        font-size: 1.5rem;
+        margin-bottom: 8px; 
+        color: #cbd5e1; 
+        transition: color 0.2s; 
+    }
+    .upload-area:hover .upload-icon { color: var(--ci-primary); }
+    .upload-text { font-size: 0.9rem; margin-bottom: 0; }
+    
+    /* Summary Box */
+    .summary-box { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); border: 1px solid #eee; display: flex; justify-content: space-around; }
+    
+    /* Interactive Summary Item */
+    .summary-item { 
+        text-align: center; 
+        padding: 10px; 
+        flex: 1; 
+        border-right: 1px solid #eee; 
+        cursor: pointer;          /* เปลี่ยนเมาส์เป็นรูปมือ */
+        border-radius: 8px;       /* มุมมนเวลา Active */
+        transition: background-color 0.2s ease;
+    }
+    .summary-item:last-child { border-right: none; }
+    .summary-item:hover { background-color: #f8f9fa; } /* Effect ตอนชี้ */
+    
+    /* Active State for Summary Item */
+    .summary-item.active { 
+        background-color: #e3f2fd; 
+        box-shadow: inset 0 0 0 1px #90caf9;
+    }
+
+    .summary-label { font-size: 0.75rem; color: #888; display: block; margin-bottom: 2px; }
+    .summary-value { font-size: 1.4rem; font-weight: 600; color: #2d3436; }
+    
+    /* Badge Types */
+    .badge-type-new { background-color: #e7f1ff; color: #0d6efd; border: 1px solid #cce5ff; } 
+    .badge-type-annual { background-color: #fff8e6; color: #ffc107; border: 1px solid #ffeeba; } 
+    .badge-type-none { background-color: #f8d7da; color: #dc3545; border: 1px solid #f5c6cb; } 
+    .badge-pill { border-radius: 50px; padding: 4px 10px; font-weight: 500; font-size: 0.75rem; }
+
+    /* Filter Box */
+    .filter-box { background-color: #f8f9fa; border-bottom: 1px solid #eee; padding: 10px 15px; }
+  </style>
+</head>
+<body>
+
+  <?!= include('_Sidebar'); ?>
+
+  <div class="main-content">
+    <?!= include('_Navbar'); ?>
+    
+    <div class="container-fluid">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h4 class="fw-bold text-dark mb-0">บัญชี (Verification Check)</h4>
+                <small class="text-muted">ตรวจสอบสถานะผู้ให้บริการจากไฟล์ Excel/CSV</small>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="row justify-content-center mb-3">
+            <div class="col-lg-8">
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                    <h6 class="text-dark fw-bold mb-1" style="font-size: 0.95rem;">คลิกเพื่ออัพโหลดไฟล์ (Excel/CSV)</h6>
+                    <p class="upload-text small text-muted">ไฟล์ต้องมีคอลัมน์ "เลขบัตรประชาชน" (ID Card)</p>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls, .csv" style="display:none;" onchange="handleFileSelect(this)">
+                </div>
+                
+                <div class="text-center mt-2 d-none" id="lastUpdateContainer">
+                    <span class="badge bg-white text-muted border fw-normal">
+                        <i class="far fa-clock me-1"></i> ข้อมูลเมื่อ: <span id="lastUpdateText">-</span>
+                    </span>
+                    <button class="btn btn-link btn-sm text-danger text-decoration-none p-0 ms-2" onclick="clearData()">
+                        <small>ล้างข้อมูล</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary (Clickable) -->
+        <div id="summarySection" class="row justify-content-center mb-3 d-none">
+            <div class="col-lg-10">
+                <div class="summary-box">
+                    <div class="summary-item active" onclick="filterBySummary('')" data-filter-type="">
+                        <span class="summary-label">ทั้งหมด</span>
+                        <span class="summary-value" id="sumTotal">0</span>
+                    </div>
+                    <div class="summary-item" onclick="filterBySummary('ผู้ให้บริการใหม่')" data-filter-type="ผู้ให้บริการใหม่">
+                        <span class="summary-label text-primary">ใหม่ (New)</span>
+                        <span class="summary-value text-primary" id="sumNew">0</span>
+                    </div>
+                    <div class="summary-item" onclick="filterBySummary('ตรวจประวัติรายปี')" data-filter-type="ตรวจประวัติรายปี">
+                        <span class="summary-label text-warning">รายปี (Yearly)</span>
+                        <span class="summary-value text-warning" id="sumAnnual">0</span>
+                    </div>
+                    <div class="summary-item" onclick="filterBySummary('ไม่พบข้อมูล')" data-filter-type="ไม่พบข้อมูล">
+                        <span class="summary-label text-danger">ไม่พบข้อมูล</span>
+                        <span class="summary-value text-danger" id="sumNotFound">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table -->
+        <div id="resultSection" class="d-none">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+                     <h6 class="mb-0 fw-bold text-secondary small"><i class="fas fa-list me-2"></i>ผลการตรวจสอบ</h6>
+                     <button class="btn btn-sm btn-success text-white fw-bold" onclick="exportToCSV()">
+                        <i class="fas fa-file-download me-1"></i> Export CSV
+                     </button>
+                </div>
+                
+                <!-- Filter Toolbar -->
+                <div class="filter-box d-flex flex-wrap gap-2 align-items-center">
+                    <div class="input-group input-group-sm" style="width: auto; min-width: 200px;">
+                        <span class="input-group-text bg-white text-muted border-end-0">ประเภท:</span>
+                        <!-- ID: filterSysType คือเป้าหมายที่เราจะเปลี่ยนค่าเมื่อกด Card -->
+                        <select class="form-select border-start-0" id="filterSysType" onchange="filterTable()">
+                            <option value="">ทั้งหมด</option>
+                            <!-- JS Populated -->
+                        </select>
+                    </div>
+                    <div class="input-group input-group-sm" style="width: auto; min-width: 200px;">
+                        <span class="input-group-text bg-white text-muted border-end-0">สถานะ:</span>
+                        <select class="form-select border-start-0" id="filterSysStatus" onchange="filterTable()">
+                            <option value="">ทั้งหมด</option>
+                            <!-- JS Populated -->
+                        </select>
+                    </div>
+                    <div class="input-group input-group-sm ms-auto" style="width: 250px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="ค้นหาชื่อ, เลขบัตร..." onkeyup="filterTable()">
+                    </div>
+                </div>
+                
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="text-center" width="50">#</th>
+                                    <th>ชื่อ (จากไฟล์)</th>
+                                    <th>เลขบัตร (จากไฟล์)</th>
+                                    <th>สถานะ (จากไฟล์)</th>
+                                    <th>ประเภทผู้ให้บริการ (ระบบ)</th>
+                                    <th>สถานะในระบบ</th>
+                                    <th>ชื่อในระบบ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div id="noDataMessage" class="text-center text-muted py-5 d-none">
+                 <i class="fas fa-search fa-2x mb-3 opacity-25"></i><br>ไม่พบข้อมูลที่ตรงกับเงื่อนไข
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <?!= include('_Scripts'); ?>
+  <script>
+    let referenceData = {};
+    let processedData = [];
+
+    window.onload = function() {
+        // Active Menu
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector('.nav-link-custom[data-page="account_verify"]');
+        if(activeLink) activeLink.classList.add('active');
+
+        if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "ตรวจสอบบัญชี";
+        
+        loadReferenceData();
+        loadFromLocal();
+    };
+
+    function loadReferenceData() {
+        google.script.run.withSuccessHandler(res => {
+            referenceData = res.referenceData;
+            if(document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').textContent = res.currentUser;
+        }).getAccountVerifyReferenceData();
+    }
+
+    function saveToLocal(data) {
+        const timestamp = new Date().toLocaleString('th-TH');
+        localStorage.setItem('accVerify_Data', JSON.stringify(data));
+        localStorage.setItem('accVerify_Time', timestamp);
+        updateLastUploadUI(timestamp);
+    }
+
+    function loadFromLocal() {
+        const storedData = localStorage.getItem('accVerify_Data');
+        const storedTime = localStorage.getItem('accVerify_Time');
+
+        if (storedData) {
+            processedData = JSON.parse(storedData);
+            updateLastUploadUI(storedTime);
+            updateSummary(processedData);
+            populateFilters(processedData); 
+            renderTable(processedData);
+            
+            document.getElementById('summarySection').classList.remove('d-none');
+            document.getElementById('resultSection').classList.remove('d-none');
+        }
+    }
+
+    function clearData() {
+        Swal.fire({
+            title: 'ยืนยันล้างข้อมูล?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'ล้างข้อมูล',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#dc3545'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('accVerify_Data');
+                localStorage.removeItem('accVerify_Time');
+                processedData = [];
+                document.getElementById('summarySection').classList.add('d-none');
+                document.getElementById('resultSection').classList.add('d-none');
+                document.getElementById('lastUpdateContainer').classList.add('d-none');
+                document.getElementById('fileInput').value = "";
+                
+                // Clear filters
+                document.getElementById('filterSysType').innerHTML = '<option value="">ทั้งหมด</option>';
+                document.getElementById('filterSysStatus').innerHTML = '<option value="">ทั้งหมด</option>';
+                updateActiveSummaryUI(''); // Reset active state
+            }
+        });
+    }
+
+    function updateLastUploadUI(timestamp) {
+        if(timestamp) {
+            document.getElementById('lastUpdateText').textContent = timestamp;
+            document.getElementById('lastUpdateContainer').classList.remove('d-none');
+        }
+    }
+
+    function handleFileSelect(input) {
+        if (!input.files || input.files.length === 0) return;
+        const file = input.files[0];
+        
+        const reader = new FileReader();
+        showLoading();
+
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            
+            processData(jsonData);
+            input.value = ""; 
+            hideLoading();
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function processData(rows) {
+        if (!referenceData || Object.keys(referenceData).length === 0) {
+             Swal.fire('ระบบกำลังเตรียมข้อมูล', 'กรุณารอสักครู่แล้วลองใหม่', 'info'); return;
+        }
+
+        processedData = [];
+        
+        // Dynamic Key Detection
+        let idKey = null, nameKey = null, statusKey = null;
+        if (rows.length > 0) {
+            const keys = Object.keys(rows[0]);
+            idKey = keys.find(k => k.includes("เลขบัตร") || k.toLowerCase().replace(/[^a-z]/g,'').includes("idcard"));
+            nameKey = keys.find(k => k.includes("ชื่อ") || k.toLowerCase().includes("name"));
+            statusKey = keys.find(k => k.includes("สถานะ") || k.toLowerCase().includes("status") || k.toLowerCase().includes("result"));
+        }
+
+        if (!idKey) {
+             Swal.fire('รูปแบบไฟล์ไม่ถูกต้อง', 'ไม่พบคอลัมน์ "เลขบัตรประชาชน" หรือ "ID Card"', 'error'); return;
+        }
+        
+        rows.forEach((row, index) => {
+            let idCardVal = row[idKey];
+            let nameVal = nameKey ? row[nameKey] : "";
+            let statusVal = statusKey ? row[statusKey] : "";
+
+            let cleanId = String(idCardVal).replace(/'/g, "").replace(/\D/g, "").trim();
+            
+            let systemType = "ไม่พบข้อมูล";
+            let systemStatus = "-";
+            let systemName = "-";
+            let typeClass = "badge-type-none";
+
+            if (cleanId && referenceData[cleanId]) {
+                const found = referenceData[cleanId];
+                systemType = found.type; 
+                systemStatus = found.status || found.result || "-";
+                systemName = found.name;
+
+                if (systemType === 'ผู้ให้บริการใหม่') typeClass = 'badge-type-new';
+                else if (systemType === 'ตรวจประวัติรายปี') typeClass = 'badge-type-annual';
+            }
+
+            if (idCardVal || nameVal) {
+                processedData.push({
+                    id: index,
+                    fileName: nameVal,
+                    fileId: idCardVal,
+                    fileStatus: statusVal,
+                    sysType: systemType,
+                    sysStatus: systemStatus,
+                    sysName: systemName,
+                    badgeClass: typeClass
+                });
+            }
+        });
+
+        saveToLocal(processedData);
+        updateSummary(processedData);
+        populateFilters(processedData);
+        
+        document.getElementById('summarySection').classList.remove('d-none');
+        document.getElementById('resultSection').classList.remove('d-none');
+        filterTable(); 
+        
+        Swal.fire({ icon: 'success', title: 'ประมวลผลเสร็จสิ้น', timer: 1500, showConfirmButton: false });
+    }
+
+    function updateSummary(data) {
+        let countNew = data.filter(d => d.sysType === 'ผู้ให้บริการใหม่').length;
+        let countAnnual = data.filter(d => d.sysType === 'ตรวจประวัติรายปี').length;
+        let countNotFound = data.filter(d => d.sysType === 'ไม่พบข้อมูล').length;
+
+        document.getElementById('sumTotal').textContent = data.length;
+        document.getElementById('sumNew').textContent = countNew;
+        document.getElementById('sumAnnual').textContent = countAnnual;
+        document.getElementById('sumNotFound').textContent = countNotFound;
+    }
+
+    function populateFilters(data) {
+        const types = [...new Set(data.map(item => item.sysType))].filter(Boolean).sort();
+        const statuses = [...new Set(data.map(item => item.sysStatus))].filter(Boolean).sort();
+
+        const typeSelect = document.getElementById('filterSysType');
+        const statusSelect = document.getElementById('filterSysStatus');
+
+        const currType = typeSelect.value;
+        const currStatus = statusSelect.value;
+
+        typeSelect.innerHTML = '<option value="">ทั้งหมด</option>';
+        statusSelect.innerHTML = '<option value="">ทั้งหมด</option>';
+
+        types.forEach(t => typeSelect.add(new Option(t, t)));
+        statuses.forEach(s => statusSelect.add(new Option(s, s)));
+
+        if(types.includes(currType)) typeSelect.value = currType;
+        if(statuses.includes(currStatus)) statusSelect.value = currStatus;
+    }
+
+    function renderTable(data) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+            document.getElementById('noDataMessage').classList.remove('d-none');
+            return;
+        }
+        document.getElementById('noDataMessage').classList.add('d-none');
+
+        data.forEach((row, i) => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-muted text-center">${i + 1}</td>
+                <td class="fw-bold text-dark">${row.fileName || "-"}</td>
+                <td>${row.fileId || "-"}</td>
+                <td><span class="badge bg-light text-dark border">${row.fileStatus || "-"}</span></td>
+                <td><span class="badge badge-pill ${row.badgeClass}">${row.sysType}</span></td>
+                <td>${row.sysStatus}</td>
+                <td class="text-muted small">${row.sysName}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    
+    // --- New: Filter by Summary Logic ---
+    function filterBySummary(type) {
+        // Update the dropdown value to match the clicked card
+        const typeDropdown = document.getElementById('filterSysType');
+        typeDropdown.value = type;
+        
+        // Trigger main filter function
+        filterTable();
+    }
+    
+    function updateActiveSummaryUI(activeType) {
+        // Helper to visual highlight the active card
+        document.querySelectorAll('.summary-item').forEach(el => {
+            if (el.dataset.filterType === activeType) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+    }
+
+    function filterTable() {
+        const txt = document.getElementById('searchInput').value.toLowerCase();
+        const typeFilter = document.getElementById('filterSysType').value;
+        const statusFilter = document.getElementById('filterSysStatus').value;
+        
+        // Update UI based on current filter state
+        updateActiveSummaryUI(typeFilter);
+
+        const filtered = processedData.filter(d => {
+            const matchText = (d.fileName && String(d.fileName).toLowerCase().includes(txt)) ||
+                              (d.fileId && String(d.fileId).includes(txt));
+            
+            const matchType = (typeFilter === "" || d.sysType === typeFilter);
+            const matchStatus = (statusFilter === "" || d.sysStatus === statusFilter);
+
+            return matchText && matchType && matchStatus;
+        });
+        renderTable(filtered);
+    }
+
+    function exportToCSV() {
+        if (!processedData || processedData.length === 0) {
+            Swal.fire('ไม่มีข้อมูล', 'กรุณาอัพโหลดไฟล์ก่อน', 'warning'); return;
+        }
+        
+        let csvContent = "ลำดับ,ชื่อ (จากไฟล์),เลขบัตร (จากไฟล์),สถานะ (จากไฟล์),ประเภทผู้ให้บริการ (ระบบ),สถานะในระบบ,ชื่อในระบบ\n";
+        
+        // Filter by current view
+        const txt = document.getElementById('searchInput').value.toLowerCase();
+        const typeFilter = document.getElementById('filterSysType').value;
+        const statusFilter = document.getElementById('filterSysStatus').value;
+        
+        const dataToExport = processedData.filter(d => {
+            const matchText = (d.fileName && String(d.fileName).toLowerCase().includes(txt)) || (d.fileId && String(d.fileId).includes(txt));
+            const matchType = (typeFilter === "" || d.sysType === typeFilter);
+            const matchStatus = (statusFilter === "" || d.sysStatus === statusFilter);
+            return matchText && matchType && matchStatus;
+        });
+
+        dataToExport.forEach((row, index) => {
+            let fields = [
+                index + 1,
+                `"${String(row.fileName || "").replace(/"/g, '""')}"`,
+                `"${String(row.fileId || "").replace(/"/g, '""')}"`,
+                `"${String(row.fileStatus || "").replace(/"/g, '""')}"`,
+                `"${String(row.sysType || "").replace(/"/g, '""')}"`,
+                `"${String(row.sysStatus || "").replace(/"/g, '""')}"`,
+                `"${String(row.sysName || "").replace(/"/g, '""')}"`
+            ];
+            csvContent += fields.join(",") + "\n";
+        });
+
+        const BOM = "\uFEFF";
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const timestamp = new Date().toISOString().slice(0,19).replace(/[-T:]/g,"");
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Verify_Result_${timestamp}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
