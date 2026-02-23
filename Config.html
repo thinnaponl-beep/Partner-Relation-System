@@ -4,583 +4,756 @@
   <base target="_top">
   <meta charset="UTF-8">
   <title>System Configuration</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- SortableJS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <?!= include('_Styles'); ?>
   <style>
-    :root { 
-        --ci-primary: #31C1D7; 
-        --ci-bg: #F8F9FA; 
-        --ci-text: #2d3436;
-        --ci-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        --sidebar-width: 260px;
-        --sidebar-width-collapsed: 80px;
-    }
-    body { font-family: 'Sarabun', sans-serif; background-color: var(--ci-bg); color: var(--ci-text); overflow-x: hidden; }
-
-    /* --- Sidebar --- */
-    .sidebar {
-        height: 100vh;
-        width: var(--sidebar-width);
-        position: fixed;
-        top: 0;
-        left: 0;
-        background-color: #ffffff;
-        box-shadow: 4px 0 15px rgba(0,0,0,0.03);
-        transition: all 0.3s ease;
-        z-index: 1000;
-        display: flex;
-        flex-direction: column;
-        border-right: 1px solid #f0f0f0;
-    }
+    /* Sortable */
+    .list-group-item { display: flex; justify-content: space-between; align-items: center; cursor: grab; background: white; border: 1px solid #f0f0f0; margin-bottom: 5px; border-radius: 8px !important; }
+    .list-group-item:hover { background-color: #f8f9fa; border-color: #e9ecef; }
+    .list-group-item:active { cursor: grabbing; }
+    .drag-handle { color: #ccc; cursor: grab; padding-right: 10px; }
+    .list-group-item:hover .drag-handle { color: var(--ci-primary); }
+    .sortable-ghost { background-color: #e9ecef; opacity: 0.5; }
+    .config-header { font-weight: 700; color: #555; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
+    .card-config { border: none; box-shadow: var(--shadow-sm); border-radius: 16px; height: 100%; transition: var(--transition); }
+    .card-config:hover { box-shadow: var(--shadow-md); transform: translateY(-3px); }
     
-    .sidebar.collapsed {
-        width: var(--sidebar-width-collapsed);
+    /* Checklist Toggle Item */
+    .checklist-item {
+        transition: background-color 0.2s;
     }
-    
-    .sidebar-header {
-        padding: 20px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        height: 80px;
-        border-bottom: 1px solid #f8f9fa;
-        justify-content: center;
+    .checklist-item:hover {
+        background-color: #f9fbfd;
     }
+    .badge-choice { font-size: 0.75rem; background-color: #e9ecef; color: #495057; border: 1px solid #dee2e6; margin-right: 4px; border-radius: 4px; padding: 2px 6px; cursor: default; }
     
-    .logo-box {
-        min-width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, var(--ci-primary), #25a0b5);
-        color: white;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        box-shadow: 0 4px 10px rgba(49, 193, 215, 0.3);
+    /* Conditional Item (Child) */
+    .checklist-item.is-child {
+        margin-left: 30px;
+        border-left: 3px solid var(--ci-primary) !important;
+        background-color: #f8fcfd;
     }
-    
-    .brand-text {
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: #2d3436;
-        transition: opacity 0.2s;
-        margin-left: 10px;
-    }
-    .sidebar.collapsed .brand-text { display: none; }
-
-    .sidebar-menu {
-        padding: 20px 10px;
-        list-style: none;
-        margin: 0;
-        flex-grow: 1;
-        overflow-y: auto;
-    }
-    
-    .sidebar-menu li { margin-bottom: 8px; }
-    
-    .nav-link-custom {
-        display: flex;
-        align-items: center;
-        padding: 12px 15px;
-        color: #636e72;
-        text-decoration: none;
-        border-radius: 12px;
-        transition: all 0.2s;
+    .condition-badge {
+        font-size: 0.7rem;
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-bottom: 4px;
         font-weight: 500;
-        white-space: nowrap;
-        overflow: hidden;
     }
     
-    .sidebar.collapsed .nav-link-custom {
-        justify-content: center;
-        padding-left: 0;
-        padding-right: 0;
-    }
-    .sidebar.collapsed .nav-link-custom span { display: none; }
-    
-    .nav-link-custom:hover {
-        background-color: #f1f3f5;
-        color: var(--ci-primary);
-        transform: translateX(3px);
-    }
-    .sidebar.collapsed .nav-link-custom:hover { transform: none; background-color: #f1f3f5; }
-    
-    .nav-link-custom.active {
-        background-color: rgba(49, 193, 215, 0.1);
-        color: var(--ci-primary);
-        font-weight: 600;
-    }
-    
-    .nav-icon {
-        min-width: 24px;
-        font-size: 1.1rem;
-        text-align: center;
-        margin-right: 15px;
-    }
-    .sidebar.collapsed .nav-icon { margin-right: 0; }
-
-    .user-section {
-        padding: 15px;
-        border-top: 1px solid #f8f9fa;
-        background-color: #fff;
-    }
-
-    .user-card {
-        display: flex;
-        align-items: center;
-        padding: 10px;
-        background-color: #f8f9fa;
-        border-radius: 12px;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-    .sidebar.collapsed .user-card { justify-content: center; padding: 10px 0; }
-    .sidebar.collapsed .user-text { display: none; }
-    
-    /* --- Main Content --- */
-    .main-content {
-        margin-left: var(--sidebar-width);
-        padding: 20px 30px;
-        transition: all 0.3s ease;
-        min-height: 100vh;
-    }
-    
-    .main-content.expanded { margin-left: var(--sidebar-width-collapsed); }
-
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-        padding-bottom: 15px;
-        border-bottom: 1px dashed #e9ecef;
-    }
-
-    .toggle-btn {
-        background: none;
-        border: none;
-        font-size: 1.2rem;
-        color: #636e72;
-        cursor: pointer;
-        padding: 5px;
-        border-radius: 5px;
-        transition: background 0.2s;
-    }
-    .toggle-btn:hover { background-color: #e9ecef; }
-
-    /* Config Specific Styles */
-    .card-header { background-color: #31C1D7; color: white; font-weight: 600; }
-    .btn-primary-theme { background-color: #31C1D7; border-color: #31C1D7; color: white; }
-    .btn-primary-theme:hover { background-color: #29a8bb; color: white; }
-    
-    .list-group-item { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      transition: background-color 0.2s;
-      cursor: grab; /* เปลี่ยนเคอร์เซอร์เป็นมือจับทั้งแถว */
-    }
-    .list-group-item:active {
-      cursor: grabbing; /* เปลี่ยนเป็นมือกำเมื่อคลิกค้าง */
-    }
-    
-    /* Drag Handle Style - ปรับเป็นแค่ Visual cue */
-    .drag-handle {
-      color: #adb5bd;
-      padding: 0 10px;
-    }
-    .list-group-item:hover .drag-handle {
-      color: #31C1D7;
-    }
-    
-    /* Sortable classes */
-    .sortable-ghost {
-      background-color: #e9ecef;
-      opacity: 0.5;
-    }
-    .sortable-drag {
-      background-color: #fff;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    
-    /* Mobile Overlay */
-    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 999; backdrop-filter: blur(2px); }
-    .overlay.active { display: block; }
-    
-    @media (max-width: 768px) {
-        .sidebar { margin-left: calc(var(--sidebar-width) * -1); }
-        .sidebar.active { margin-left: 0; }
-        .main-content { margin-left: 0 !important; padding: 15px; }
-    }
+    /* Type Badge */
+    .badge-type { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 5px; background: #e3f2fd; color: #0d6efd; border: 1px solid #90caf9; }
   </style>
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-          <div class="logo-box"><i class="fas fa-bolt"></i></div>
-          <div class="brand-text">Partner Relation<br><small class="fw-light">Support</small></div>
-      </div>
-      
-      <ul class="sidebar-menu">
-          <li>
-              <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="nav-link-custom">
-                  <i class="fas fa-th-large nav-icon"></i>
-                  <span>หน้าแรก</span>
-              </a>
-          </li>
-          <li>
-              <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="nav-link-custom">
-                  <i class="fas fa-user-check nav-icon"></i>
-                  <span>ติดตามเปิดระบบ</span>
-              </a>
-          </li>
-          <li>
-              <a href="<?= ScriptApp.getService().getUrl() ?>?page=firstbk" class="nav-link-custom">
-                  <i class="fas fa-briefcase nav-icon"></i>
-                  <span>ติดตามรับงานแรก</span>
-              </a>
-          </li>
-          <li>
-              <a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="nav-link-custom">
-                  <i class="fas fa-file-signature nav-icon"></i>
-                  <span>ตรวจประวัติใหม่</span>
-              </a>
-          </li>
-          <li>
-              <a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="nav-link-custom">
-                  <i class="fas fa-calendar-check nav-icon"></i>
-                  <span>ตรวจประวัติรายปี</span>
-              </a>
-          </li>
-          <li>
-              <a href="javascript:void(0)" class="nav-link-custom active">
-                  <i class="fas fa-cogs nav-icon"></i>
-                  <span>ตั้งค่า</span>
-              </a>
-          </li>
-      </ul>
+  <?!= include('_Sidebar'); ?>
 
-      <div class="user-section">
-          <div class="user-card" title="ข้อมูลผู้ใช้">
-              <div class="rounded-circle bg-light d-flex align-items-center justify-content-center text-secondary" style="width: 35px; height: 35px; min-width: 35px;">
-                  <i class="fas fa-user"></i>
+  <div class="main-content">
+    <?!= include('_Navbar'); ?>
+    
+    <div class="container-fluid">
+        <!-- Row 1: Core System -->
+        <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">1. ตั้งค่าทั่วไป (General)</h6>
+        <div class="row g-4 mb-5">
+            <!-- Admin -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-primary bg-opacity-10 p-2 text-primary"><i class="fas fa-user-shield"></i></div> ผู้ดูแลระบบ (Admin)</div>
+                    <div class="input-group mb-3"><input type="email" id="newAdmin" class="form-control" placeholder="Email"><button class="btn btn-soft-primary" onclick="addConfig('admin')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="adminList"></ul>
+                </div>
+            </div>
+            <!-- Center -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-success bg-opacity-10 p-2 text-success"><i class="fas fa-building"></i></div> ศูนย์ (Centers)</div>
+                    <div class="input-group mb-3"><input type="text" id="newCenter" class="form-control" placeholder="ชื่อศูนย์"><button class="btn btn-soft-success" onclick="addConfig('center')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="centerList"></ul>
+                </div>
+            </div>
+            <!-- Master Type -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-warning bg-opacity-10 p-2 text-warning"><i class="fas fa-briefcase"></i></div>  ประเภทผู้ให้บริการ (Master)</div>
+                    <div class="input-group mb-3"><input type="text" id="newMasterType" class="form-control" placeholder="ประเภท"><button class="btn btn-soft-warning text-dark" onclick="addConfig('masterType')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="masterTypeList"></ul>
+                </div>
+            </div>
+            <!-- FT Status -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-danger bg-opacity-10 p-2 text-danger"><i class="fas fa-flag"></i></div> สถานะ FT</div>
+                    <div class="input-group mb-3"><input type="text" id="newFtStatus" class="form-control" placeholder="สถานะ"><button class="btn btn-soft-danger" onclick="addConfig('ftStatus')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="ftStatusList"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Onboard & Verification -->
+        <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">2. ตั้งค่า Onboard & ตรวจสอบ</h6>
+        <div class="row g-4 mb-5">
+            <!-- Onboard Center -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-info bg-opacity-10 p-2 text-info"><i class="fas fa-map-marker-alt"></i></div> ศูนย์เทรน</div>
+                    <div class="input-group mb-3"><input type="text" id="newOnboardCenter" class="form-control" placeholder="ชื่อศูนย์เทรน"><button class="btn btn-soft-info" onclick="addConfig('onboardCenter')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="onboardCenterList"></ul>
+                </div>
+            </div>
+            <!-- Onboard Groups -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-secondary bg-opacity-10 p-2 text-secondary"><i class="fas fa-users-cog"></i></div> กลุ่ม (Groups)</div>
+                    <div class="input-group mb-3"><input type="text" id="newOnboardGroup" class="form-control" placeholder="ชื่อกลุ่ม"><button class="btn btn-soft-secondary" onclick="addConfig('onboardGroup')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="onboardGroupList"></ul>
+                </div>
+            </div>
+            <!-- Onboard Types -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-dark bg-opacity-10 p-2 text-dark"><i class="fas fa-tags"></i></div> สถานะ Onboard</div>
+                    <div class="input-group mb-3"><input type="text" id="newOnboardType" class="form-control" placeholder="ชื่อสถานะ"><button class="btn btn-outline-dark border-0 bg-light" onclick="addConfig('onboardType')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="onboardTypeList"></ul>
+                </div>
+            </div>
+            <!-- Results -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-primary bg-opacity-10 p-2 text-primary"><i class="fas fa-poll"></i></div> ผลการตรวจสอบ</div>
+                    <div class="input-group mb-3"><input type="text" id="newResult" class="form-control" placeholder="ผลการตรวจสอบ"><button class="btn btn-soft-primary" onclick="addConfig('result')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="resultList"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Checklist Management -->
+        <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">3. ตั้งค่าแบบสอบถาม (First Job Checklist)</h6>
+        <div class="row g-4 mb-4">
+             <div class="col-12">
+                <div class="card card-config p-4">
+                    <div class="alert alert-soft-primary border-0 d-flex align-items-center mb-4">
+                        <i class="fas fa-edit me-3 fs-4"></i>
+                        <div>
+                            <strong>คำแนะนำ:</strong> จัดการคำถามและเงื่อนไข (Conditional Logic) ได้ที่นี่
+                        </div>
+                        <div class="ms-auto d-flex gap-2">
+                             <button class="btn btn-primary-theme btn-sm shadow-sm" onclick="openAddQuestionModal()">
+                                <i class="fas fa-plus me-1"></i> เพิ่มคำถาม
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Pre-Start Column -->
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-muted fw-bold mb-3"><i class="fas fa-clipboard-list me-2"></i>ก่อนเริ่มงาน (Pre-Start)</h6>
+                            <div class="list-group list-group-flush" id="preChecklistConfig"></div>
+                        </div>
+                        
+                        <!-- Post-Start Column -->
+                        <div class="col-md-6 ps-md-4">
+                            <h6 class="text-muted fw-bold mb-3"><i class="fas fa-check-double me-2"></i>หลังจบงาน (Post-Start)</h6>
+                            <div class="list-group list-group-flush" id="postChecklistConfig"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+  </div>
+
+  <!-- Edit Options Modal (UPDATED with Answer Type) -->
+  <div class="modal fade" id="editOptionsModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow">
+              <div class="modal-header bg-light">
+                  <h5 class="modal-title fs-6 fw-bold"><i class="fas fa-pen-to-square me-2"></i>แก้ไขคำถาม</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
-              <div class="ms-2 user-text overflow-hidden">
-                  <div class="small fw-bold text-truncate" id="userEmail">Loading...</div>
-                  <div class="text-muted" style="font-size: 0.7rem;">Officer</div>
+              <div class="modal-body">
+                  <input type="hidden" id="editQId">
+                  <input type="hidden" id="editQSection"> 
+                  
+                  <div class="mb-3">
+                      <label class="form-label small fw-bold">ชื่อคำถาม</label>
+                      <input type="text" class="form-control" id="editQLabel">
+                  </div>
+                  
+                  <!-- Added: Answer Type Selector -->
+                  <div class="mb-3">
+                      <label class="form-label small fw-bold">รูปแบบคำตอบ</label>
+                      <select class="form-select" id="editQType" onchange="toggleEditQType()">
+                          <option value="select">ตัวเลือกเดียว (Dropdown)</option>
+                          <option value="checkbox">หลายคำตอบ (Checkbox)</option>
+                          <option value="text">ข้อความ (Text)</option>
+                      </select>
+                  </div>
+                  
+                  <!-- Conditional Logic Toggle -->
+                  <div class="mb-3 p-3 bg-light rounded border border-warning border-opacity-25">
+                      <div class="form-check form-switch">
+                          <input class="form-check-input" type="checkbox" id="editEnableCondition" onchange="toggleEditConditionSettings()">
+                          <label class="form-check-label fw-bold small text-muted" for="editEnableCondition">
+                              เงื่อนไขการแสดงผล (Conditional)
+                          </label>
+                      </div>
+                      
+                      <div id="editConditionSettings" class="mt-3 d-none">
+                          <div class="mb-2">
+                              <label class="form-label small">แสดงเมื่อคำถามนี้... (Parent)</label>
+                              <select class="form-select form-select-sm" id="editParentQuestion" onchange="refreshEditTriggerValues()">
+                                  <option value="">- เลือกคำถามหลัก -</option>
+                              </select>
+                          </div>
+                          <div>
+                              <label class="form-label small">ตอบว่า... (Value)</label>
+                              <select class="form-select form-select-sm" id="editTriggerValue">
+                                  <option value="">- เลือกคำตอบ -</option>
+                              </select>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- Options Container -->
+                  <div id="editOptionsContainer" class="mb-3">
+                      <label class="form-label small fw-bold">ตัวเลือกที่มีอยู่</label>
+                      <ul class="list-group small mb-2" id="optionsList"></ul>
+                      <div class="input-group input-group-sm">
+                          <input type="text" class="form-control" id="newOptionInput" placeholder="เพิ่มตัวเลือก...">
+                          <button class="btn btn-outline-secondary" onclick="addOption()">เพิ่ม</button>
+                      </div>
+                  </div>
+              </div>
+              <div class="modal-footer border-0 bg-light">
+                  <button type="button" class="btn btn-primary-theme w-100 rounded-pill" onclick="saveChecklistChanges()">บันทึกการเปลี่ยนแปลง</button>
               </div>
           </div>
       </div>
   </div>
 
-  <!-- Mobile Overlay -->
-  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+  <!-- Add Question Modal -->
+  <div class="modal fade" id="addQuestionModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow">
+              <div class="modal-header bg-primary text-white">
+                  <h5 class="modal-title fs-6 fw-bold"><i class="fas fa-plus-circle me-2"></i>เพิ่มคำถามใหม่</h5>
+                  <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                  <div class="mb-3">
+                      <label class="form-label small fw-bold">ชื่อคำถาม <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" id="addQName" placeholder="เช่น รายละเอียดความเสียหาย">
+                  </div>
+                  <div class="row g-3 mb-3">
+                      <div class="col-6">
+                           <label class="form-label small fw-bold">ส่วนงาน</label>
+                           <select class="form-select" id="addQSection" onchange="refreshParentOptions()">
+                               <option value="pre">ก่อนเริ่มงาน</option>
+                               <option value="post">หลังจบงาน</option>
+                           </select>
+                      </div>
+                      <div class="col-6">
+                           <label class="form-label small fw-bold">รูปแบบคำตอบ</label>
+                           <select class="form-select" id="addQType" onchange="toggleAddQType()">
+                               <option value="select">ตัวเลือก (Dropdown)</option>
+                               <option value="checkbox">หลายคำตอบ (Checkbox)</option>
+                               <option value="text">ข้อความ (Text)</option>
+                           </select>
+                      </div>
+                  </div>
+                  
+                  <!-- Conditional Logic Toggle -->
+                  <div class="mb-3 p-3 bg-light rounded border border-warning border-opacity-25">
+                      <div class="form-check form-switch">
+                          <input class="form-check-input" type="checkbox" id="enableCondition" onchange="toggleConditionSettings()">
+                          <label class="form-check-label fw-bold small text-muted" for="enableCondition">
+                              ตั้งค่าเงื่อนไข (Conditional)
+                          </label>
+                      </div>
+                      
+                      <div id="conditionSettings" class="mt-3 d-none">
+                          <div class="mb-2">
+                              <label class="form-label small">แสดงเมื่อคำถามนี้...</label>
+                              <select class="form-select form-select-sm" id="parentQuestion" onchange="refreshTriggerValues()">
+                                  <option value="">- เลือกคำถามหลัก -</option>
+                              </select>
+                          </div>
+                          <div>
+                              <label class="form-label small">ตอบว่า...</label>
+                              <select class="form-select form-select-sm" id="triggerValue">
+                                  <option value="">- เลือกคำตอบ -</option>
+                              </select>
+                          </div>
+                      </div>
+                  </div>
 
-  <!-- Main Content -->
-  <div class="main-content" id="mainContent">
-    
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <div class="d-flex align-items-center">
-            <button class="toggle-btn me-3" onclick="toggleSidebar()">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h4 class="mb-0 fw-bold text-secondary">ตั้งค่าระบบ (System Configuration)</h4>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-               <i class="fas fa-home me-1"></i> กลับหน้าแรก
-            </a>
-        </div>
-    </div>
-
-    <!-- Config Content -->
-    <div class="row g-4 mb-4">
-      <!-- Admin Management -->
-      <div class="col-md-6 col-lg-3">
-        <div class="card shadow-sm h-100">
-          <div class="card-header"><i class="fas fa-user-shield"></i> จัดการผู้ดูแลระบบ (Admin)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="email" id="newAdmin" class="form-control" placeholder="ระบุ Email (Google Account)">
-              <button class="btn btn-primary-theme" onclick="addConfig('admin')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="adminList"></ul>
-            <small class="text-muted mt-2 d-block">* ผู้ที่มีรายชื่อในนี้จะสามารถ ลบข้อมูล และ เข้าหน้านี้ได้</small>
+                  <!-- Options List Input -->
+                  <div class="mb-3" id="addQOptionsGroup">
+                      <label class="form-label small fw-bold text-muted">ตัวเลือก (Options)</label>
+                      <div class="input-group mb-2">
+                          <input type="text" class="form-control" id="newOptionInputAdd" placeholder="พิมพ์ตัวเลือกแล้วกดเพิ่ม..." onkeydown="if(event.key==='Enter') addTempOption()">
+                          <button class="btn btn-outline-secondary" type="button" onclick="addTempOption()"><i class="fas fa-plus"></i></button>
+                      </div>
+                      <ul class="list-group small" id="tempOptionsList" style="max-height: 100px; overflow-y: auto;"></ul>
+                  </div>
+                  
+                  <div class="alert alert-light border small text-muted mb-0">
+                      <i class="fas fa-info-circle me-1"></i> ระบบจะสร้างรหัส ID อัตโนมัติ
+                  </div>
+              </div>
+              <div class="modal-footer border-0 bg-light">
+                  <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+                  <button type="button" class="btn btn-primary-theme btn-sm px-4 rounded-pill" onclick="saveNewQuestion()">บันทึกคำถาม</button>
+              </div>
           </div>
-        </div>
       </div>
-
-      <!-- Center Management -->
-      <div class="col-md-6 col-lg-3">
-        <div class="card shadow-sm h-100">
-          <div class="card-header"><i class="fas fa-building"></i> จัดการรายชื่อศูนย์ (Centers)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newCenter" class="form-control" placeholder="ระบุชื่อศูนย์">
-              <button class="btn btn-primary-theme" onclick="addConfig('center')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="centerList"></ul>
-            <small class="text-muted mt-2 d-block"><i class="fas fa-arrows-alt-v me-1"></i> ลากวางเพื่อจัดเรียงลำดับได้</small>
-          </div>
-        </div>
-      </div>
-      
-      <!-- New: Master Types -->
-      <div class="col-md-6 col-lg-3">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-success text-white"><i class="fas fa-briefcase"></i> ประเภทงาน (Master Types)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newMasterType" class="form-control" placeholder="ประเภท (เช่น ช่างแอร์)">
-              <button class="btn btn-success" onclick="addConfig('masterType')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="masterTypeList"></ul>
-          </div>
-        </div>
-      </div>
-
-      <!-- Result Management -->
-      <div class="col-md-6 col-lg-3">
-        <div class="card shadow-sm h-100">
-          <div class="card-header"><i class="fas fa-poll"></i> ผลการตรวจสอบ (Results)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newResult" class="form-control" placeholder="ระบุผลตรวจ">
-              <button class="btn btn-primary-theme" onclick="addConfig('result')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="resultList"></ul>
-            <small class="text-muted mt-2 d-block"><i class="fas fa-arrows-alt-v me-1"></i> ลากวางเพื่อจัดเรียงลำดับได้</small>
-          </div>
-        </div>
-      </div>
-      
-       <!-- FT Status Management -->
-      <div class="col-md-6 col-lg-3">
-        <div class="card shadow-sm h-100">
-          <div class="card-header"><i class="fas fa-flag"></i> สถานะ FT (Status)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newFtStatus" class="form-control" placeholder="ระบุสถานะ">
-              <button class="btn btn-primary-theme" onclick="addConfig('ftStatus')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="ftStatusList"></ul>
-            <small class="text-muted mt-2 d-block"><i class="fas fa-arrows-alt-v me-1"></i> ลากวางเพื่อจัดเรียงลำดับได้</small>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Row 2: Onboard Config -->
-    <h5 class="mb-3 text-secondary border-bottom pb-2">ตั้งค่า Onboard</h5>
-    <div class="row g-4">
-      <!-- Onboard Center Config -->
-      <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-warning text-dark"><i class="fas fa-map-marker-alt"></i> ศูนย์เทรน (Onboard Centers)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newOnboardCenter" class="form-control" placeholder="ชื่อศูนย์เทรน (เช่น BKK01)">
-              <button class="btn btn-warning" onclick="addConfig('onboardCenter')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="onboardCenterList"></ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-warning text-dark"><i class="fas fa-users-cog"></i> Onboard: กลุ่ม (Groups)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newOnboardGroup" class="form-control" placeholder="ชื่อกลุ่ม (เช่น A, 0)">
-              <button class="btn btn-warning" onclick="addConfig('onboardGroup')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="onboardGroupList"></ul>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-          <div class="card-header bg-warning text-dark"><i class="fas fa-tags"></i> Onboard: ประเภท (Types)</div>
-          <div class="card-body">
-            <div class="input-group mb-3">
-              <input type="text" id="newOnboardType" class="form-control" placeholder="ชื่อประเภท (เช่น เปิดระบบ)">
-              <button class="btn btn-warning" onclick="addConfig('onboardType')"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul class="list-group small" id="onboardTypeList"></ul>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
+  <?!= include('_Scripts'); ?>
   <script>
-    let configData = { admin: [], center: [], result: [], ftStatus: [], onboardGroup: [], onboardType: [], masterType: [], onboardCenter: [] };
+    let configData = {};
+    let checklistQuestions = []; // Loaded from server
+    let editOptionsModal, addQuestionModal;
+    let tempNewOptions = []; 
 
     window.onload = function() { 
+        editOptionsModal = new bootstrap.Modal(document.getElementById('editOptionsModal'));
+        addQuestionModal = new bootstrap.Modal(document.getElementById('addQuestionModal'));
+        
+        if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "ตั้งค่าระบบ (Configuration)";
+        
         loadConfigs(); 
         
-        // Show current user email
-        google.script.run.withSuccessHandler(res => {
-            document.getElementById('userEmail').textContent = res.userEmail;
-        }).getClientConfig();
-    };
-    
-    // --- Sidebar Toggle ---
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        const overlay = document.getElementById('overlay');
+        // Load Checklist
+        showLoading();
+        google.script.run.withSuccessHandler(data => {
+            hideLoading();
+            checklistQuestions = data || [];
+            renderChecklistConfig();
+        }).getChecklistConfig();
         
-        if (window.innerWidth <= 768) {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
-        } else {
-            sidebar.classList.toggle('collapsed');
-            mainContent.classList.toggle('expanded');
-        }
-    }
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector('.nav-link-custom[data-page="config"]');
+        if(activeLink) activeLink.classList.add('active');
+    };
 
-    function loadConfigs() {
-      google.script.run.withSuccessHandler(renderConfigs).getClientConfig();
-    }
+    function loadConfigs() { showLoading(); google.script.run.withSuccessHandler(renderConfigs).getClientConfig(); }
 
     function renderConfigs(data) {
-      configData.admin = data.admins || [];
-      configData.center = data.centers || [];
-      configData.result = data.results || [];
-      configData.ftStatus = data.ftStatuses || [];
-      configData.onboardGroup = data.onboardGroups || [];
-      configData.onboardType = data.onboardTypes || [];
-      configData.masterType = data.masterTypes || [];
-      configData.onboardCenter = data.onboardCenters || [];
-
-      renderList('adminList', configData.admin, 'admin');
-      renderList('centerList', configData.center, 'center');
-      renderList('resultList', configData.result, 'result');
-      renderList('ftStatusList', configData.ftStatus, 'ftStatus');
-      renderList('onboardGroupList', configData.onboardGroup, 'onboardGroup');
-      renderList('onboardTypeList', configData.onboardType, 'onboardType');
-      renderList('masterTypeList', configData.masterType, 'masterType');
-      renderList('onboardCenterList', configData.onboardCenter, 'onboardCenter');
-      
+      hideLoading();
+      configData = data; 
+      renderList('adminList', data.admins, 'admin');
+      renderList('centerList', data.centers, 'center');
+      renderList('resultList', data.results, 'result');
+      renderList('ftStatusList', data.ftStatuses, 'ftStatus');
+      renderList('onboardGroupList', data.onboardGroups, 'onboardGroup');
+      renderList('onboardTypeList', data.onboardTypes, 'onboardType');
+      renderList('masterTypeList', data.masterTypes, 'masterType');
+      renderList('onboardCenterList', data.onboardCenters, 'onboardCenter');
       initSortable();
     }
 
-    function renderList(elementId, items, type) {
-        const ul = document.getElementById(elementId);
+    function renderList(elId, items, type) {
+        const ul = document.getElementById(elId);
+        if (!ul) { console.warn("Element not found:", elId); return; }
         ul.innerHTML = "";
-        if(items.length === 0) { ul.innerHTML = '<li class="list-group-item text-muted text-center p-2">ไม่มีข้อมูล</li>'; return; }
-        
-        items.forEach((item) => {
-            const safeItem = item.replace(/'/g, "\\'");
-            
-            ul.innerHTML += `
-                <li class="list-group-item" data-value="${item}">
-                  <div class="d-flex align-items-center w-100">
-                      <i class="fas fa-grip-vertical drag-handle" title="ลากเพื่อย้าย"></i>
-                      <span class="ms-2 flex-grow-1 text-break">${item}</span>
-                  </div>
-                  <button class="btn btn-sm btn-outline-danger" onclick="removeConfig('${type}', '${safeItem}')" title="ลบรายการ">
-                    <i class="fas fa-trash"></i>
-                  </button>
-                </li>
-            `;
+        if(!items || items.length === 0) { ul.innerHTML = '<li class="list-group-item text-muted text-center p-2 border-0 bg-transparent small">ไม่มีข้อมูล</li>'; return; }
+        items.forEach(item => {
+            const safe = item.replace(/'/g, "\\'");
+            ul.innerHTML += `<li class="list-group-item" data-value="${item}"><div class="d-flex align-items-center w-100"><i class="fas fa-grip-vertical drag-handle"></i><span class="ms-2 flex-grow-1 text-break">${item}</span></div><button class="btn btn-sm text-danger" onclick="removeConfig('${type}', '${safe}')"><i class="fas fa-trash-alt"></i></button></li>`;
         });
     }
 
-    // *** Initialize SortableJS ***
     function initSortable() {
         const lists = ['adminList', 'centerList', 'resultList', 'ftStatusList', 'onboardGroupList', 'onboardTypeList', 'masterTypeList', 'onboardCenterList'];
         const types = ['admin', 'center', 'result', 'ftStatus', 'onboardGroup', 'onboardType', 'masterType', 'onboardCenter'];
-        
         lists.forEach((id, idx) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            
-            new Sortable(el, {
-                animation: 150,
-                filter: '.btn', // ป้องกันการลากเมื่อกดปุ่มลบ
-                ghostClass: 'sortable-ghost', 
-                dragClass: 'sortable-drag',
-                onEnd: function (evt) {
-                    saveOrder(types[idx], el);
-                },
-            });
+            const el = document.getElementById(id); if (!el) return;
+            new Sortable(el, { animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost', onEnd: function () { saveOrder(types[idx], el); } });
         });
     }
     
-    function saveOrder(type, ulElement) {
-        const items = [];
-        ulElement.querySelectorAll('li').forEach(li => {
-            const val = li.getAttribute('data-value') || li.querySelector('span').textContent.trim();
-            if(val) items.push(val);
-        });
-        
-        google.script.run.withSuccessHandler(res => {
-            if(!res.success) {
-                Swal.fire('Error', 'บันทึกการจัดเรียงไม่สำเร็จ', 'error');
-            }
-        }).saveConfigOrder(type, items);
+    function saveOrder(type, ul) {
+        const items = []; ul.querySelectorAll('li').forEach(li => { const v = li.getAttribute('data-value'); if(v) items.push(v); });
+        google.script.run.saveConfigOrder(type, items);
     }
 
     function addConfig(type) {
-      let inputId;
-      if(type==='admin') inputId='newAdmin';
-      else if(type==='center') inputId='newCenter';
-      else if(type==='result') inputId='newResult';
-      else if(type==='ftStatus') inputId='newFtStatus';
-      else if(type==='onboardGroup') inputId='newOnboardGroup';
-      else if(type==='onboardType') inputId='newOnboardType';
-      else if(type==='masterType') inputId='newMasterType';
-      else if(type==='onboardCenter') inputId='newOnboardCenter';
-
-      const value = document.getElementById(inputId).value.trim();
-      if (!value) return;
-
-      google.script.run.withSuccessHandler(res => {
-        if (res.success) {
-          document.getElementById(inputId).value = "";
-          loadConfigs(); 
-          Swal.fire({
-             icon: 'success',
-             title: 'สำเร็จ',
-             text: 'เพิ่มข้อมูลเรียบร้อย',
-             timer: 1000,
-             showConfirmButton: false
-          });
-        } else {
-          Swal.fire('Error', res.message, 'error');
-        }
-      }).addConfigItem(type, value);
+      const idMap = { 'admin':'newAdmin', 'center':'newCenter', 'result':'newResult', 'ftStatus':'newFtStatus', 'onboardGroup':'newOnboardGroup', 'onboardType':'newOnboardType', 'masterType':'newMasterType', 'onboardCenter':'newOnboardCenter' };
+      const input = document.getElementById(idMap[type]);
+      if(!input) return;
+      const val = input.value.trim();
+      if (!val) return;
+      showLoading();
+      google.script.run.withSuccessHandler(res => { hideLoading(); if(res.success) { input.value = ""; loadConfigs(); Swal.fire({icon:'success',title:'เพิ่มแล้ว',timer:1000,showConfirmButton:false}); } else showError(res.message); }).addConfigItem(type, val);
     }
 
-    function removeConfig(type, value) {
-      Swal.fire({
-        title: 'ยืนยันการลบ?', text: `ต้องการลบ ${value} ออกจากระบบ?`, icon: 'warning',
-        showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบ'
-      }).then((result) => {
-        if (result.isConfirmed) {
-          google.script.run.withSuccessHandler(() => {
-            loadConfigs();
-            Swal.fire({
-               icon: 'success',
-               title: 'ลบแล้ว',
-               timer: 1000,
-               showConfirmButton: false
-            });
-          }).removeConfigItem(type, value);
-        }
+    function removeConfig(type, val) {
+      Swal.fire({ title: 'ยืนยันลบ?', text: val, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((r) => {
+        if (r.isConfirmed) { showLoading(); google.script.run.withSuccessHandler(() => { hideLoading(); loadConfigs(); }).removeConfigItem(type, val); }
       });
+    }
+    
+    // --- Checklist Logic ---
+    function renderChecklistConfig() {
+        const preContainer = document.getElementById('preChecklistConfig');
+        const postContainer = document.getElementById('postChecklistConfig');
+        preContainer.innerHTML = ''; postContainer.innerHTML = '';
+
+        if (!checklistQuestions || checklistQuestions.length === 0) {
+            preContainer.innerHTML = '<div class="text-muted small">ไม่มีข้อมูล</div>';
+            return;
+        }
+
+        checklistQuestions.forEach(q => {
+            const isChecked = q.active !== false ? 'checked' : ''; 
+            
+            let choicesHtml = '';
+            if ((q.type === 'select' || q.type === 'checkbox') && q.options && q.options.length > 0) {
+                 choicesHtml = `<div class="mt-1">`;
+                 q.options.forEach(opt => choicesHtml += `<span class="badge-choice">${opt}</span>`);
+                 choicesHtml += `</div>`;
+            }
+            
+            let conditionBadge = '';
+            let itemClass = 'list-group-item border-0 px-0 checklist-item row align-items-start';
+            if (q.condition) {
+                itemClass += ' is-child';
+                const parent = checklistQuestions.find(p => p.id === q.condition.parentId);
+                const parentName = parent ? parent.label.substring(0, 20) + (parent.label.length>20?'...':'') : q.condition.parentId;
+                conditionBadge = `<div class="condition-badge"><i class="fas fa-code-branch me-1"></i>แสดงเมื่อตอบ "${q.condition.value}" (จากข้อ "${parentName}")</div>`;
+            }
+            
+            let typeLabel = q.type === 'text' ? 'ข้อความ' : (q.type === 'checkbox' ? 'หลายคำตอบ' : 'ตัวเลือกเดียว');
+            let typeBadge = `<span class="badge-type">${typeLabel}</span>`;
+
+            const itemHtml = `
+                <div class="${itemClass}">
+                    <div class="col-8">
+                        ${conditionBadge}
+                        <div class="fw-bold text-dark small">${q.label} ${typeBadge}</div>
+                        <div class="text-muted" style="font-size:0.65rem; opacity:0.6;">ID: ${q.id}</div>
+                        ${choicesHtml}
+                    </div>
+                    <div class="col-4 d-flex justify-content-end align-items-center gap-2">
+                        <button class="btn btn-sm btn-light border" onclick="openEditOptions('${q.id}')" title="แก้ไข"><i class="fas fa-pen text-muted"></i></button>
+                        <button class="btn btn-sm btn-light border text-danger" onclick="deleteQuestion('${q.id}')" title="ลบคำถาม"><i class="fas fa-trash"></i></button>
+                        <div class="form-check form-switch ms-2">
+                            <input class="form-check-input" type="checkbox" role="switch" onchange="toggleChecklist('${q.id}', this)" ${isChecked}>
+                        </div>
+                    </div>
+                </div>`;
+            
+            if(q.section === 'pre') preContainer.innerHTML += itemHtml;
+            else postContainer.innerHTML += itemHtml;
+        });
+    }
+
+    function toggleChecklist(qid, checkbox) {
+        const q = checklistQuestions.find(x => x.id === qid);
+        if(q) {
+            q.active = checkbox.checked;
+            saveToServer();
+        }
+    }
+    
+    // --- Edit Question Logic (Updated to allow type change) ---
+    function openEditOptions(qid) {
+        const q = checklistQuestions.find(x => x.id === qid);
+        if(!q) return;
+        
+        document.getElementById('editQId').value = q.id;
+        document.getElementById('editQLabel').value = q.label;
+        document.getElementById('editQSection').value = q.section;
+        
+        // Set Type Dropdown
+        const typeSelect = document.getElementById('editQType');
+        typeSelect.value = q.type || 'select';
+        
+        // Show/Hide Options based on Type
+        toggleEditQType(); 
+        if (q.type === 'select' || q.type === 'checkbox') {
+            renderOptionsList(q.options || []);
+        }
+        
+        // Setup Condition UI
+        const conditionCheck = document.getElementById('editEnableCondition');
+        if (q.condition) {
+            conditionCheck.checked = true;
+            toggleEditConditionSettings();
+            refreshParentOptionsForEdit(q.section, q.id); 
+            document.getElementById('editParentQuestion').value = q.condition.parentId;
+            refreshEditTriggerValues();
+            document.getElementById('editTriggerValue').value = q.condition.value;
+        } else {
+            conditionCheck.checked = false;
+            toggleEditConditionSettings();
+            refreshParentOptionsForEdit(q.section, q.id); 
+        }
+        
+        editOptionsModal.show();
+    }
+    
+    function toggleEditQType() {
+        const type = document.getElementById('editQType').value;
+        const optionsContainer = document.getElementById('editOptionsContainer');
+        if (type === 'select' || type === 'checkbox') {
+            optionsContainer.style.display = 'block';
+        } else {
+            optionsContainer.style.display = 'none';
+        }
+    }
+    
+    function toggleEditConditionSettings() {
+        const isEnabled = document.getElementById('editEnableCondition').checked;
+        const settings = document.getElementById('editConditionSettings');
+        if(isEnabled) settings.classList.remove('d-none');
+        else settings.classList.add('d-none');
+    }
+    
+    function refreshParentOptionsForEdit(section, currentQId) {
+        const parentSel = document.getElementById('editParentQuestion');
+        parentSel.innerHTML = '<option value="">- เลือกคำถามหลัก -</option>';
+        
+        checklistQuestions.filter(q => q.section === section && (q.type === 'select' || q.type === 'checkbox') && q.id !== currentQId).forEach(q => {
+            parentSel.add(new Option(q.label, q.id));
+        });
+    }
+    
+    function refreshEditTriggerValues() {
+        const parentId = document.getElementById('editParentQuestion').value;
+        const triggerSel = document.getElementById('editTriggerValue');
+        triggerSel.innerHTML = '<option value="">- เลือกคำตอบ -</option>';
+        
+        const parentQ = checklistQuestions.find(q => q.id === parentId);
+        if(parentQ && parentQ.options) {
+            parentQ.options.forEach(opt => {
+                triggerSel.add(new Option(opt, opt));
+            });
+        }
+    }
+    
+    function renderOptionsList(options) {
+        const list = document.getElementById('optionsList');
+        list.innerHTML = "";
+        options.forEach((opt, idx) => {
+            list.innerHTML += `
+               <li class="list-group-item d-flex justify-content-between align-items-center p-2">
+                  <span>${opt}</span>
+                  <button class="btn btn-sm text-danger" onclick="removeOption(${idx})">&times;</button>
+               </li>`;
+        });
+    }
+    
+    function addOption() {
+        const val = document.getElementById('newOptionInput').value.trim();
+        if(!val) return;
+        const qid = document.getElementById('editQId').value;
+        const q = checklistQuestions.find(x => x.id === qid);
+        if(q) {
+            if(!q.options) q.options = [];
+            q.options.push(val);
+            renderOptionsList(q.options);
+            document.getElementById('newOptionInput').value = "";
+        }
+    }
+    
+    function removeOption(idx) {
+        const qid = document.getElementById('editQId').value;
+        const q = checklistQuestions.find(x => x.id === qid);
+        if(q && q.options) {
+            q.options.splice(idx, 1);
+            renderOptionsList(q.options);
+        }
+    }
+    
+    function saveChecklistChanges() {
+        const qid = document.getElementById('editQId').value;
+        const q = checklistQuestions.find(x => x.id === qid);
+        if(q) {
+            q.label = document.getElementById('editQLabel').value;
+            q.type = document.getElementById('editQType').value;
+
+            // Ensure options array exists if switching to select/checkbox
+            if ((q.type === 'select' || q.type === 'checkbox') && (!q.options || q.options.length === 0)) {
+                q.options = ['ปกติ', 'ผิดปกติ']; // Default
+            }
+            
+            // Save Condition
+            if (document.getElementById('editEnableCondition').checked) {
+                 const parentId = document.getElementById('editParentQuestion').value;
+                 const value = document.getElementById('editTriggerValue').value;
+                 if(parentId && value) {
+                     q.condition = { parentId: parentId, value: value };
+                 }
+            } else {
+                 delete q.condition; 
+            }
+            
+            saveToServer();
+            editOptionsModal.hide();
+            Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 1500 });
+        }
+    }
+    
+    // --- Add Question Logic ---
+    function openAddQuestionModal() {
+        document.getElementById('addQName').value = "";
+        document.getElementById('addQSection').value = "pre";
+        document.getElementById('addQType').value = "select";
+        document.getElementById('enableCondition').checked = false;
+        tempNewOptions = [];
+        renderTempOptions();
+        toggleAddQType(); 
+        toggleConditionSettings();
+        refreshParentOptions(); 
+        addQuestionModal.show();
+    }
+    
+    function toggleAddQType() {
+        const type = document.getElementById('addQType').value;
+        const group = document.getElementById('addQOptionsGroup');
+        if(type === 'select' || type === 'checkbox') group.classList.remove('d-none');
+        else group.classList.add('d-none');
+    }
+    
+    function toggleConditionSettings() {
+        const isEnabled = document.getElementById('enableCondition').checked;
+        const settings = document.getElementById('conditionSettings');
+        if(isEnabled) {
+            settings.classList.remove('d-none');
+            refreshParentOptions();
+        } else {
+            settings.classList.add('d-none');
+        }
+    }
+    
+    function refreshParentOptions() {
+        const section = document.getElementById('addQSection').value;
+        const parentSel = document.getElementById('parentQuestion');
+        parentSel.innerHTML = '<option value="">- เลือกคำถามหลัก -</option>';
+        
+        checklistQuestions.filter(q => q.section === section && (q.type === 'select' || q.type === 'checkbox')).forEach(q => {
+            parentSel.add(new Option(q.label, q.id));
+        });
+    }
+    
+    function refreshTriggerValues() {
+        const parentId = document.getElementById('parentQuestion').value;
+        const triggerSel = document.getElementById('triggerValue');
+        triggerSel.innerHTML = '<option value="">- เลือกคำตอบ -</option>';
+        
+        const parentQ = checklistQuestions.find(q => q.id === parentId);
+        if(parentQ && parentQ.options) {
+            parentQ.options.forEach(opt => {
+                triggerSel.add(new Option(opt, opt));
+            });
+        }
+    }
+
+    function addTempOption() {
+        const val = document.getElementById('newOptionInputAdd').value.trim();
+        if(val) {
+            tempNewOptions.push(val);
+            document.getElementById('newOptionInputAdd').value = "";
+            renderTempOptions();
+        }
+    }
+
+    function removeTempOption(idx) {
+        tempNewOptions.splice(idx, 1);
+        renderTempOptions();
+    }
+
+    function renderTempOptions() {
+        const list = document.getElementById('tempOptionsList');
+        list.innerHTML = "";
+        tempNewOptions.forEach((opt, i) => {
+            list.innerHTML += `
+                <li class="list-group-item d-flex justify-content-between align-items-center p-2 bg-light border-0 mb-1 rounded-2">
+                    <span>${opt}</span>
+                    <button class="btn btn-sm text-danger p-0" onclick="removeTempOption(${i})"><i class="fas fa-times"></i></button>
+                </li>`;
+        });
+    }
+    
+    function saveNewQuestion() {
+        const name = document.getElementById('addQName').value.trim();
+        const section = document.getElementById('addQSection').value;
+        const type = document.getElementById('addQType').value;
+        
+        if (!name) {
+            Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุชื่อคำถาม', 'warning');
+            return;
+        }
+        
+        const id = 'q_' + Date.now().toString(36);
+        let options = [];
+        if (type === 'select' || type === 'checkbox') {
+            options = [...tempNewOptions];
+            if(options.length === 0) options = ['ปกติ', 'ผิดปกติ'];
+        }
+        
+        const newQ = {
+            id: id,
+            label: name,
+            section: section,
+            type: type,
+            active: true,
+            options: options
+        };
+        
+        if (document.getElementById('enableCondition').checked) {
+             const parentId = document.getElementById('parentQuestion').value;
+             const value = document.getElementById('triggerValue').value;
+             if(parentId && value) {
+                 newQ.condition = { parentId: parentId, value: value };
+             }
+        }
+        
+        checklistQuestions.push(newQ);
+        saveToServer();
+        addQuestionModal.hide();
+        
+        Swal.fire({ icon: 'success', title: 'เพิ่มคำถามแล้ว', text: 'บันทึกเรียบร้อย', timer: 1500, showConfirmButton: false });
+    }
+
+    function deleteQuestion(qid) {
+        Swal.fire({
+            title: 'ยืนยันลบ?',
+            text: "คำถามนี้จะหายไปจากแบบฟอร์มทันที",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'ลบ'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                checklistQuestions = checklistQuestions.filter(q => q.id !== qid);
+                // Also remove conditions linked to this question
+                checklistQuestions.forEach(q => {
+                    if(q.condition && q.condition.parentId === qid) delete q.condition;
+                });
+                
+                saveToServer();
+                Swal.fire({ icon: 'success', title: 'ลบแล้ว', showConfirmButton: false, timer: 1000 });
+            }
+        });
+    }
+
+    function saveToServer() {
+        showLoading();
+        google.script.run.withSuccessHandler(res => {
+            hideLoading();
+            renderChecklistConfig();
+        }).saveChecklistConfig(checklistQuestions);
     }
     
     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
