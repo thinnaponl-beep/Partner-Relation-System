@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>Fast Report - Executive Summary</title>
+  
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Flatpickr -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <?!= include('_Styles'); ?>
+
+  <style>
+    /* Dashboard Specific Styles */
+    .kpi-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        border: 1px solid #f0f0f0;
+        height: 100%;
+        transition: transform 0.2s;
+    }
+    .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); }
+    
+    .kpi-icon-box {
+        width: 48px; height: 48px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+    }
+    .kpi-value { font-size: 2rem; font-weight: 700; color: #2d3436; line-height: 1.2; }
+    .kpi-label { font-size: 0.9rem; color: #636e72; font-weight: 500; }
+    
+    .chart-container {
+        background: #fff;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        border: 1px solid #f0f0f0;
+        margin-bottom: 25px;
+        min-height: 350px;
+    }
+    
+    .chart-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #f8f9fa;
+        padding-bottom: 10px;
+    }
+    
+    .summary-table th { background-color: #f8f9fa; font-weight: 600; color: #495057; }
+    .summary-table td { vertical-align: middle; }
+    
+    /* Colors */
+    .bg-soft-primary { background-color: #e3f2fd; color: #0d6efd; }
+    .bg-soft-success { background-color: #e8f5e9; color: #198754; }
+    .bg-soft-warning { background-color: #fff3cd; color: #ffc107; }
+    .bg-soft-danger { background-color: #f8d7da; color: #dc3545; }
+    .bg-soft-info { background-color: #e1f5fe; color: #0dcaf0; }
+    
+    .text-trend-up { color: #198754; font-size: 0.8rem; }
+    .text-trend-down { color: #dc3545; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+
+  <?!= include('_Sidebar'); ?>
+
+  <div class="main-content">
+    <?!= include('_Navbar'); ?>
+    
+    <div class="container-fluid">
+        <!-- Header & Filters -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-0"><i class="fas fa-chart-line me-2 text-primary"></i>Fast Report</h4>
+                <small class="text-muted">ภาพรวมสถานะการดำเนินงานทั้งระบบ (Executive Summary)</small>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <div class="input-group shadow-sm" style="width: 300px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="far fa-calendar-alt text-primary"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="dateFilter" placeholder="ทั้งหมด (All Time)" readonly>
+                    <button class="btn btn-light border-start-0 text-muted" type="button" onclick="clearDateFilter()" title="ล้างค่า">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <select class="form-select shadow-sm" id="centerFilter" style="width: 150px;" onchange="loadReportData()">
+                    <option value="ALL">ทุกศูนย์</option>
+                    <!-- JS Populated -->
+                </select>
+                
+                <button class="btn btn-primary-theme shadow-sm rounded-circle" onclick="loadReportData()" title="รีเฟรชข้อมูล">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Row 1: KPI Highlights -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="kpi-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="kpi-label">เปิดระบบใหม่ (Onboard)</div>
+                            <div class="kpi-value text-primary" id="kpi-onboard">0</div>
+                        </div>
+                        <div class="kpi-icon-box bg-soft-primary"><i class="fas fa-user-plus"></i></div>
+                    </div>
+                    <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-primary" id="prog-onboard" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block" id="sub-onboard">จากผู้เข้าอบรม 0 คน</small>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="kpi-card">
+                     <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="kpi-label">จบงานแรกสำเร็จ</div>
+                            <div class="kpi-value text-success" id="kpi-firstjob">0</div>
+                        </div>
+                        <div class="kpi-icon-box bg-soft-success"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                     <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-success" id="prog-firstjob" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block" id="sub-firstjob">คะแนนเฉลี่ย 0.0 ดาว</small>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="kpi-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="kpi-label">ผ่านการตรวจประวัติ (ใหม่)</div>
+                            <div class="kpi-value text-info" id="kpi-verify">0</div>
+                        </div>
+                        <div class="kpi-icon-box bg-soft-info"><i class="fas fa-file-signature"></i></div>
+                    </div>
+                     <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-info" id="prog-verify" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block" id="sub-verify">รอผลอีก 0 คน</small>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-3">
+                <div class="kpi-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="kpi-label">ต่ออายุรายปีสำเร็จ</div>
+                            <div class="kpi-value text-warning" id="kpi-annual">0</div>
+                        </div>
+                        <div class="kpi-icon-box bg-soft-warning"><i class="fas fa-calendar-check"></i></div>
+                    </div>
+                     <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-warning" id="prog-annual" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block" id="sub-annual">ค้างชำระ 0 คน</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Row 2: Trend Analysis (New Chart) -->
+        <div class="row mb-4">
+             <div class="col-12">
+                 <div class="chart-container" style="min-height: auto;">
+                     <div class="chart-header">
+                        <h5 class="fw-bold mb-0 text-secondary"><i class="fas fa-chart-area me-2"></i>แนวโน้มรายวัน (Daily Trend)</h5>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="chartTrend"></canvas>
+                    </div>
+                 </div>
+             </div>
+        </div>
+
+        <!-- Row 3: Detailed Charts & Tables -->
+        <div class="row g-4">
+            
+            <!-- 1. Onboard Funnel -->
+            <div class="col-lg-8">
+                <div class="chart-container h-100">
+                    <div class="chart-header">
+                        <h5 class="fw-bold mb-0 text-secondary">1. สถานะการเปิดระบบ (Onboard Funnel)</h5>
+                    </div>
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                             <canvas id="chartOnboard"></canvas>
+                        </div>
+                        <div class="col-md-5">
+                            <table class="table table-sm summary-table table-bordered">
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge bg-primary rounded-pill">เปิดระบบ</span></td>
+                                        <td class="text-end fw-bold" id="tbl-ob-open">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-warning text-dark rounded-pill">เตรียมความพร้อม</span></td>
+                                        <td class="text-end fw-bold" id="tbl-ob-wait">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-secondary rounded-pill">ยุติการอบรม</span></td>
+                                        <td class="text-end fw-bold" id="tbl-ob-stop">0</td>
+                                    </tr>
+                                    <tr class="table-light">
+                                        <td class="fw-bold">รวมทั้งหมด</td>
+                                        <td class="text-end fw-bold text-primary" id="tbl-ob-total">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. First Job Status -->
+            <div class="col-lg-4">
+                <div class="chart-container h-100">
+                    <div class="chart-header">
+                        <h5 class="fw-bold mb-0 text-secondary">2. ติดตามงานแรก</h5>
+                    </div>
+                    <canvas id="chartFirstJob" style="max-height: 250px;"></canvas>
+                    <div class="mt-3 text-center">
+                         <h6 class="text-muted small">คะแนนรีวิวเฉลี่ย</h6>
+                         <div class="display-6 fw-bold text-warning" id="fj-rating-avg">0.0</div>
+                         <div id="fj-rating-stars" class="text-warning"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 3. Verification Comparison -->
+            <div class="col-12">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h5 class="fw-bold mb-0 text-secondary">3. สถานะการตรวจสอบประวัติ (Verification Status)</h5>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 border-end">
+                            <h6 class="text-center fw-bold text-info mb-3">คนใหม่ (New)</h6>
+                            <canvas id="chartNewVerify" style="max-height: 250px;"></canvas>
+                        </div>
+                         <div class="col-md-6">
+                            <h6 class="text-center fw-bold text-warning mb-3">รายปี (Annual)</h6>
+                            <canvas id="chartAnnualVerify" style="max-height: 250px;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                             <div class="alert alert-light border d-flex justify-content-between align-items-center">
+                                 <span><i class="fas fa-wallet me-2 text-success"></i>สถานะการชำระเงิน (รายปี)</span>
+                                 <div>
+                                     <span class="badge bg-success me-2">ชำระแล้ว: <span id="ann-paid">0</span></span>
+                                     <span class="badge bg-danger">ค้างชำระ: <span id="ann-unpaid">0</span></span>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="text-center text-muted small mt-4 mb-5">
+            ข้อมูลล่าสุด ณ วันที่: <span id="dataTimestamp">-</span>
+        </div>
+    </div>
+  </div>
+
+  <?!= include('_Scripts'); ?>
+  
+  <script>
+    let charts = {};
+    let rangePicker;
+    
+    window.onload = function() {
+        // Init Date Picker (No Default to show ALL)
+        rangePicker = flatpickr("#dateFilter", {
+             mode: "range",
+             dateFormat: "Y-m-d",
+             altInput: true,
+             altFormat: "j M Y",
+             locale: "th",
+             onChange: function(selectedDates) { 
+                 if(selectedDates.length===2) loadReportData(); 
+                 else if(selectedDates.length===0) loadReportData();
+             }
+        });
+        
+        // Load Data
+        loadReportData();
+        
+        // Active Menu
+        const navLinks = document.querySelectorAll('.nav-link-custom');
+        navLinks.forEach(link => link.classList.remove('active'));
+        const activeLink = document.querySelector('.nav-link-custom[data-page="fast_report"]');
+        if(activeLink) activeLink.classList.add('active');
+    };
+    
+    function clearDateFilter() {
+        if(rangePicker) rangePicker.clear();
+        loadReportData();
+    }
+
+    function loadReportData() {
+        const dateRange = document.getElementById('dateFilter').value;
+        const center = document.getElementById('centerFilter').value;
+        
+        Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        google.script.run.withSuccessHandler(renderDashboard).withFailureHandler(err => {
+             Swal.fire('Error', err.message, 'error');
+        }).getFastReportData(dateRange, center);
+    }
+    
+    function renderDashboard(data) {
+        Swal.close();
+        document.getElementById('dataTimestamp').textContent = new Date().toLocaleString('th-TH');
+        
+        // Update Filters UI (Populate Centers if empty)
+        const centerSel = document.getElementById('centerFilter');
+        if (centerSel.options.length <= 1 && data.centers) {
+            data.centers.forEach(c => centerSel.add(new Option(c, c)));
+        }
+
+        // --- 1. KPI Cards ---
+        animateValue("kpi-onboard", data.onboard.openSystem);
+        animateValue("kpi-firstjob", data.firstJob.completed);
+        animateValue("kpi-verify", data.newVerify.verified);
+        animateValue("kpi-annual", data.annualVerify.verified); 
+
+        // Progress Bars
+        updateProgress("prog-onboard", "sub-onboard", data.onboard.openSystem, data.onboard.total, "ผู้เข้าอบรม");
+        updateProgress("prog-firstjob", "sub-firstjob", data.firstJob.completed, data.onboard.openSystem, "จากคนที่เปิดระบบ"); 
+        updateProgress("prog-verify", "sub-verify", data.newVerify.verified, data.newVerify.total, "ทั้งหมด");
+        updateProgress("prog-annual", "sub-annual", data.annualVerify.paid, data.annualVerify.total, "ชำระเงินแล้ว");
+
+        // Override sub-text
+        document.getElementById('sub-firstjob').textContent = `คะแนนเฉลี่ย ${data.firstJob.avgRating} ดาว`;
+        document.getElementById('sub-verify').textContent = `รอผล ${data.newVerify.pending} คน`;
+        document.getElementById('sub-annual').textContent = `ค้างชำระ ${data.annualVerify.unpaid} คน`;
+
+        // --- 2. Tables ---
+        document.getElementById('tbl-ob-open').textContent = data.onboard.openSystem;
+        document.getElementById('tbl-ob-wait').textContent = data.onboard.waiting;
+        document.getElementById('tbl-ob-stop').textContent = data.onboard.stopped;
+        document.getElementById('tbl-ob-total').textContent = data.onboard.total;
+
+        document.getElementById('fj-rating-avg').textContent = data.firstJob.avgRating;
+        document.getElementById('fj-rating-stars').innerHTML = getStarHtml(data.firstJob.avgRating);
+        
+        document.getElementById('ann-paid').textContent = data.annualVerify.paid;
+        document.getElementById('ann-unpaid').textContent = data.annualVerify.unpaid;
+
+        // --- 3. Charts ---
+        renderTrendChart(data.trend); // New Function
+        renderOnboardChart(data.onboard);
+        renderFirstJobChart(data.firstJob);
+        renderVerifyCharts(data.newVerify, data.annualVerify);
+    }
+
+    // --- Chart Rendering Functions ---
+    
+    function renderTrendChart(data) {
+        const ctx = document.getElementById('chartTrend').getContext('2d');
+        if (charts.trend) charts.trend.destroy();
+        
+        charts.trend = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'เปิดระบบใหม่',
+                        data: data.onboard,
+                        borderColor: '#0d6efd',
+                        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'จบงานแรกสำเร็จ',
+                        data: data.firstJob,
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderOnboardChart(data) {
+        const ctx = document.getElementById('chartOnboard').getContext('2d');
+        if (charts.onboard) charts.onboard.destroy();
+        
+        charts.onboard = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['ผู้เข้าอบรม', 'เปิดระบบ', 'เตรียมความพร้อม', 'ยุติการอบรม'],
+                datasets: [{
+                    label: 'จำนวน (คน)',
+                    data: [data.total, data.openSystem, data.waiting, data.stopped],
+                    backgroundColor: ['#6c757d', '#0d6efd', '#ffc107', '#dc3545'],
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function renderFirstJobChart(data) {
+        const ctx = document.getElementById('chartFirstJob').getContext('2d');
+        if (charts.firstjob) charts.firstjob.destroy();
+
+        charts.firstjob = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['รอรับงาน', 'รอโทรเยี่ยม', 'โทรแล้ว', 'จบงาน'],
+                datasets: [{
+                    data: [data.waitingJob, data.waitingCall, data.callDone, data.completed],
+                    backgroundColor: ['#ffc107', '#0dcaf0', '#6c757d', '#198754'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '70%',
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+    }
+
+    function renderVerifyCharts(newData, annualData) {
+        // New Verify Chart
+        const ctxNew = document.getElementById('chartNewVerify').getContext('2d');
+        if (charts.newVerify) charts.newVerify.destroy();
+        
+        charts.newVerify = new Chart(ctxNew, {
+            type: 'pie',
+            data: {
+                labels: ['ผ่าน (Verified)', 'รอผล/อนุโลม', 'ไม่ผ่าน'],
+                datasets: [{
+                    data: [newData.verified, newData.pending, newData.notVerified],
+                    backgroundColor: ['#198754', '#ffc107', '#dc3545']
+                }]
+            },
+            options: { plugins: { legend: { position: 'right' } } }
+        });
+
+        // Annual Verify Chart
+        const ctxAnn = document.getElementById('chartAnnualVerify').getContext('2d');
+        if (charts.annualVerify) charts.annualVerify.destroy();
+        
+        charts.annualVerify = new Chart(ctxAnn, {
+            type: 'pie',
+            data: {
+                labels: ['ผลออกแล้ว', 'ส่งลิงค์/รอผล'],
+                datasets: [{
+                    data: [annualData.verified, (annualData.total - annualData.verified)],
+                    backgroundColor: ['#198754', '#0dcaf0']
+                }]
+            },
+            options: { plugins: { legend: { position: 'right' } } }
+        });
+    }
+
+    // --- Helpers ---
+    function animateValue(id, value) {
+        const el = document.getElementById(id);
+        el.innerText = value.toLocaleString();
+    }
+    
+    function updateProgress(id, subId, val, total, totalLabel) {
+        const percent = total > 0 ? (val / total) * 100 : 0;
+        document.getElementById(id).style.width = percent + "%";
+    }
+
+    function getStarHtml(rating) {
+        let html = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) html += '<i class="fas fa-star"></i>';
+            else if (i - 0.5 <= rating) html += '<i class="fas fa-star-half-alt"></i>';
+            else html += '<i class="far fa-star"></i>';
+        }
+        return html;
+    }
+  </script>
+</body>
+</html>
