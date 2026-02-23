@@ -1,0 +1,244 @@
+<style>
+    .sidebar {
+        height: 100vh;
+        width: var(--sidebar-width, 260px);
+        position: fixed;
+        top: 0; left: 0;
+        background-color: #ffffff;
+        border-right: 1px solid #f0f0f0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        transition: var(--transition, all 0.3s ease);
+    }
+    .sidebar-header {
+        height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between; 
+        padding: 0 24px;
+        border-bottom: 1px solid #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .brand-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        overflow: hidden;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    
+    .logo-box {
+        min-width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--ci-primary), #25a0b5);
+        color: white;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 10px rgba(49, 193, 215, 0.3);
+    }
+    
+    .brand-text {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #2d3436;
+        opacity: 1;
+        transition: opacity 0.2s;
+    }
+
+    /* ปุ่ม Toggle ใน Sidebar (แสดงเฉพาะ Desktop) */
+    .sidebar-toggle-btn {
+        width: 32px; height: 32px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 8px;
+        color: #adb5bd;
+        background: transparent;
+        border: none;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    .sidebar-toggle-btn:hover {
+        background-color: #f1f3f5;
+        color: var(--ci-primary);
+    }
+
+    .sidebar-menu {
+        padding: 20px 10px;
+        list-style: none;
+        margin: 0;
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+    .sidebar-menu li { margin-bottom: 8px; }
+
+    .nav-link-custom {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        color: #636e72;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.2s;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+    .nav-link-custom:hover {
+        background-color: #f8f9fa;
+        color: var(--ci-primary);
+        transform: translateX(5px);
+    }
+    .nav-link-custom.active {
+        background-color: #f0fbff;
+        color: var(--ci-primary);
+        border-right: 4px solid var(--ci-primary); /* Optional visual cue */
+        font-weight: 700;
+    }
+    .nav-link-custom i { width: 25px; text-align: center; margin-right: 10px; font-size: 1.1rem; flex-shrink: 0; transition: margin 0.3s ease; }
+    
+    /* Collapsed Logic (Desktop) */
+    @media (min-width: 769px) {
+        .sidebar.collapsed { width: 80px; }
+        .sidebar.collapsed .sidebar-header {
+            justify-content: center; 
+            padding: 0;
+        }
+        .sidebar.collapsed .brand-text { 
+            display: none; 
+        }
+        .sidebar.collapsed .sidebar-toggle-btn {
+            display: none; 
+        }
+        .sidebar.collapsed .brand-group {
+             margin: 0;
+        }
+        
+        .sidebar.collapsed .nav-link-custom { justify-content: center; padding: 12px 0; }
+        .sidebar.collapsed .nav-link-custom i { margin-right: 0; }
+        .sidebar.collapsed .nav-link-custom span { display: none; }
+        .sidebar.collapsed .nav-link-custom:hover { transform: none; background-color: #f1f3f5; }
+        
+        body.sidebar-collapsed .main-content { margin-left: 80px !important; }
+    }
+    
+    /* Mobile Overlay */
+    .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(2px); z-index: 999; }
+    .sidebar-overlay.active { display: block; }
+    
+    @media (max-width: 768px) {
+        .sidebar { transform: translateX(-100%); }
+        .sidebar.active { transform: translateX(0); box-shadow: 5px 0 25px rgba(0,0,0,0.1); }
+        .sidebar-toggle-btn { display: none; } 
+    }
+    
+    .sidebar-footer-text {
+        font-size: 0.75rem;
+        color: #adb5bd;
+    }
+    .sidebar.collapsed .sidebar-footer-text { display: none; }
+</style>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header" onclick="checkCollapseExpand(event)">
+        <!-- Logo Group -->
+        <div class="brand-group" title="PRS System">
+            <div class="logo-box"><i class="fas fa-bolt"></i></div>
+            <div class="brand-text">PRS System</div>
+        </div>
+        
+        <!-- Toggle Button (Desktop Only) -->
+        <button class="sidebar-toggle-btn d-none d-lg-flex" onclick="toggleSidebar(event)">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+    
+    <ul class="sidebar-menu">
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=home" class="nav-link-custom" data-page="home">
+                <i class="fas fa-home"></i> <span>หน้าหลัก (Dashboard)</span>
+            </a>
+        </li>
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=onboard" class="nav-link-custom" data-page="onboard">
+                <i class="fas fa-user-plus"></i> <span>ติดตามเปิดระบบ (Onboard)</span>
+            </a>
+        </li>
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=firstbk" class="nav-link-custom" data-page="firstbk">
+                <i class="fas fa-briefcase"></i> <span>ติดตามงานแรก (First Job)</span>
+            </a>
+        </li>
+        
+        <div class="my-3 border-top mx-3"></div>
+        
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="nav-link-custom" data-page="index">
+                <i class="fas fa-file-signature"></i> <span>ตรวจประวัติใหม่ (New)</span>
+            </a>
+        </li>
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="nav-link-custom" data-page="year_verify">
+                <i class="fas fa-calendar-check"></i> <span>ตรวจประวัติรายปี (Yearly)</span>
+            </a>
+        </li>
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=account_verify" class="nav-link-custom" data-page="account_verify">
+                <i class="fas fa-search-dollar"></i> <span>ตรวจสอบบัญชี (Verify)</span>
+            </a>
+        </li>
+        
+        <div class="my-3 border-top mx-3"></div>
+
+        <!-- เมนู Fast Report -->
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=fast_report" class="nav-link-custom" data-page="fast_report">
+                <i class="fas fa-chart-line"></i> <span>Fast Report</span>
+            </a>
+        </li>
+        
+        <li>
+            <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="nav-link-custom d-none mt-2" id="nav-config" data-page="config">
+                <i class="fas fa-cogs"></i> <span>ตั้งค่าระบบ (Config)</span>
+            </a>
+        </li>
+    </ul>
+    
+    <div class="p-3 border-top text-center sidebar-footer-text">
+        &copy; 2026 Partner Relation
+    </div>
+</div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<script>
+    function toggleSidebar(e) {
+        if(e) e.stopPropagation(); 
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const body = document.body;
+        
+        if (window.innerWidth <= 768) {
+            // Mobile
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        } else {
+            // Desktop
+            sidebar.classList.toggle('collapsed');
+            body.classList.toggle('sidebar-collapsed');
+        }
+    }
+
+    // Helper to expand when clicking header in collapsed mode
+    function checkCollapseExpand(e) {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar.classList.contains('collapsed') && window.innerWidth > 768) {
+            toggleSidebar();
+        }
+    }
+</script>
