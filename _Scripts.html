@@ -1,0 +1,69 @@
+<!-- Bootstrap Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Flatpickr -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
+
+<script>
+  // --- Auto Active Sidebar Menu (Fixed Logic for GAS) ---
+  document.addEventListener('DOMContentLoaded', function() {
+      // ใช้ google.script.url.getLocation เพื่อความแม่นยำ 100% ใน Apps Script (แก้ปัญหา iFrame)
+      google.script.url.getLocation(function(location) {
+          // 1. ดึงค่า parameter 'page' (ถ้าไม่มีให้เป็น 'home')
+          const currentPage = location.parameter.page || 'home';
+          
+          // console.log("Current Page:", currentPage); // เช็คค่าใน Console
+
+          // 2. ลบ class 'active' ออกจากทุกเมนูก่อน
+          document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
+          
+          // 3. ค้นหาเมนูที่มี data-page ตรงกับค่า page แล้วเติม class 'active'
+          const targetLink = document.querySelector(`.nav-link-custom[data-page="${currentPage}"]`);
+          
+          if (targetLink) {
+              targetLink.classList.add('active');
+          } else {
+              // Fallback: ถ้าหาไม่เจอ ให้ active ที่ home
+              const homeLink = document.querySelector(`.nav-link-custom[data-page="home"]`);
+              if(homeLink) homeLink.classList.add('active');
+          }
+      });
+      
+      // Check Admin for Config Menu & Get User Email
+      google.script.run.withSuccessHandler(res => {
+           if(res.isAdmin) {
+               const configMenu = document.getElementById('nav-config');
+               if(configMenu) configMenu.classList.remove('d-none');
+           }
+           // Update User Email in Navbar if exists
+           const userEmailEl = document.getElementById('userEmailDisplay');
+           if(userEmailEl) userEmailEl.textContent = res.userEmail;
+      }).getClientConfig();
+  });
+
+  // --- Global Helpers ---
+  function showLoading() {
+      Swal.fire({
+          title: 'กำลังประมวลผล...',
+          html: '<div class="spinner-border text-primary mt-2"></div>',
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          background: 'rgba(255, 255, 255, 0.95)',
+          backdrop: 'rgba(0,0,0,0.3)'
+      });
+  }
+  
+  function hideLoading() {
+      Swal.close();
+  }
+  
+  function showError(msg) {
+      Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: msg,
+          confirmButtonColor: '#31C1D7'
+      });
+  }
+</script>
