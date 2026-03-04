@@ -74,6 +74,19 @@
     
     .text-trend-up { color: #198754; font-size: 0.8rem; }
     .text-trend-down { color: #dc3545; font-size: 0.8rem; }
+
+    /* Custom Rating Box */
+    .rating-clickable-box {
+        cursor: pointer; 
+        background: #fffdf5; 
+        border: 1px solid #ffecb5; 
+        transition: all 0.2s;
+    }
+    .rating-clickable-box:hover {
+        transform: translateY(-3px); 
+        box-shadow: 0 6px 15px rgba(255, 193, 7, 0.15);
+        background: #fffbef;
+    }
   </style>
 </head>
 <body>
@@ -165,7 +178,7 @@
                 <div class="kpi-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="kpi-label">ต่ออายุรายปีสำเร็จ</div>
+                            <div class="kpi-label">ตรวจประวัติรายปีสำเร็จ</div>
                             <div class="kpi-value text-warning" id="kpi-annual">0</div>
                         </div>
                         <div class="kpi-icon-box bg-soft-warning"><i class="fas fa-calendar-check"></i></div>
@@ -178,7 +191,7 @@
             </div>
         </div>
         
-        <!-- Row 2: Trend Analysis (New Chart) -->
+        <!-- Row 2: Trend Analysis -->
         <div class="row mb-4">
              <div class="col-12">
                  <div class="chart-container" style="min-height: auto;">
@@ -238,10 +251,13 @@
                         <h5 class="fw-bold mb-0 text-secondary">2. ติดตามงานแรก</h5>
                     </div>
                     <canvas id="chartFirstJob" style="max-height: 250px;"></canvas>
-                    <div class="mt-3 text-center">
-                         <h6 class="text-muted small">คะแนนรีวิวเฉลี่ย</h6>
-                         <div class="display-6 fw-bold text-warning" id="fj-rating-avg">0.0</div>
-                         <div id="fj-rating-stars" class="text-warning"></div>
+                    
+                    <!-- 🌟 กล่องคะแนนที่กดคลิกได้ -->
+                    <div class="mt-4 text-center p-3 rounded rating-clickable-box" onclick="openRatingModal()" title="คลิกเพื่อดูรายการงานตามดาว">
+                         <h6 class="text-muted small fw-bold mb-1">คะแนนรีวิวเฉลี่ย <i class="fas fa-hand-pointer text-warning ms-1"></i></h6>
+                         <div class="display-6 fw-bold text-warning mb-1" id="fj-rating-avg">0.0</div>
+                         <div id="fj-rating-stars" class="text-warning mb-2"></div>
+                         <div class="badge bg-white text-muted border px-3 py-1">คลิกเพื่อดูรายละเอียดรายบุคคล</div>
                     </div>
                 </div>
             </div>
@@ -255,7 +271,7 @@
                     
                     <div class="row">
                         <div class="col-md-6 border-end">
-                            <h6 class="text-center fw-bold text-info mb-3">คนใหม่ (New)</h6>
+                            <h6 class="text-center fw-bold text-info mb-3">ผู้ให้บริการใหม่ (New)</h6>
                             <canvas id="chartNewVerify" style="max-height: 250px;"></canvas>
                         </div>
                          <div class="col-md-6">
@@ -286,14 +302,67 @@
     </div>
   </div>
 
+  <!-- 🌟 Modal สำหรับดูรายการตามดาว 🌟 -->
+  <div class="modal fade" id="ratingDetailsModal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+          <div class="modal-content border-0 shadow-lg">
+              <div class="modal-header bg-warning bg-opacity-25 border-warning border-opacity-50">
+                  <h5 class="modal-title fw-bold text-dark"><i class="fas fa-star text-warning me-2"></i>รายละเอียดคะแนนรีวิวงานแรก</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body bg-light p-4">
+                  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                      <h6 class="fw-bold mb-0 text-secondary"><i class="fas fa-list-ul me-2"></i>รายการงานที่จบแล้ว</h6>
+                      
+                      <!-- ตัวกรองดาว -->
+                      <div class="d-flex align-items-center bg-white border rounded-pill px-3 py-1 shadow-sm">
+                          <span class="small text-muted me-2 fw-bold"><i class="fas fa-filter"></i> กรอง:</span>
+                          <select class="form-select form-select-sm border-0 bg-transparent shadow-none text-dark fw-bold" id="starFilter" onchange="filterRatingList()" style="width: 180px; cursor: pointer;">
+                              <option value="ALL">ทุกคะแนน (All)</option>
+                              <option value="5">⭐⭐⭐⭐⭐ (5 ดาว)</option>
+                              <option value="4">⭐⭐⭐⭐ (4 ดาว)</option>
+                              <option value="LOW">1-3 ดาว (ควรติดตาม)</option>
+                              <option value="NO_REVIEW">ยังไม่มีรีวิว</option>
+                          </select>
+                      </div>
+                  </div>
+                  
+                  <div class="table-responsive bg-white rounded-3 shadow-sm border border-light">
+                      <table class="table table-hover align-middle mb-0">
+                          <thead class="table-light">
+                              <tr>
+                                  <th class="text-center" width="10%">รหัส</th>
+                                  <th width="18%">ชื่อ-นามสกุล</th>
+                                  <th width="12%">Booking</th>
+                                  <th width="12%">วันที่ทำงาน</th>
+                                  <th class="text-center" width="13%">คะแนนรีวิว</th>
+                                  <th width="25%">คอมเมนต์จากลูกค้า</th>
+                                  <th class="text-center" width="10%">ปัญหา</th>
+                              </tr>
+                          </thead>
+                          <tbody id="ratingListBody">
+                              <!-- ข้อมูลจำถูกเติมด้วย JS -->
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+              <div class="modal-footer border-top-0 bg-white">
+                  <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
+              </div>
+          </div>
+      </div>
+  </div>
+
   <?!= include('_Scripts'); ?>
   
   <script>
     let charts = {};
     let rangePicker;
+    let globalJobList = []; // เก็บ Data งานทั้งหมดเพื่อแสดงใน Modal
+    let ratingModal;
     
     window.onload = function() {
-        // Init Date Picker (No Default to show ALL)
+        // Init Date Picker
         rangePicker = flatpickr("#dateFilter", {
              mode: "range",
              dateFormat: "Y-m-d",
@@ -305,6 +374,9 @@
                  else if(selectedDates.length===0) loadReportData();
              }
         });
+
+        // Init Modal
+        ratingModal = new bootstrap.Modal(document.getElementById('ratingDetailsModal'));
         
         // Load Data
         loadReportData();
@@ -336,11 +408,13 @@
         Swal.close();
         document.getElementById('dataTimestamp').textContent = new Date().toLocaleString('th-TH');
         
-        // Update Filters UI (Populate Centers if empty)
         const centerSel = document.getElementById('centerFilter');
         if (centerSel.options.length <= 1 && data.centers) {
             data.centers.forEach(c => centerSel.add(new Option(c, c)));
         }
+
+        // Store Job List in Global Variable for Modal
+        globalJobList = data.firstJob.jobList || [];
 
         // --- 1. KPI Cards ---
         animateValue("kpi-onboard", data.onboard.openSystem);
@@ -348,13 +422,11 @@
         animateValue("kpi-verify", data.newVerify.verified);
         animateValue("kpi-annual", data.annualVerify.verified); 
 
-        // Progress Bars
         updateProgress("prog-onboard", "sub-onboard", data.onboard.openSystem, data.onboard.total, "ผู้เข้าอบรม");
         updateProgress("prog-firstjob", "sub-firstjob", data.firstJob.completed, data.onboard.openSystem, "จากคนที่เปิดระบบ"); 
         updateProgress("prog-verify", "sub-verify", data.newVerify.verified, data.newVerify.total, "ทั้งหมด");
         updateProgress("prog-annual", "sub-annual", data.annualVerify.paid, data.annualVerify.total, "ชำระเงินแล้ว");
 
-        // Override sub-text
         document.getElementById('sub-firstjob').textContent = `คะแนนเฉลี่ย ${data.firstJob.avgRating} ดาว`;
         document.getElementById('sub-verify').textContent = `รอผล ${data.newVerify.pending} คน`;
         document.getElementById('sub-annual').textContent = `ค้างชำระ ${data.annualVerify.unpaid} คน`;
@@ -372,14 +444,102 @@
         document.getElementById('ann-unpaid').textContent = data.annualVerify.unpaid;
 
         // --- 3. Charts ---
-        renderTrendChart(data.trend); // New Function
+        renderTrendChart(data.trend); 
         renderOnboardChart(data.onboard);
         renderFirstJobChart(data.firstJob);
         renderVerifyCharts(data.newVerify, data.annualVerify);
     }
 
+    // 🌟 ฟังก์ชันจัดการ Modal รายละเอียดคะแนนดาว 🌟
+    function openRatingModal() {
+        document.getElementById('starFilter').value = 'ALL'; // Reset Filter
+        filterRatingList();
+        ratingModal.show();
+    }
+
+    function filterRatingList() {
+        const filterVal = document.getElementById('starFilter').value;
+        const tbody = document.getElementById('ratingListBody');
+        tbody.innerHTML = '';
+
+        // กรองข้อมูล
+        const filteredData = globalJobList.filter(job => {
+            if (filterVal === 'ALL') return true;
+            if (filterVal === 'NO_REVIEW') return job.rating === 'NO_REVIEW' || !job.rating;
+            
+            const score = parseFloat(job.rating);
+            if (isNaN(score)) return false;
+
+            if (filterVal === '5') return score === 5;
+            if (filterVal === '4') return score === 4;
+            if (filterVal === 'LOW') return score <= 3; // ดึง 1-3 ดาว
+            
+            return true;
+        });
+
+        if (filteredData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-inbox fa-3x opacity-25 mb-3"></i><br>ไม่พบรายการที่ตรงกับเงื่อนไข</td></tr>`;
+            return;
+        }
+
+        // เรียงข้อมูล (เอาดาวน้อยสุดขึ้นก่อนเสมอ เพื่อให้ตามงานง่าย)
+        filteredData.sort((a, b) => {
+            let scoreA = isNaN(parseFloat(a.rating)) ? 99 : parseFloat(a.rating);
+            let scoreB = isNaN(parseFloat(b.rating)) ? 99 : parseFloat(b.rating);
+            return scoreA - scoreB;
+        });
+
+        // วาดตาราง
+        filteredData.forEach(job => {
+            let starDisplay = '<span class="badge bg-light text-muted border">ยังไม่รีวิว</span>';
+            let rowClass = "";
+            
+            if (job.rating && job.rating !== 'NO_REVIEW') {
+                const score = parseFloat(job.rating);
+                let colorClass = 'text-warning';
+                
+                // Highlight พิเศษสำหรับคะแนนน้อย
+                if (score <= 3) {
+                    colorClass = 'text-danger fw-bold';
+                    rowClass = 'table-danger bg-opacity-10'; // ไฮไลท์สีแดงอ่อนทั้งแถว
+                }
+                
+                starDisplay = `<span class="${colorClass}">${'★'.repeat(score)}</span>`;
+            }
+
+            // ตกแต่ง Link ไป Profile
+            const profileLink = `<a href="https://admin-test.beneat.co/professional/${job.maidCode}/profile" target="_blank" class="text-decoration-none badge bg-primary-soft text-primary border">${job.maidCode}</a>`;
+            
+            // 🌟 สร้าง Link ไป Booking
+            let bookingDisplay = '-';
+            if (job.bookingCode) {
+                if (job.jobId) {
+                    bookingDisplay = `<a href="https://admin-test.beneat.co/order/${job.jobId}/edit" target="_blank" class="fw-bold text-primary text-decoration-none">${job.bookingCode}</a>`;
+                } else {
+                    bookingDisplay = `<span class="fw-bold text-dark">${job.bookingCode}</span>`;
+                }
+            }
+
+            // ตกแต่ง Link ไปปัญหา
+            const problemLink = job.problemId 
+                ? `<a href="https://admin-test.beneat.co/report-problems/${job.problemId}/edit" target="_blank" class="badge bg-danger text-white text-decoration-none">${job.problemId}</a>` 
+                : `<span class="text-muted">-</span>`;
+
+            tbody.innerHTML += `
+                <tr class="${rowClass}">
+                    <td class="text-center">${profileLink}</td>
+                    <td class="fw-bold text-dark">${job.name}</td>
+                    <td>${bookingDisplay}</td>
+                    <td class="small text-muted">${job.cleanDate || '-'}</td>
+                    <td class="text-center" style="font-size: 1.1rem;">${starDisplay}</td>
+                    <td class="small text-secondary" style="max-width: 250px; white-space: normal;">${job.comment || '<span class="text-black-50 fst-italic">ไม่มีคอมเมนต์</span>'}</td>
+                    <td class="text-center">${problemLink}</td>
+                </tr>
+            `;
+        });
+    }
+
     // --- Chart Rendering Functions ---
-    
     function renderTrendChart(data) {
         const ctx = document.getElementById('chartTrend').getContext('2d');
         if (charts.trend) charts.trend.destroy();
@@ -410,14 +570,8 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: { mode: 'index', intersect: false }
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 } },
-                    x: { grid: { display: false } }
-                }
+                plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } }
             }
         });
     }
@@ -468,10 +622,8 @@
     }
 
     function renderVerifyCharts(newData, annualData) {
-        // New Verify Chart
         const ctxNew = document.getElementById('chartNewVerify').getContext('2d');
         if (charts.newVerify) charts.newVerify.destroy();
-        
         charts.newVerify = new Chart(ctxNew, {
             type: 'pie',
             data: {
@@ -484,10 +636,8 @@
             options: { plugins: { legend: { position: 'right' } } }
         });
 
-        // Annual Verify Chart
         const ctxAnn = document.getElementById('chartAnnualVerify').getContext('2d');
         if (charts.annualVerify) charts.annualVerify.destroy();
-        
         charts.annualVerify = new Chart(ctxAnn, {
             type: 'pie',
             data: {
