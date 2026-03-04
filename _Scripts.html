@@ -6,43 +6,158 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 
 <script>
-  // --- Auto Active Sidebar Menu (Fixed Logic for GAS) ---
-  document.addEventListener('DOMContentLoaded', function() {
-      // ใช้ google.script.url.getLocation เพื่อความแม่นยำ 100% ใน Apps Script (แก้ปัญหา iFrame)
-      google.script.url.getLocation(function(location) {
-          // 1. ดึงค่า parameter 'page' (ถ้าไม่มีให้เป็น 'home')
-          const currentPage = location.parameter.page || 'home';
-          
-          // console.log("Current Page:", currentPage); // เช็คค่าใน Console
-
-          // 2. ลบ class 'active' ออกจากทุกเมนูก่อน
-          document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
-          
-          // 3. ค้นหาเมนูที่มี data-page ตรงกับค่า page แล้วเติม class 'active'
-          const targetLink = document.querySelector(`.nav-link-custom[data-page="${currentPage}"]`);
-          
-          if (targetLink) {
-              targetLink.classList.add('active');
-          } else {
-              // Fallback: ถ้าหาไม่เจอ ให้ active ที่ home
-              const homeLink = document.querySelector(`.nav-link-custom[data-page="home"]`);
-              if(homeLink) homeLink.classList.add('active');
+  // ==========================================
+  // 🌟 BULLETPROOF INITIALIZATION 🌟
+  // ==========================================
+  function initGlobalApp() {
+      // 1. จัดการแถบเมนู Active ด้านข้าง (ครอบ Try-Catch ป้องกันพัง)
+      try {
+          if (typeof google !== 'undefined' && google.script && google.script.url) {
+              google.script.url.getLocation(function(location) {
+                  const currentPage = location.parameter.page || 'home';
+                  document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
+                  const targetLink = document.querySelector(`.nav-link-custom[data-page="${currentPage}"]`);
+                  if (targetLink) targetLink.classList.add('active');
+                  else {
+                      const homeLink = document.querySelector(`.nav-link-custom[data-page="home"]`);
+                      if(homeLink) homeLink.classList.add('active');
+                  }
+              });
           }
+      } catch (e) {
+          console.warn("Sidebar active sync skipped:", e);
+      }
+
+      // 2. ดึงข้อมูล Config และแสดงชื่อ User/Admin
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run
+              .withSuccessHandler(res => {
+                  if(res && res.isAdmin) {
+                      const configMenu = document.getElementById('nav-config');
+                      if(configMenu) configMenu.classList.remove('d-none');
+                  }
+                  const userEmailEl = document.getElementById('userEmailDisplay');
+                  if(userEmailEl) {
+                      userEmailEl.textContent = (res && res.userEmail) ? res.userEmail : "Officer";
+                  }
+              })
+              .withFailureHandler(err => {
+                  console.error("Config Load Error:", err);
+                  const userEmailEl = document.getElementById('userEmailDisplay');
+                  if(userEmailEl) userEmailEl.textContent = "Offline/Error";
+              })
+              .getClientConfig();
+      }
+
+      // 3. ผูกคำสั่งให้กับ Global Search (กล่องค้นหาด้านบน)
+      const searchInput = document.getElementById('globalSearchInput');
+      const resultsContainer = document.getElementById('globalSearchResults');
+      let globalSearchTimeout = null;
+
+      if (searchInput && resultsContainer) {
+          searchInput.addEventListener('keyup', function(e) {
+              clearTimeout(globalSearchTimeout);
+              const keyword = e.target.value.trim();
+              const spinner = document.getElementById('globalSearchSpinner');
+              
+              if (keyword.length < 3) {
+                  resultsContainer.style.display = 'none';
+                  if(spinner) spinner.classList.add('d-none');
+                  return;
+              }
+              
+              if(spinner) spinner.classList.remove('d-none');
+              
+              // หน่วงเวลาพิมพ์ 600ms ก่อนยิงคำค้นหา
+              globalSearchTimeout = setTimeout(() => {
+                  if (typeof google !== 'undefined' && google.script && google.script.run) {
+                      google.script.run
+                          .withSuccessHandler(res => {
+                              if(spinner) spinner.classList.add('d-none');
+                              renderGlobalSearchResults(res);
+                          })
+                          .withFailureHandler(err => {
+                              if(spinner) spinner.classList.add('d-none');
+                              console.error("Search Error:", err);
+                              resultsContainer.innerHTML = `<div class="p-3 text-center text-danger small">Error: เกิดข้อผิดพลาดในการค้นหา</div>`;
+                              resultsContainer.style.display = 'block';
+                          })
+                          .globalSmartSearch(keyword);
+                  }
+              }, 600); 
+          });
+          
+          // ปิดหน้าต่างผลลัพธ์เมื่อคลิกที่ว่างบนหน้าจอ
+          document.addEventListener('click', function(e) {
+              if (!e.target.closest('#globalSearchInput') && !e.target.closest('#globalSearchResults')) {
+                  resultsContainer.style.display = 'none';
+              }
+          });
+      }
+  }
+
+  // รันระบบตั้งต้นแบบกันเหนียว (ครอบคลุมทั้งกรณีหน้าเว็บโหลดเสร็จแล้วและยังไม่เสร็จ)
+  if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initGlobalApp);
+  } else {
+      initGlobalApp();
+  }
+
+  // ==========================================
+  // 🌟 RENDER SEARCH RESULTS 🌟
+  // ==========================================
+  function renderGlobalSearchResults(res) {
+      const container = document.getElementById('globalSearchResults');
+      container.innerHTML = '';
+      
+      if (!res.success) {
+          container.innerHTML = `<div class="p-3 text-center text-danger small"><i class="fas fa-exclamation-triangle me-1"></i> ${res.message}</div>`;
+          container.style.display = 'block';
+          return;
+      }
+      
+      if (!res.data || res.data.length === 0) {
+          container.innerHTML = `
+              <div class="text-center py-4">
+                  <i class="fas fa-search fa-2x text-muted opacity-25 mb-2"></i>
+                  <div class="small text-muted fw-bold">ไม่พบข้อมูลผู้ให้บริการ</div>
+              </div>`;
+          container.style.display = 'block';
+          return;
+      }
+      
+      let html = `<h6 class="dropdown-header fw-bold text-primary mb-2 px-2 border-bottom pb-2">ผลการค้นหาเจอ ${res.data.length} รายการ</h6>`;
+      
+      res.data.forEach(item => {
+          let badgesHtml = '';
+          item.foundIn.forEach(mod => {
+              let badgeClass = 'bg-secondary';
+              if(mod.includes('Master')) badgeClass = 'bg-primary';
+              else if(mod.includes('Onboard')) badgeClass = 'bg-info text-dark';
+              else if(mod.includes('Annual')) badgeClass = 'bg-warning text-dark';
+              
+              badgesHtml += `<span class="badge ${badgeClass} me-1 mb-1 shadow-sm" style="font-size: 0.7rem; font-weight: 500;">${mod}</span>`;
+          });
+          
+          html += `
+              <a href="https://admin-test.beneat.co/professional/${item.code || ''}/profile" target="_blank" class="dropdown-item p-3 mb-2 rounded-3 border bg-light text-wrap transition-all hover-shadow" style="transition: all 0.2s;">
+                  <div class="d-flex justify-content-between align-items-start mb-1">
+                      <span class="fw-bold text-dark">${item.name}</span>
+                      <span class="badge bg-white text-primary border">${item.code || '-'}</span>
+                  </div>
+                  <div class="small text-muted mb-2"><i class="far fa-id-card me-1 text-secondary"></i> ${item.idCard || '-'}</div>
+                  <div class="d-flex flex-wrap">${badgesHtml}</div>
+              </a>
+          `;
       });
       
-      // Check Admin for Config Menu & Get User Email
-      google.script.run.withSuccessHandler(res => {
-           if(res.isAdmin) {
-               const configMenu = document.getElementById('nav-config');
-               if(configMenu) configMenu.classList.remove('d-none');
-           }
-           // Update User Email in Navbar if exists
-           const userEmailEl = document.getElementById('userEmailDisplay');
-           if(userEmailEl) userEmailEl.textContent = res.userEmail;
-      }).getClientConfig();
-  });
+      container.innerHTML = html;
+      container.style.display = 'block';
+  }
 
-  // --- Global Helpers ---
+  // ==========================================
+  // 🌟 GLOBAL HELPERS 🌟
+  // ==========================================
   function showLoading() {
       Swal.fire({
           title: 'กำลังประมวลผล...',
@@ -59,11 +174,6 @@
   }
   
   function showError(msg) {
-      Swal.fire({
-          icon: 'error',
-          title: 'เกิดข้อผิดพลาด',
-          text: msg,
-          confirmButtonColor: '#31C1D7'
-      });
+      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg, confirmButtonColor: '#31C1D7' });
   }
 </script>
