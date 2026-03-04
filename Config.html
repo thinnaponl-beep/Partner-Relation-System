@@ -122,6 +122,14 @@
                     <ul class="list-group small list-group-flush" id="onboardTypeList"></ul>
                 </div>
             </div>
+            <!-- 🌟 Onboard Tags (NEW) 🌟 -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-config p-3">
+                    <div class="config-header"><div class="rounded-circle bg-warning bg-opacity-10 p-2 text-warning"><i class="fas fa-tasks"></i></div> Tags (สิ่งที่ต้องติดตาม)</div>
+                    <div class="input-group mb-3"><input type="text" id="newOnboardTag" class="form-control" placeholder="เช่น รูปโปรไฟล์"><button class="btn btn-soft-warning text-dark" onclick="addConfig('onboardTag')"><i class="fas fa-plus"></i></button></div>
+                    <ul class="list-group small list-group-flush" id="onboardTagList"></ul>
+                </div>
+            </div>
             <!-- Results -->
             <div class="col-md-6 col-lg-3">
                 <div class="card card-config p-3">
@@ -169,7 +177,7 @@
     </div>
   </div>
 
-  <!-- Edit Options Modal (UPDATED with Answer Type) -->
+  <!-- Edit Options Modal -->
   <div class="modal fade" id="editOptionsModal" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content border-0 shadow">
@@ -186,7 +194,6 @@
                       <input type="text" class="form-control" id="editQLabel">
                   </div>
                   
-                  <!-- Added: Answer Type Selector -->
                   <div class="mb-3">
                       <label class="form-label small fw-bold">รูปแบบคำตอบ</label>
                       <select class="form-select" id="editQType" onchange="toggleEditQType()">
@@ -358,6 +365,8 @@
       renderList('onboardTypeList', data.onboardTypes, 'onboardType');
       renderList('masterTypeList', data.masterTypes, 'masterType');
       renderList('onboardCenterList', data.onboardCenters, 'onboardCenter');
+      // 🌟 เพิ่มส่วนแสดงผล Tag
+      renderList('onboardTagList', data.onboardTags, 'onboardTag');
       initSortable();
     }
 
@@ -373,8 +382,8 @@
     }
 
     function initSortable() {
-        const lists = ['adminList', 'centerList', 'resultList', 'ftStatusList', 'onboardGroupList', 'onboardTypeList', 'masterTypeList', 'onboardCenterList'];
-        const types = ['admin', 'center', 'result', 'ftStatus', 'onboardGroup', 'onboardType', 'masterType', 'onboardCenter'];
+        const lists = ['adminList', 'centerList', 'resultList', 'ftStatusList', 'onboardGroupList', 'onboardTypeList', 'masterTypeList', 'onboardCenterList', 'onboardTagList'];
+        const types = ['admin', 'center', 'result', 'ftStatus', 'onboardGroup', 'onboardType', 'masterType', 'onboardCenter', 'onboardTag'];
         lists.forEach((id, idx) => {
             const el = document.getElementById(id); if (!el) return;
             new Sortable(el, { animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost', onEnd: function () { saveOrder(types[idx], el); } });
@@ -387,7 +396,7 @@
     }
 
     function addConfig(type) {
-      const idMap = { 'admin':'newAdmin', 'center':'newCenter', 'result':'newResult', 'ftStatus':'newFtStatus', 'onboardGroup':'newOnboardGroup', 'onboardType':'newOnboardType', 'masterType':'newMasterType', 'onboardCenter':'newOnboardCenter' };
+      const idMap = { 'admin':'newAdmin', 'center':'newCenter', 'result':'newResult', 'ftStatus':'newFtStatus', 'onboardGroup':'newOnboardGroup', 'onboardType':'newOnboardType', 'masterType':'newMasterType', 'onboardCenter':'newOnboardCenter', 'onboardTag': 'newOnboardTag' };
       const input = document.getElementById(idMap[type]);
       if(!input) return;
       const val = input.value.trim();
@@ -465,7 +474,7 @@
         }
     }
     
-    // --- Edit Question Logic (Updated to allow type change) ---
+    // --- Edit Question Logic ---
     function openEditOptions(qid) {
         const q = checklistQuestions.find(x => x.id === qid);
         if(!q) return;
@@ -474,17 +483,14 @@
         document.getElementById('editQLabel').value = q.label;
         document.getElementById('editQSection').value = q.section;
         
-        // Set Type Dropdown
         const typeSelect = document.getElementById('editQType');
         typeSelect.value = q.type || 'select';
         
-        // Show/Hide Options based on Type
         toggleEditQType(); 
         if (q.type === 'select' || q.type === 'checkbox') {
             renderOptionsList(q.options || []);
         }
         
-        // Setup Condition UI
         const conditionCheck = document.getElementById('editEnableCondition');
         if (q.condition) {
             conditionCheck.checked = true;
@@ -582,12 +588,10 @@
             q.label = document.getElementById('editQLabel').value;
             q.type = document.getElementById('editQType').value;
 
-            // Ensure options array exists if switching to select/checkbox
             if ((q.type === 'select' || q.type === 'checkbox') && (!q.options || q.options.length === 0)) {
-                q.options = ['ปกติ', 'ผิดปกติ']; // Default
+                q.options = ['ปกติ', 'ผิดปกติ']; 
             }
             
-            // Save Condition
             if (document.getElementById('editEnableCondition').checked) {
                  const parentId = document.getElementById('editParentQuestion').value;
                  const value = document.getElementById('editTriggerValue').value;
@@ -737,7 +741,6 @@
         }).then((result) => {
             if (result.isConfirmed) {
                 checklistQuestions = checklistQuestions.filter(q => q.id !== qid);
-                // Also remove conditions linked to this question
                 checklistQuestions.forEach(q => {
                     if(q.condition && q.condition.parentId === qid) delete q.condition;
                 });
