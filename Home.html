@@ -3,7 +3,7 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>Partner Relation Support</title>
+  <title>Partner Relation (PRS)</title>
   <?!= include('_Styles'); ?>
   
   <style>
@@ -49,11 +49,12 @@
     
     .menu-card:hover .icon-box { transform: scale(1.1) rotate(5deg); }
     
-    /* Specific Colors */
+    /* Specific Colors for each module */
     .menu-onboard:hover .icon-box { background: #e0f7fa; color: #00bcd4; }
     .menu-firstbk:hover .icon-box { background: #f3e5f5; color: #9c27b0; }
-    .menu-master:hover  .icon-box { background: #fff3e0; color: #ff9800; }
-    .menu-annual:hover  .icon-box { background: #e8f5e9; color: #4caf50; }
+    .menu-verify:hover  .icon-box { background: #e8f5e9; color: #198754; }
+    .menu-account:hover .icon-box { background: #fff3cd; color: #ffc107; }
+    .menu-report:hover  .icon-box { background: #e1f5fe; color: #0dcaf0; }
     .menu-config:hover  .icon-box { background: #eceff1; color: #607d8b; }
     
     .menu-title { font-weight: 700; font-size: 1.25rem; margin-bottom: 8px; color: #2d3436; }
@@ -98,25 +99,34 @@
                   </a>
               </div>
 
-              <!-- 3. Master Data (New Verification) -->
+              <!-- 3. Unified Verify Workspace -->
               <div class="col-md-6 col-lg-4 col-xl-3">
-                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=index" class="card menu-card menu-master">
-                      <div class="icon-box"><i class="fas fa-file-signature"></i></div>
-                      <div class="menu-title">ตรวจประวัติใหม่</div>
-                      <div class="menu-desc">จัดการข้อมูลและส่งตรวจประวัติ<br>สำหรับคุณแม่บ้านเข้าใหม่</div>
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=verify_workspace" class="card menu-card menu-verify">
+                      <div class="icon-box"><i class="fas fa-user-shield"></i></div>
+                      <div class="menu-title">จัดการการตรวจประวัติ</div>
+                      <div class="menu-desc">ดูแลข้อมูลประวัติใหม่ (Master)<br>และต่ออายุประวัติรายปี (Annual)</div>
                   </a>
               </div>
 
-              <!-- 4. Annual Verify -->
+              <!-- 4. Account Verify -->
               <div class="col-md-6 col-lg-4 col-xl-3">
-                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=year_verify" class="card menu-card menu-annual">
-                      <div class="icon-box"><i class="fas fa-calendar-check"></i></div>
-                      <div class="menu-title">ตรวจประวัติรายปี</div>
-                      <div class="menu-desc">ตรวจสอบและอัปเดตสถานะ<br>ประวัติอาชญากรรมประจำปี</div>
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=account_verify" class="card menu-card menu-account">
+                      <div class="icon-box"><i class="fas fa-search-dollar"></i></div>
+                      <div class="menu-title">กระทบยอดบัญชี</div>
+                      <div class="menu-desc">อัปโหลดตรวจสอบสถานะผู้ให้บริการ<br>แบบกลุ่ม (Account Verification)</div>
                   </a>
               </div>
 
-              <!-- 5. Config (Admin Only) -->
+              <!-- 5. Fast Report -->
+              <div class="col-md-6 col-lg-4 col-xl-3">
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=fast_report" class="card menu-card menu-report">
+                      <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                      <div class="menu-title">Fast Report</div>
+                      <div class="menu-desc">แดชบอร์ดสรุปผลภาพรวม<br>และสถิติการดำเนินงาน</div>
+                  </a>
+              </div>
+
+              <!-- 6. Config (Admin Only) -->
               <div class="col-md-6 col-lg-4 col-xl-3 d-none" id="menu-config-card">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="card menu-card menu-config">
                       <div class="icon-box"><i class="fas fa-cogs"></i></div>
