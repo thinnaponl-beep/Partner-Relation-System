@@ -29,8 +29,14 @@ function doGet(e) {
     case 'home': html = HtmlService.createTemplateFromFile('Home'); break;
     case 'onboard': html = HtmlService.createTemplateFromFile('Onboard'); break;
     case 'firstbk': html = HtmlService.createTemplateFromFile('Firstbk'); break;
+    
+    // 🌟 เพิ่มเงื่อนไขสำหรับดึงหน้าจอใหม่ที่รวม Master & Annual เข้าด้วยกัน 🌟
+    case 'verify_workspace': html = HtmlService.createTemplateFromFile('VerifyWorkspace'); break;
+    
+    // (เก็บ index กับ year_verify เดิมไว้ก่อนได้ เผื่อพิมพ์ URL เข้าตรงๆ)
     case 'index': html = HtmlService.createTemplateFromFile('index'); break;
     case 'year_verify': html = HtmlService.createTemplateFromFile('YearVerify'); break;
+    
     case 'account_verify': html = HtmlService.createTemplateFromFile('AccountVerify'); break;
     case 'fast_report': html = HtmlService.createTemplateFromFile('FastReport'); break;
     case 'config': 
@@ -41,7 +47,7 @@ function doGet(e) {
   }
 
   return html.evaluate()
-    .setTitle('Partner Relation Support')
+    .setTitle('Partner Relation (PRS)')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
@@ -101,16 +107,18 @@ function getSheet(name) {
     }
   }
 
+  // 🌟 อัปเดตตาราง Config: รองรับคอลัมน์ที่ 9 "Onboard Tags" 🌟
   if (name === CONFIG_SHEET_NAME) {
       if (!sheet) {
         sheet = ss.insertSheet(CONFIG_SHEET_NAME);
-        sheet.appendRow(["Admin Emails", "Centers", "Results", "FT Statuses", "Onboard Groups", "Onboard Types", "Master Types", "Onboard Centers"]); 
+        sheet.appendRow(["Admin Emails", "Centers", "Results", "FT Statuses", "Onboard Groups", "Onboard Types", "Master Types", "Onboard Centers", "Onboard Tags"]); 
       } else {
-        if (sheet.getLastColumn() < 8) {
+        if (sheet.getLastColumn() < 9) {
            if(sheet.getLastColumn() < 5) sheet.getRange(1, 5).setValue("Onboard Groups");
            if(sheet.getLastColumn() < 6) sheet.getRange(1, 6).setValue("Onboard Types");
            if(sheet.getLastColumn() < 7) sheet.getRange(1, 7).setValue("Master Types");
            if(sheet.getLastColumn() < 8) sheet.getRange(1, 8).setValue("Onboard Centers"); 
+           if(sheet.getLastColumn() < 9) sheet.getRange(1, 9).setValue("Onboard Tags"); 
         }
       }
   }
@@ -210,9 +218,9 @@ function saveChecklistConfig(config) {
 function getConfigs() {
   const sheet = getSheet(CONFIG_SHEET_NAME);
   const lastRow = sheet.getLastRow();
-  const maxCols = Math.max(sheet.getLastColumn(), 8);
+  const maxCols = Math.max(sheet.getLastColumn(), 9);
   
-  if (lastRow <= 1) return { admins: [], centers: [], results: [], ftStatuses: [], onboardGroups: [], onboardTypes: [], masterTypes: [], onboardCenters: [] };
+  if (lastRow <= 1) return { admins: [], centers: [], results: [], ftStatuses: [], onboardGroups: [], onboardTypes: [], masterTypes: [], onboardCenters: [], onboardTags: [] };
   
   const data = sheet.getRange(2, 1, lastRow - 1, maxCols).getValues();
   const getCol = (r, idx) => String(r[idx] || "").trim();
@@ -225,7 +233,8 @@ function getConfigs() {
     onboardGroups: data.map(r => getCol(r, 4)).filter(s => s !== ""),
     onboardTypes: data.map(r => getCol(r, 5)).filter(s => s !== ""),
     masterTypes: data.map(r => getCol(r, 6)).filter(s => s !== ""),
-    onboardCenters: data.map(r => getCol(r, 7)).filter(s => s !== "") 
+    onboardCenters: data.map(r => getCol(r, 7)).filter(s => s !== ""),
+    onboardTags: data.map(r => getCol(r, 8)).filter(s => s !== "")
   };
 }
 
@@ -235,20 +244,33 @@ function isUserAdmin(email) {
 }
 
 function getClientConfig() {
-  const configs = getConfigs();
-  const currentUser = Session.getActiveUser().getEmail();
-  return {
-    isAdmin: isUserAdmin(currentUser),
-    userEmail: currentUser,
-    admins: configs.admins,
-    centers: configs.centers,
-    results: configs.results,
-    ftStatuses: configs.ftStatuses,
-    onboardGroups: configs.onboardGroups,
-    onboardTypes: configs.onboardTypes,
-    masterTypes: configs.masterTypes,
-    onboardCenters: configs.onboardCenters 
-  };
+  try {
+    const configs = typeof getConfigsCached === "function" ? getConfigsCached() : getConfigs(); 
+    const currentUser = Session.getActiveUser().getEmail() || "Unknown User";
+    const adminList = configs.admins || [];
+    const isAdminUser = adminList.includes(String(currentUser).trim().toLowerCase());
+
+    return {
+      isAdmin: isAdminUser,
+      userEmail: currentUser,
+      admins: adminList,
+      centers: configs.centers || [],
+      results: configs.results || [],
+      ftStatuses: configs.ftStatuses || [],
+      onboardGroups: configs.onboardGroups || [],
+      onboardTypes: configs.onboardTypes || [],
+      masterTypes: configs.masterTypes || [],
+      onboardCenters: configs.onboardCenters || [],
+      onboardTags: configs.onboardTags || [] 
+    };
+    
+  } catch (error) {
+    return {
+      isAdmin: false,
+      userEmail: "System Error",
+      error: error.toString()
+    };
+  }
 }
 
 function addConfigItem(type, value) {
@@ -264,12 +286,14 @@ function addConfigItem(type, value) {
     case 'onboardType': colIndex = 6; break;
     case 'masterType': colIndex = 7; break;
     case 'onboardCenter': colIndex = 8; break; 
+    case 'onboardTag': colIndex = 9; break; // เพิ่มบรรทัดนี้
     default: return { success: false, message: "Invalid type" };
   }
 
   let targetRow = 2;
   while (targetRow <= sheet.getLastRow() && sheet.getRange(targetRow, colIndex).getValue() !== "") targetRow++;
   sheet.getRange(targetRow, colIndex).setValue(value);
+  if (typeof clearConfigCache === "function") clearConfigCache();
   return { success: true };
 }
 
@@ -288,6 +312,7 @@ function removeConfigItem(type, value) {
     case 'onboardType': colIndex = 6; break;
     case 'masterType': colIndex = 7; break;
     case 'onboardCenter': colIndex = 8; break;
+    case 'onboardTag': colIndex = 9; break; // เพิ่มบรรทัดนี้
     default: return { success: false };
   }
 
@@ -301,6 +326,7 @@ function removeConfigItem(type, value) {
     newRange.clearContent();
     if(newValues.length > 0) sheet.getRange(2, colIndex, newValues.length, 1).setValues(newValues);
   }
+  if (typeof clearConfigCache === "function") clearConfigCache();
   return { success: true };
 }
 
@@ -319,6 +345,7 @@ function saveConfigOrder(type, newList) {
       case 'onboardType': colIndex = 6; break;
       case 'masterType': colIndex = 7; break;
       case 'onboardCenter': colIndex = 8; break;
+      case 'onboardTag': colIndex = 9; break; // เพิ่มบรรทัดนี้
       default: return { success: false, message: "Invalid type" };
     }
     
@@ -331,6 +358,7 @@ function saveConfigOrder(type, newList) {
        const dataToWrite = newList.map(item => [item]);
        sheet.getRange(2, colIndex, dataToWrite.length, 1).setValues(dataToWrite);
     }
+    if (typeof clearConfigCache === "function") clearConfigCache();
     return { success: true };
   } catch (e) {
     return { success: false, message: e.toString() };
@@ -783,7 +811,7 @@ function exportAnnualReport(filterVal) {
   if (lastRow <= 1) return { content: "", count: 0 };
 
   const displayValues = sheet.getRange(2, 1, lastRow - 1, 20).getDisplayValues();
-  let csvContent = "ลำดับ,ID,รหัส,ชื่อ-นามสกุล,กลุ่ม,เลขบัตร,วันเกิด,เบอร์โทร,ยินยอม,ยอดเงิน,ยอดค้าง,สถานะหัก,ช่องทาง,สถานะส่ง,วันรับผล,ผล,ติดตามล่าสุด,จนท.,วันที่ส่ง,หมายเหตุ\n";
+  let csvContent = "ลำดับ,ID,รหัส,ชื่อ-นามสกุล,กลุ่ม,เลขบัตร,วันเกิด,เบอร์โทร,ยินยอม,ยอดเงิน,ยอดค้าง,สถานะหัก,ช่องทาง,สถานะ,วันรับผล,ผล,ติดตามล่าสุด,จนท.,วันที่ส่ง,หมายเหตุ\n";
   let count = 0;
 
   displayValues.sort((a, b) => parseDateForSort(a[17]) - parseDateForSort(b[17]));
@@ -913,7 +941,7 @@ function getOnboardData(filterVal) {
     data.sort((a, b) => parseDateForSort(b.trainingDate) - parseDateForSort(a.trainingDate));
   }
   
-  const configs = getClientConfig();
+ const configs = getClientConfig();
   return { 
     currentUser: currentUser, 
     isAdmin: configs.isAdmin, 
@@ -921,6 +949,7 @@ function getOnboardData(filterVal) {
     onboardTypes: configs.onboardTypes,
     masterTypes: configs.masterTypes, 
     onboardCenters: configs.onboardCenters, 
+    onboardTags: configs.onboardTags, // 🌟 เพิ่มบรรทัดนี้ลงไป เพื่อส่ง Tag ไปให้หน้า Onboard 🌟
     data: data 
   };
 }
@@ -1155,13 +1184,12 @@ function getFirstBkData() {
   if (lastRow > 1) {
     const obValues = onboardSheet.getRange(2, 1, lastRow - 1, 21).getDisplayValues();
     
-    // Read FirstBk Data Map (Read extended columns up to 35 to include ExtraData_JSON)
     let fbMap = new Map();
     const fbLastRow = firstBkSheet.getLastRow();
     
     if (fbLastRow > 1) {
-        // Read up to col 35 (ExtraData_JSON)
-        const fbData = firstBkSheet.getRange(2, 1, fbLastRow - 1, 35).getDisplayValues(); 
+        // 🌟 ปรับให้อ่านถึงคอลัมน์ที่ 37 (เพื่อรวม PreAdvice และ PostAdvice)
+        const fbData = firstBkSheet.getRange(2, 1, fbLastRow - 1, 37).getDisplayValues(); 
         fbData.forEach(r => {
              let history = [];
              try { if (r[21] && r[21].startsWith('[')) history = JSON.parse(r[21]); } catch(e) {}
@@ -1169,7 +1197,6 @@ function getFirstBkData() {
              let extraData = {};
              try { if (r[34] && r[34].startsWith('{')) extraData = JSON.parse(r[34]); } catch(e) {}
 
-             // Base Checklist (Standard Columns)
              const baseChecklist = {
                  c1_1: r[10], c1_2: r[11], c1_3: r[12], c1_4: r[13], c1_5: r[14],
                  c1_6: r[22], c1_7: r[23],
@@ -1179,62 +1206,62 @@ function getFirstBkData() {
                  reviewScore: r[18], customerComment: r[19], problemId: r[20]
              };
              
-             // Merge with Extra Data (Dynamic Fields override standard if present in JSON)
              const mergedChecklist = { ...baseChecklist, ...extraData };
 
              fbMap.set(String(r[0]), { 
                  bookingCode: r[5], jobId: r[6], cleanDate: r[7], acceptDate: r[8], status: r[9],
                  checklist: mergedChecklist,
                  history: history,
-                 workHours: r[32], cleanTime: r[33]
+                 workHours: r[32], cleanTime: r[33],
+                 // 🌟 อ่านค่าจากคอลัมน์ที่ 36(AJ) และ 37(AK) (ถ้ายกเลิก/ไม่มีข้อมูล ให้ดึงจาก advice เก่าแทน)
+                 preAdvice: r[35] || r[15] || "", 
+                 postAdvice: r[36] || ""
              });
         });
     }
 
     data = obValues.reduce((acc, row) => {
-       const group = String(row[4]).trim();
-       const statusOnboard = String(row[7]).trim(); // Col 7 (index) is "Type" (Status)
-       const id = String(row[0]);
-       
-       // *** LOGIC CHANGED: Remove Group Check. If status is 'เปิดระบบ' OR has booking, include it ***
-       const fbRecord = fbMap.get(id);
-       const bookingCode = fbRecord ? fbRecord.bookingCode : "";
-       const jobId = fbRecord ? fbRecord.jobId : "";
-       const cleanDateStr = fbRecord ? fbRecord.cleanDate : "";
-       const status = fbRecord ? fbRecord.status : ""; 
+        const statusOnboard = String(row[7]).trim(); 
+        const id = String(row[0]);
+        
+        const fbRecord = fbMap.get(id);
+        const bookingCode = fbRecord ? fbRecord.bookingCode : "";
+        const jobId = fbRecord ? fbRecord.jobId : "";
+        const cleanDateStr = fbRecord ? fbRecord.cleanDate : "";
+        const status = fbRecord ? fbRecord.status : ""; 
 
-       let cleanTime = 0;
-       if (cleanDateStr) cleanTime = parseDateForSort(cleanDateStr);
+        let cleanTime = 0;
+        if (cleanDateStr) cleanTime = parseDateForSort(cleanDateStr);
 
-       // Fix Default Status Logic
-       let processStatus = "รอรับงานแรก";
-       if (bookingCode) {
-           if (status === 'PreCallDone') processStatus = "โทรเยี่ยมเรียบร้อย";
-           else if (status === 'Done') processStatus = "จบงานสมบูรณ์";
-           else processStatus = "รอโทรเยี่ยม";
-       } else {
-           // Important: If no booking code, status MUST be waiting for job
-           processStatus = "รอรับงานแรก";
-       }
-       
-       const isPreCallDone = status === 'PreCallDone' || status === 'Done';
-       const isPostCallDone = status === 'Done';
+        let processStatus = "รอรับงานแรก";
+        if (bookingCode) {
+            if (status === 'PreCallDone') processStatus = "โทรเยี่ยมเรียบร้อย";
+            else if (status === 'Done') processStatus = "จบงานสมบูรณ์";
+            else processStatus = "รอโทรเยี่ยม";
+        } else {
+            processStatus = "รอรับงานแรก";
+        }
+        
+        const isPreCallDone = status === 'PreCallDone' || status === 'Done';
+        const isPostCallDone = status === 'Done';
 
-       // ** CORE CHANGE HERE: Allow ANY group if status is 'เปิดระบบ' **
-       // Removed condition: if (group === 'A')
-       if (statusOnboard === 'เปิดระบบ' || bookingCode) {
-          acc.push({
+        if (statusOnboard === 'เปิดระบบ' || bookingCode) {
+           acc.push({
              id: id, maidCode: row[2], name: row[3], phone: row[5], center: row[18],
              bookingCode: bookingCode, jobId: jobId, cleanDate: cleanDateStr, cleanTimestamp: cleanTime,
+             acceptDate: fbRecord ? fbRecord.acceptDate : "", 
              processStatus: processStatus,
              isPreCallDone: isPreCallDone, isPostCallDone: isPostCallDone,
              checklist: fbRecord ? fbRecord.checklist : null,
              history: fbRecord ? fbRecord.history : [],
              workHours: fbRecord ? fbRecord.workHours : "",
+             // 🌟 ส่งค่าที่อ่านได้กลับไปหน้าเว็บ
+             preAdvice: fbRecord ? fbRecord.preAdvice : "",
+             postAdvice: fbRecord ? fbRecord.postAdvice : ""
           });
-       }
-       
-       return acc;
+        }
+        
+        return acc;
     }, []);
   }
 
@@ -1261,9 +1288,6 @@ function saveFirstJobDetails(form) {
     // Parse Date & Time
     let formattedCleanDate = form.cleanDate;
     let dbTime = "";
-    
-    // ... (Date parsing logic same as before) ...
-    // Simplified for brevity, assume valid date passed or simple fallback
     if (!formattedCleanDate && form.cleanDate) formattedCleanDate = form.cleanDate; 
 
     const status = "Assigned";
@@ -1271,12 +1295,13 @@ function saveFirstJobDetails(form) {
     const logEntry = { date: timestamp, note: `[Assign Job] จ่ายงานแรก: ${form.bookingCode} (Clean: ${form.cleanDate})`, by: form.officer };
 
     if (rowIndex !== -1) {
+        // อัปเดตข้อมูลเดิมที่มีอยู่แล้ว
         firstBkSheet.getRange(rowIndex, 6).setValue(form.bookingCode);
         firstBkSheet.getRange(rowIndex, 7).setValue(form.jobId);
         firstBkSheet.getRange(rowIndex, 8).setValue(formattedCleanDate);     
-        firstBkSheet.getRange(rowIndex, 34).setValue(dbTime);     
-        firstBkSheet.getRange(rowIndex, 9).setValue(form.acceptDate);
+        firstBkSheet.getRange(rowIndex, 9).setValue(form.acceptDate); // 🌟 เซฟวันที่กดรับงานลงคอลัมน์ 9 (I)
         firstBkSheet.getRange(rowIndex, 33).setValue(form.workHours); 
+        firstBkSheet.getRange(rowIndex, 34).setValue(dbTime);     
         
         const currStatus = firstBkSheet.getRange(rowIndex, 10).getValue();
         if(!currStatus) firstBkSheet.getRange(rowIndex, 10).setValue(status);
@@ -1288,6 +1313,7 @@ function saveFirstJobDetails(form) {
         history.unshift(logEntry);
         historyCell.setValue(JSON.stringify(history));
     } else {
+        // กรณีเพิ่มข้อมูลใหม่ (ดึงมาจาก Onboard)
         const obLastRow = onboardSheet.getLastRow();
         const obIds = onboardSheet.getRange(2, 1, obLastRow - 1, 1).getDisplayValues().flat();
         const obIndex = obIds.indexOf(String(form.id));
@@ -1296,12 +1322,25 @@ function saveFirstJobDetails(form) {
         const obData = onboardSheet.getRange(obIndex + 2, 1, 1, 21).getValues()[0];
         const historyJson = JSON.stringify([logEntry]);
 
-        const newRow = [
-            String(form.id), obData[2], obData[3], "'" + obData[5], obData[18],
-            form.bookingCode, form.jobId, formattedCleanDate, form.acceptDate, status,
-            "", "", "", "", "", "", form.officer, timestamp, "", "", "", historyJson,
-            "", "", "", "", "", "", "", "", "", "", "", "", form.workHours, dbTime, ""
-        ];
+        // 🌟 ปรับวิธีสร้าง Row ใหม่ให้อ่านง่าย และป้องกันคอลัมน์เคลื่อน
+        const newRow = Array(35).fill(""); // สร้าง Array ว่างๆ 35 ช่อง (เผื่อไว้จนถึง ExtraData)
+        newRow[0] = String(form.id);
+        newRow[1] = obData[2];             // รหัสแม่บ้าน
+        newRow[2] = obData[3];             // ชื่อ-นามสกุล
+        newRow[3] = "'" + obData[5];       // เบอร์โทร
+        newRow[4] = obData[18];            // ศูนย์ (Center)
+        newRow[5] = form.bookingCode;      // รหัสการจอง
+        newRow[6] = form.jobId;            // Job ID
+        newRow[7] = formattedCleanDate;    // วันที่ทำงาน
+        newRow[8] = form.acceptDate;       // 🌟 วันที่กดรับงาน
+        newRow[9] = status;                // สถานะ Assigned
+        newRow[16] = form.officer;         // เจ้าหน้าที่
+        newRow[17] = timestamp;            // เวลาที่อัปเดต
+        newRow[21] = historyJson;          // ประวัติ (Log)
+        newRow[32] = form.workHours;       // ชั่วโมงทำงาน
+        newRow[33] = dbTime;               // เวลา
+        newRow[34] = "{}";                 // Extra JSON
+
         firstBkSheet.appendRow(newRow);
     }
     
@@ -1347,6 +1386,10 @@ function saveFirstJobChecklist(form) {
             // Standard Cols 11-15
             const preData = [form.c1_1||"", form.c1_2||"", form.c1_3||"", form.c1_4||"", form.c1_5||""];
             firstBkSheet.getRange(rowNumber, 11, 1, 5).setValues([preData]);
+            
+            // 🌟 บันทึกคำแนะนำ "ก่อนเริ่มงาน" ลงคอลัมน์ที่ 36 (AJ)
+            firstBkSheet.getRange(rowNumber, 36).setValue(form.preAdvice || "");
+            
             noteContent = `${logTitle}\nบันทึกข้อมูลเรียบร้อย`;
         } else {
             logTitle = `[Pre-Call] โทรไม่ติด (${form.callResult})`;
@@ -1373,12 +1416,15 @@ function saveFirstJobChecklist(form) {
         ];
         firstBkSheet.getRange(rowNumber, 23, 1, 10).setValues([postData]);
         
-        firstBkSheet.getRange(rowNumber, 19).setValue(form.reviewScore);
-        firstBkSheet.getRange(rowNumber, 20).setValue(form.customerComment);
-        firstBkSheet.getRange(rowNumber, 21).setValue(form.problemId);
+        firstBkSheet.getRange(rowNumber, 19).setValue(form.reviewScore || "");
+        firstBkSheet.getRange(rowNumber, 20).setValue(form.customerComment || "");
+        firstBkSheet.getRange(rowNumber, 21).setValue(form.problemId || "");
+        
+        // 🌟 บันทึกคำแนะนำ "หลังจบงาน" ลงคอลัมน์ที่ 37 (AK)
+        firstBkSheet.getRange(rowNumber, 37).setValue(form.postAdvice || "");
     }
     
-    // Save Advice & Officer
+    // Save Advice (คอลัมน์ 16 แบบเดิม เผื่อไว้ให้เป็น Fallback) & Officer
     if(form.advice) firstBkSheet.getRange(rowNumber, 16).setValue(form.advice);
     firstBkSheet.getRange(rowNumber, 17).setValue(form.officer);
     firstBkSheet.getRange(rowNumber, 18).setValue(formatDateForSheet(new Date()));
@@ -1480,7 +1526,8 @@ function getFastReportData(dateRange, centerFilter) {
     let result = {
         centers: config.onboardCenters,
         onboard: { total: 0, openSystem: 0, waiting: 0, stopped: 0 },
-        firstJob: { total: 0, waitingJob: 0, waitingCall: 0, callDone: 0, completed: 0, avgRating: 0 },
+        // 🌟 เพิ่มตัวแปร jobList สำหรับเก็บ Array รายชื่องานที่จบแล้วส่งไปให้ Popup หน้าบ้าน
+        firstJob: { total: 0, waitingJob: 0, waitingCall: 0, callDone: 0, completed: 0, avgRating: 0, jobList: [] },
         newVerify: { total: 0, verified: 0, pending: 0, notVerified: 0 },
         annualVerify: { total: 0, verified: 0, paid: 0, unpaid: 0 }
     };
@@ -1522,7 +1569,23 @@ function getFastReportData(dateRange, centerFilter) {
         if (!validMaidIds.has(row.id)) return;
 
         result.firstJob.total++;
-        if (row.processStatus === 'จบงานสมบูรณ์') result.firstJob.completed++;
+        if (row.processStatus === 'จบงานสมบูรณ์') {
+            result.firstJob.completed++;
+            
+            // 🌟 เพิ่มข้อมูลงานลงใน Array ส่งให้ UI แสดง Popup
+            result.firstJob.jobList.push({
+                id: row.id,
+                name: row.name,
+                maidCode: row.maidCode,
+                bookingCode: row.bookingCode, // <-- 🌟 เพิ่ม Booking Code
+                jobId: row.jobId,             // <-- 🌟 เพิ่ม Job ID สำหรับทำลิ้งก์
+                cleanDate: row.cleanDate,
+                rating: (row.checklist && row.checklist.reviewScore) ? row.checklist.reviewScore : "NO_REVIEW",
+                comment: (row.checklist && row.checklist.customerComment) ? row.checklist.customerComment : "",
+                problemId: (row.checklist && row.checklist.problemId) ? row.checklist.problemId : ""
+            });
+            
+        }
         else if (row.processStatus === 'โทรเยี่ยมเรียบร้อย') result.firstJob.callDone++;
         else if (row.processStatus === 'รอโทรเยี่ยม') result.firstJob.waitingCall++;
         else result.firstJob.waitingJob++;
@@ -1608,70 +1671,74 @@ function getFastReportData(dateRange, centerFilter) {
 // --- NEW: ACCOUNT VERIFICATION LOGIC ---
 // ==========================================
 
+// ==========================================
+// 🌟 ACCOUNT VERIFY (ดึงข้อมูลเพื่อเทียบสถานะบัญชี) 🌟
+// ==========================================
 function getAccountVerifyReferenceData() {
-    const masterSheet = getSheet(SHEET_NAME);
-    const annualSheet = getSheet(ANNUAL_SHEET_NAME);
-    const onboardSheet = getSheet(ONBOARD_SHEET_NAME); // NEW: Import Onboard sheet
+  try {
+    const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+    const referenceData = {};
     const currentUser = Session.getActiveUser().getEmail();
     
-    let refData = {};
-    
-    // 0. Get from Onboard (Start here for latest onboarding status)
-    const obRows = onboardSheet.getLastRow();
-    if (obRows > 1) {
-        // Col ID(0), Name(3), ID Card(6), Type(7)
-        // Use getDisplayValues to ensure string format
-        const obData = onboardSheet.getRange(2, 1, obRows - 1, 21).getDisplayValues();
-        obData.forEach(r => {
-             const cleanId = String(r[6]).replace(/'/g, "").replace(/\D/g, "").trim();
-             if (cleanId) {
-                 refData[cleanId] = {
-                     type: 'Onboard (เปิดระบบ)',
-                     name: r[3],
-                     result: '-', // No verification result yet usually
-                     status: r[7] // Onboard Status (e.g. "เปิดระบบ", "รอเอกสาร")
-                 };
-             }
-        });
+    // ฟังก์ชันย่อยสำหรับตัดเครื่องหมายขีด (-) ออกให้เหลือแต่ตัวเลข
+    const cleanId = (id) => String(id).replace(/\D/g, '');
+
+    // 1. ดึงข้อมูลประวัติใหม่ (Master)
+    const mSheet = ss.getSheetByName(SHEET_NAME); 
+    if (mSheet) {
+        const masterData = mSheet.getDataRange().getDisplayValues();
+        if (masterData.length > 1) {
+            const h = masterData[0];
+            // 🌟 ปรับให้ค้นหาหัวตารางแบบยืดหยุ่นขึ้น
+            const idIdx = h.findIndex(x => { let s = String(x).toLowerCase(); return s.includes('บัตร') || s.includes('id card') || s.includes('id_card'); });
+            const nameIdx = h.findIndex(x => { let s = String(x).toLowerCase(); return s.includes('ชื่อ') || s.includes('name'); });
+            const statusIdx = h.findIndex(x => { let s = String(x).toLowerCase(); return s.includes('ft') || s.includes('สถานะ') || s.includes('status') || s.includes('ผลตรวจ'); });
+            
+            for (let i = 1; i < masterData.length; i++) {
+                let r = masterData[i];
+                let id = idIdx >= 0 ? cleanId(r[idIdx]) : "";
+                if (id) {
+                    referenceData[id] = {
+                        name: nameIdx >= 0 ? r[nameIdx] : "-",
+                        status: statusIdx >= 0 ? r[statusIdx] : "-",
+                        type: "ผู้ให้บริการใหม่"
+                    };
+                }
+            }
+        }
     }
 
-    // 1. Get from Master (New Verification) - Overwrite if found
-    const mRows = masterSheet.getLastRow();
-    if (mRows > 1) {
-        const mData = masterSheet.getRange(2, 1, mRows - 1, 12).getDisplayValues();
-        mData.forEach(r => {
-             const cleanId = String(r[3]).replace(/'/g, "").replace(/\D/g, "").trim();
-             if (cleanId) {
-                 refData[cleanId] = {
-                     type: 'ผู้ให้บริการใหม่',
-                     name: r[2],
-                     result: r[10], // Result
-                     status: r[11]  // FT Status
-                 };
-             }
-        });
+    // 2. ดึงข้อมูลประวัติรายปี (Annual) 
+    // ทำทีหลังเพื่อ Update ทับ (ถ้ามีชื่อซ้ำกัน ระบบจะยึดสถานะของ "รายปี" เป็นหลักเพราะใหม่กว่า)
+    const aSheet = ss.getSheetByName(ANNUAL_SHEET_NAME);
+    if (aSheet) {
+        const annualData = aSheet.getDataRange().getDisplayValues();
+        if (annualData.length > 1) {
+            const h = annualData[0];
+            // 🌟 ปรับให้ค้นหาหัวตารางแบบยืดหยุ่นขึ้น
+            const idIdx = h.findIndex(x => { let s = String(x).toLowerCase(); return s.includes('บัตร') || s.includes('id card') || s.includes('id_card'); });
+            const nameIdx = h.findIndex(x => { let s = String(x).toLowerCase(); return s.includes('ชื่อ') || s.includes('name'); });
+            const statusIdx = h.findIndex(x => { let s = String(x).toLowerCase(); return s.includes('สถานะส่ง') || s.includes('ผลตรวจ') || s.includes('status'); });
+            
+            for (let i = 1; i < annualData.length; i++) {
+                let r = annualData[i];
+                let id = idIdx >= 0 ? cleanId(r[idIdx]) : "";
+                if (id) {
+                    referenceData[id] = {
+                        name: nameIdx >= 0 ? r[nameIdx] : "-",
+                        status: statusIdx >= 0 ? r[statusIdx] : "-",
+                        type: "ตรวจประวัติรายปี"
+                    };
+                }
+            }
+        }
     }
 
-    // 2. Get from Annual (Yearly Verification) - Overwrite if found (Latest status)
-    const aRows = annualSheet.getLastRow();
-    if (aRows > 1) {
-        const aData = annualSheet.getRange(2, 1, aRows - 1, 15).getDisplayValues();
-        aData.forEach(r => {
-             const cleanId = String(r[4]).replace(/'/g, "").replace(/\D/g, "").trim();
-             if (cleanId) {
-                 refData[cleanId] = {
-                     type: 'ตรวจประวัติรายปี',
-                     name: r[2],
-                     result: r[14], // Result
-                     status: r[14]  // Status
-                 };
-             }
-        });
-    }
-
-    return { referenceData: refData, currentUser: currentUser };
+    return { success: true, referenceData: referenceData, currentUser: currentUser };
+  } catch (e) {
+    return { success: false, message: e.toString(), referenceData: {} };
+  }
 }
-
 // ==========================================
 // --- UTILITIES ---
 // ==========================================
@@ -1808,4 +1875,471 @@ function convertToStandardDate(dateStr) {
     let m = (d.getMonth() + 1).toString().padStart(2, '0');
     let day = d.getDate().toString().padStart(2, '0');
     return `${y}-${m}-${day}`;
+}
+
+// ==========================================
+// 🌟 BULK UPDATE & HISTORY LOGS LOGIC 🌟
+// ==========================================
+
+const UPLOAD_LOG_SHEET = "UploadLogs";
+
+function processBulkUpdate(records, moduleName, fileName, userEmail) {
+  const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+  
+  let logSheet = ss.getSheetByName("UploadLogs");
+  if (!logSheet) {
+    logSheet = ss.insertSheet("UploadLogs");
+    logSheet.appendRow(["Timestamp", "User Email", "Module", "File Name", "Success Count", "Failed Count", "Failed Details", "Success Details"]);
+  }
+
+  let targetSheet;
+  let idCardColIdx; 
+
+  if (moduleName === 'MASTER') {
+    targetSheet = ss.getSheetByName(SHEET_NAME); 
+    idCardColIdx = 4; // คอลัมน์ D
+  } else if (moduleName === 'ANNUAL') {
+    targetSheet = ss.getSheetByName(ANNUAL_SHEET_NAME); 
+    idCardColIdx = 5; // คอลัมน์ E
+  } else {
+    return { success: false, message: "Invalid module name" };
+  }
+
+  if (!targetSheet) return { success: false, message: "ไม่พบฐานข้อมูล" };
+
+  const lastRow = targetSheet.getLastRow();
+  if (lastRow <= 1) return { success: false, message: "ไม่มีข้อมูลในฐานข้อมูลให้ค้นหา" };
+
+  const dataRange = targetSheet.getRange(2, 1, lastRow - 1, targetSheet.getLastColumn());
+  const sheetData = dataRange.getDisplayValues();
+
+  // 🌟 ดึงชื่อหัวตารางเพื่อหาคอลัมน์แบบอัตโนมัติ 🌟
+  const headers = targetSheet.getRange(1, 1, 1, targetSheet.getLastColumn()).getValues()[0];
+  
+  // -- สำหรับหน้า ANNUAL (รายปี) --
+  let colAnnualResult = headers.findIndex(h => String(h).includes('ผลตรวจ') || String(h).includes('result')) + 1;
+  if (colAnnualResult <= 0 && moduleName === 'ANNUAL') colAnnualResult = 15; // default O
+  
+  let colAnnualStatusProcess = headers.findIndex(h => String(h).trim().toLowerCase() === 'status process' || String(h).includes('สถานะส่ง')) + 1;
+  if (colAnnualStatusProcess <= 0 && moduleName === 'ANNUAL') colAnnualStatusProcess = 13; // default M
+  
+  let colAnnualResultDate = headers.findIndex(h => String(h).trim().toLowerCase() === 'result date' || String(h).includes('วันรับผล')) + 1;
+  if (colAnnualResultDate <= 0 && moduleName === 'ANNUAL') colAnnualResultDate = 14; // default N
+
+  // -- สำหรับหน้า MASTER (ประวัติใหม่) --
+  let colMasterFtStatus = headers.findIndex(h => String(h).trim().toLowerCase().includes('สถานะ ft')) + 1;
+  if (colMasterFtStatus <= 0 && moduleName === 'MASTER') colMasterFtStatus = 12; // default L
+  
+  let colMasterResult = headers.findIndex(h => String(h).includes('ผลตรวจสอบ') || String(h) === 'ผลตรวจ') + 1;
+  if (colMasterResult <= 0 && moduleName === 'MASTER') colMasterResult = 11; // default K
+  
+  let colMasterResultDate = headers.findIndex(h => String(h).includes('วันที่รับผล') || String(h).includes('วันรับผล')) + 1;
+  if (colMasterResultDate <= 0 && moduleName === 'MASTER') colMasterResultDate = 10; // default J
+
+  let successCount = 0;
+  let failedItems = [];
+  let successItems = [];
+  let updatedIds = []; 
+  let updatesToMake = []; 
+
+  const todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+
+  records.forEach((record, index) => {
+    if(!record.idCard && !record.status) return;
+    
+    const cleanCsvId = String(record.idCard).replace(/\D/g, '');
+    const rawStatus = String(record.status).trim();
+    const lowerStatus = rawStatus.toLowerCase();
+    
+    if (cleanCsvId === '' || rawStatus === '' || cleanCsvId.length < 10) {
+       if(index > 0) failedItems.push({ idCard: record.idCard, status: rawStatus, reason: "ข้อมูลไม่ครบ/รูปแบบผิด" });
+       return;
+    }
+
+    let rowIndexFound = -1;
+    for (let i = 0; i < sheetData.length; i++) {
+       const cleanSheetId = String(sheetData[i][idCardColIdx - 1]).replace(/\D/g, '');
+       if (cleanCsvId === cleanSheetId) {
+           rowIndexFound = i;
+           break;
+       }
+    }
+
+    if (rowIndexFound !== -1) {
+       const targetRow = rowIndexFound + 2;
+
+       if (moduleName === 'MASTER') {
+           // 🌟 Logic สำหรับตรวจประวัติใหม่ (MASTER) 🌟
+           if (lowerStatus.includes('kyc ไม่ผ่าน') || lowerStatus.includes('kycไม่ผ่าน') || lowerStatus.includes('ไม่ผ่าน')) {
+               if (colMasterResult > 0) updatesToMake.push({ row: targetRow, col: colMasterResult, val: 'พบประวัติ' });
+               if (colMasterFtStatus > 0) updatesToMake.push({ row: targetRow, col: colMasterFtStatus, val: 'Not Verified' });
+               if (colMasterResultDate > 0) updatesToMake.push({ row: targetRow, col: colMasterResultDate, val: todayStr });
+           } 
+           else if (lowerStatus.includes('ได้รับผลแล้ว') || lowerStatus.includes('อนุมัติโดยพนักงาน')) {
+               if (colMasterResult > 0) updatesToMake.push({ row: targetRow, col: colMasterResult, val: 'ไม่พบประวัติ' });
+               if (colMasterFtStatus > 0) updatesToMake.push({ row: targetRow, col: colMasterFtStatus, val: 'Verified' });
+               if (colMasterResultDate > 0) updatesToMake.push({ row: targetRow, col: colMasterResultDate, val: todayStr });
+           } 
+           else {
+               // กรณีสถานะอื่นๆ ที่นอกเหนือเงื่อนไข ให้อัปเดตแค่ สถานะ FT
+               if (colMasterFtStatus > 0) updatesToMake.push({ row: targetRow, col: colMasterFtStatus, val: rawStatus });
+           }
+       } 
+       else if (moduleName === 'ANNUAL') {
+           // 🌟 Logic สำหรับตรวจรายปี (ANNUAL) 🌟
+           if (colAnnualResult > 0) updatesToMake.push({ row: targetRow, col: colAnnualResult, val: rawStatus });
+           
+           if (lowerStatus.includes('ได้รับผลแล้ว') || lowerStatus.includes('อนุมัติโดยพนักงาน')) {
+               if (colAnnualStatusProcess > 0) updatesToMake.push({ row: targetRow, col: colAnnualStatusProcess, val: 'ผลตรวจออกแล้ว' });
+               if (colAnnualResultDate > 0) updatesToMake.push({ row: targetRow, col: colAnnualResultDate, val: todayStr });
+           }
+       }
+
+       updatedIds.push(String(sheetData[rowIndexFound][0])); 
+       successItems.push({ idCard: record.idCard, status: rawStatus });
+       successCount++;
+    } else {
+       failedItems.push({ idCard: record.idCard, status: rawStatus, reason: "ไม่พบเลขบัตรในระบบ" });
+    }
+  });
+
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    
+    updatesToMake.forEach(update => {
+       targetSheet.getRange(update.row, update.col).setValue(update.val);
+    });
+
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss");
+    logSheet.insertRowAfter(1); 
+    logSheet.getRange(2, 1, 1, 8).setValues([[
+        timestamp, userEmail, moduleName, fileName, successCount, failedItems.length, JSON.stringify(failedItems), JSON.stringify(successItems)
+    ]]);
+    
+    if (typeof clearConfigCache === "function") clearConfigCache();
+
+    return { 
+      success: true, 
+      successCount: successCount, 
+      failedCount: failedItems.length, 
+      updatedIds: updatedIds 
+    };
+
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function getUploadLogs(moduleName) {
+  try {
+      const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+      const logSheet = ss.getSheetByName(UPLOAD_LOG_SHEET);
+      if (!logSheet) return [];
+
+      const lastRow = logSheet.getLastRow();
+      if (lastRow <= 1) return [];
+
+      const logs = logSheet.getRange(2, 1, lastRow - 1, 8).getDisplayValues(); 
+      return logs
+        .filter(row => row[2] === moduleName)
+        .map(row => {
+          let failed = [];
+          let success = [];
+          try { failed = row[6] ? JSON.parse(row[6]) : []; } catch(e) {}
+          try { success = row[7] ? JSON.parse(row[7]) : []; } catch(e) {}
+          
+          return {
+            timestamp: row[0],
+            user: row[1],
+            fileName: row[3],
+            successCount: row[4],
+            failedCount: row[5],
+            failedItems: failed,
+            successItems: success
+          };
+        });
+  } catch (error) {
+      return [];
+  }
+}
+
+// ==========================================
+// 🌟 UNIFIED BULK UPDATE (Master + Annual) 🌟
+// ==========================================
+function processUnifiedBulkUpdate(records, fileName, userEmail) {
+  const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+  
+  let logSheet = ss.getSheetByName("UploadLogs");
+  if (!logSheet) {
+    logSheet = ss.insertSheet("UploadLogs");
+    logSheet.appendRow(["Timestamp", "User Email", "Module", "File Name", "Success Count", "Failed Count", "Failed Details", "Success Details"]);
+  }
+
+  // --- 1. เตรียมข้อมูล Master (ประวัติใหม่) ---
+  const masterSheet = ss.getSheetByName(SHEET_NAME);
+  const masterData = masterSheet ? masterSheet.getDataRange().getDisplayValues() : [];
+  const m_headers = masterData.length > 0 ? masterData[0] : [];
+  let m_idCol = 4; // D
+  let m_ftStatusCol = m_headers.findIndex(h => String(h).trim().toLowerCase().includes('สถานะ ft')) + 1 || 12;
+  let m_resultCol = m_headers.findIndex(h => String(h).includes('ผลตรวจสอบ') || String(h) === 'ผลตรวจ') + 1 || 11;
+  let m_resultDateCol = m_headers.findIndex(h => String(h).includes('วันที่รับผล') || String(h).includes('วันรับผล')) + 1 || 10;
+
+  // --- 2. เตรียมข้อมูล Annual (รายปี) ---
+  const annualSheet = ss.getSheetByName(ANNUAL_SHEET_NAME);
+  const annualData = annualSheet ? annualSheet.getDataRange().getDisplayValues() : [];
+  const a_headers = annualData.length > 0 ? annualData[0] : [];
+  let a_idCol = 5; // E
+  let a_resultCol = a_headers.findIndex(h => String(h).includes('ผลตรวจ') || String(h).includes('result')) + 1 || 15;
+  let a_statusProcessCol = a_headers.findIndex(h => String(h).trim().toLowerCase() === 'status process' || String(h).includes('สถานะส่ง')) + 1 || 13;
+  let a_resultDateCol = a_headers.findIndex(h => String(h).trim().toLowerCase() === 'result date' || String(h).includes('วันรับผล')) + 1 || 14;
+
+  let masterUpdates = [];
+  let annualUpdates = [];
+  let successItems = [];
+  let failedItems = [];
+  
+  let masterUpdateCount = 0;
+  let annualUpdateCount = 0;
+  let updatedMasterIds = [];
+  let updatedAnnualIds = [];
+
+  const todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+
+  // --- 3. วนลูปจับคู่ข้อมูล ---
+  records.forEach((record, index) => {
+    if(!record.idCard && !record.status) return;
+    
+    const cleanCsvId = String(record.idCard).replace(/\D/g, '');
+    const rawStatus = String(record.status).trim();
+    const lowerStatus = rawStatus.toLowerCase();
+    
+    if (cleanCsvId === '' || rawStatus === '' || cleanCsvId.length < 10) {
+       if(index > 0) failedItems.push({ idCard: record.idCard, status: rawStatus, reason: "ข้อมูลไม่ครบ" });
+       return;
+    }
+
+    let foundInAnnual = false;
+    let annualRowIdx = -1;
+
+    // 1. ค้นหาใน Annual ก่อนเป็นอันดับแรก
+    if (annualData.length > 1) {
+        for (let i = 1; i < annualData.length; i++) {
+           const sheetId = String(annualData[i][a_idCol - 1]).replace(/\D/g, '');
+           if (cleanCsvId === sheetId) { annualRowIdx = i; foundInAnnual = true; break; }
+        }
+    }
+
+    let foundInMaster = false;
+    let masterRowIdx = -1;
+
+    // 2. ค้นหาใน Master เฉพาะกรณีที่ "ไม่เจอใน Annual" เท่านั้น
+    if (!foundInAnnual && masterData.length > 1) {
+        for (let i = 1; i < masterData.length; i++) {
+           const sheetId = String(masterData[i][m_idCol - 1]).replace(/\D/g, '');
+           if (cleanCsvId === sheetId) { masterRowIdx = i; foundInMaster = true; break; }
+        }
+    }
+
+    if (!foundInMaster && !foundInAnnual) {
+        failedItems.push({ idCard: record.idCard, status: rawStatus, reason: "ไม่พบในระบบใดเลย" });
+        return;
+    }
+
+    // 🌟 Logic ฝั่งรายปี (Annual) 🌟
+    if (foundInAnnual) {
+        const targetRow = annualRowIdx + 1;
+        if(a_resultCol > 0) annualUpdates.push({ row: targetRow, col: a_resultCol, val: rawStatus });
+        if (lowerStatus.includes('ได้รับผลแล้ว') || lowerStatus.includes('อนุมัติโดยพนักงาน')) {
+           if(a_statusProcessCol > 0) annualUpdates.push({ row: targetRow, col: a_statusProcessCol, val: 'ผลตรวจออกแล้ว' });
+           if(a_resultDateCol > 0) annualUpdates.push({ row: targetRow, col: a_resultDateCol, val: todayStr });
+        }
+        updatedAnnualIds.push(String(annualData[annualRowIdx][0]));
+        annualUpdateCount++;
+    }
+
+    // 🌟 Logic ฝั่งประวัติใหม่ (Master) 🌟
+    if (foundInMaster) {
+        const targetRow = masterRowIdx + 1;
+        if (lowerStatus.includes('kyc ไม่ผ่าน') || lowerStatus.includes('kycไม่ผ่าน') || lowerStatus.includes('ไม่ผ่าน')) {
+           if(m_resultCol > 0) masterUpdates.push({ row: targetRow, col: m_resultCol, val: 'พบประวัติ' });
+           if(m_ftStatusCol > 0) masterUpdates.push({ row: targetRow, col: m_ftStatusCol, val: 'Not Verified' });
+           if(m_resultDateCol > 0) masterUpdates.push({ row: targetRow, col: m_resultDateCol, val: todayStr });
+        } else if (lowerStatus.includes('ได้รับผลแล้ว') || lowerStatus.includes('อนุมัติโดยพนักงาน')) {
+           if(m_resultCol > 0) masterUpdates.push({ row: targetRow, col: m_resultCol, val: 'ไม่พบประวัติ' });
+           if(m_ftStatusCol > 0) masterUpdates.push({ row: targetRow, col: m_ftStatusCol, val: 'Verified' });
+           if(m_resultDateCol > 0) masterUpdates.push({ row: targetRow, col: m_resultDateCol, val: todayStr });
+        } else {
+           if(m_ftStatusCol > 0) masterUpdates.push({ row: targetRow, col: m_ftStatusCol, val: rawStatus });
+        }
+        updatedMasterIds.push(String(masterData[masterRowIdx][0]));
+        masterUpdateCount++;
+    }
+
+    successItems.push({ idCard: record.idCard, status: rawStatus, masterMatch: foundInMaster, annualMatch: foundInAnnual });
+  });
+
+  // --- 4. บันทึกลง Google Sheets ---
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    
+    if (masterSheet && masterUpdates.length > 0) {
+        masterUpdates.forEach(u => masterSheet.getRange(u.row, u.col).setValue(u.val));
+    }
+    if (annualSheet && annualUpdates.length > 0) {
+        annualUpdates.forEach(u => annualSheet.getRange(u.row, u.col).setValue(u.val));
+    }
+
+    const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss");
+    logSheet.insertRowAfter(1); 
+    logSheet.getRange(2, 1, 1, 8).setValues([[
+        timestamp, userEmail, "UNIFIED_VERIFY", fileName, successItems.length, failedItems.length, JSON.stringify(failedItems), JSON.stringify(successItems)
+    ]]);
+    
+    if (typeof clearConfigCache === "function") clearConfigCache();
+
+    return { 
+      success: true, 
+      masterCount: masterUpdateCount,
+      annualCount: annualUpdateCount,
+      failedCount: failedItems.length, 
+      updatedMasterIds: updatedMasterIds,
+      updatedAnnualIds: updatedAnnualIds,
+      successItems: successItems,
+      failedItems: failedItems
+    };
+
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ==========================================
+// 🌟 GLOBAL SMART SEARCH (ค้นหาอัจฉริยะทะลุทุกชีต) 🌟
+// ==========================================
+function globalSmartSearch(keyword) {
+  if (!keyword || keyword.length < 3) return { success: true, data: [] };
+  
+  keyword = keyword.toLowerCase().trim();
+  const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+  
+  let results = [];
+
+  // ฟังก์ชันช่วยหาคอลัมน์จากชื่อหัวตาราง
+  function getColIndex(headers, possibleNames) {
+      return headers.findIndex(h => {
+          const lowerH = String(h).toLowerCase().trim();
+          return possibleNames.some(pn => lowerH.includes(pn));
+      });
+  }
+
+  // ฟังก์ชันช่วยค้นหาในแต่ละชีต
+  function searchInSheet(sheetName, moduleName) {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) return;
+      
+      const data = sheet.getDataRange().getDisplayValues();
+      if (data.length <= 1) return;
+
+      const headers = data[0];
+      const nameIdx = getColIndex(headers, ['ชื่อ', 'name']);
+      const idIdx = getColIndex(headers, ['บัตร', 'id card', 'เลขบัตร']);
+      const codeIdx = getColIndex(headers, ['รหัส', 'code', 'maid', 'ref']);
+
+      for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          const name = nameIdx >= 0 ? String(row[nameIdx]) : "";
+          const idCard = idIdx >= 0 ? String(row[idIdx]) : "";
+          const code = codeIdx >= 0 ? String(row[codeIdx]) : "";
+          
+          const searchStr = (name + " " + idCard + " " + code).toLowerCase();
+          
+          // ถ้ามีคำค้นหาอยู่ในแถวนี้
+          if (searchStr.includes(keyword)) {
+              const cleanId = idCard.replace(/\D/g, '');
+              const uniqueKey = cleanId || name; // ใช้เลขบัตรเป็น Key หลักในการรวมข้อมูล
+              
+              let existing = results.find(r => r.key === uniqueKey);
+              if (existing) {
+                  // ถ้าเจอคนนี้แล้วในระบบอื่น ให้เพิ่มป้ายสถานะระบบใหม่เข้าไป
+                  if (!existing.foundIn.includes(moduleName)) {
+                      existing.foundIn.push(moduleName);
+                  }
+                  if (!existing.code && code) existing.code = code;
+              } else {
+                  // ถ้าเพิ่งเจอครั้งแรก
+                  results.push({
+                      key: uniqueKey,
+                      name: name || "-",
+                      idCard: idCard || "-",
+                      code: code || "",
+                      foundIn: [moduleName]
+                  });
+              }
+          }
+      }
+  }
+
+  try {
+      // วิ่งค้นหาใน 3 ชีตหลัก (ใช้ตัวแปรชื่อชีตที่คุณตั้งไว้ด้านบนของ Code.gs)
+      if (typeof ONBOARD_SHEET_NAME !== 'undefined') searchInSheet(ONBOARD_SHEET_NAME, "Onboard");
+      if (typeof SHEET_NAME !== 'undefined') searchInSheet(SHEET_NAME, "Master");
+      if (typeof ANNUAL_SHEET_NAME !== 'undefined') searchInSheet(ANNUAL_SHEET_NAME, "Annual");
+
+      // ส่งผลลัพธ์กลับไปแสดงแค่ 15 รายการแรก เพื่อป้องกันหน้าจอกระตุก
+      return { success: true, data: results.slice(0, 15) };
+  } catch (e) {
+      return { success: false, message: e.toString() };
+  }
+}
+
+function getGlobalProviderMap() {
+  try {
+    const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+    const map = {};
+    const cleanId = (id) => String(id).replace(/\D/g, '');
+
+    // 1. ดึงจาก Master
+    const mSheet = ss.getSheetByName(SHEET_NAME);
+    if (mSheet) {
+        const mData = mSheet.getDataRange().getDisplayValues();
+        if (mData.length > 1) {
+            const h = mData[0];
+            const idIdx = h.findIndex(x => String(x).toLowerCase().includes('บัตร'));
+            const nameIdx = h.findIndex(x => String(x).toLowerCase().includes('ชื่อ'));
+            const codeIdx = h.findIndex(x => String(x).toLowerCase().includes('รหัส') || String(x).toLowerCase().includes('code'));
+            
+            for(let i=1; i<mData.length; i++) {
+                let id = idIdx >= 0 ? cleanId(mData[i][idIdx]) : "";
+                if (id) map[id] = { name: mData[i][nameIdx]||"-", code: mData[i][codeIdx]||"-" };
+            }
+        }
+    }
+
+    // 2. ดึงจาก Annual (ถ้ามีซ้ำ ให้ยึดข้อมูล Annual เป็นหลักเพราะอัปเดตกว่า)
+    const aSheet = ss.getSheetByName(ANNUAL_SHEET_NAME);
+    if (aSheet) {
+        const aData = aSheet.getDataRange().getDisplayValues();
+        if (aData.length > 1) {
+            const h = aData[0];
+            const idIdx = h.findIndex(x => String(x).toLowerCase().includes('บัตร'));
+            const nameIdx = h.findIndex(x => String(x).toLowerCase().includes('ชื่อ'));
+            const codeIdx = h.findIndex(x => String(x).toLowerCase().includes('รหัส') || String(x).toLowerCase().includes('ref'));
+            
+            for(let i=1; i<aData.length; i++) {
+                let id = idIdx >= 0 ? cleanId(aData[i][idIdx]) : "";
+                if (id) map[id] = { name: aData[i][nameIdx]||"-", code: aData[i][codeIdx]||"-" };
+            }
+        }
+    }
+    return map;
+  } catch(e) {
+    console.error("Error in getGlobalProviderMap: ", e);
+    return {};
+  }
 }
