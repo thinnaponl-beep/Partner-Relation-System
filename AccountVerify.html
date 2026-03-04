@@ -19,7 +19,7 @@
   <?!= include('_Styles'); ?>
 
   <style>
-    /* Minimal Upload Area (ปรับให้เล็กลง) */
+    /* Minimal Upload Area */
     .upload-area {
         border: 1px dashed #ced4da;
         border-radius: 12px;
@@ -53,12 +53,12 @@
         padding: 10px; 
         flex: 1; 
         border-right: 1px solid #eee; 
-        cursor: pointer;          /* เปลี่ยนเมาส์เป็นรูปมือ */
-        border-radius: 8px;       /* มุมมนเวลา Active */
+        cursor: pointer;          
+        border-radius: 8px;       
         transition: background-color 0.2s ease;
     }
     .summary-item:last-child { border-right: none; }
-    .summary-item:hover { background-color: #f8f9fa; } /* Effect ตอนชี้ */
+    .summary-item:hover { background-color: #f8f9fa; } 
     
     /* Active State for Summary Item */
     .summary-item.active { 
@@ -91,7 +91,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h4 class="fw-bold text-dark mb-0">บัญชี (Verification Check)</h4>
-                <small class="text-muted">ตรวจสอบสถานะผู้ให้บริการจากไฟล์ Excel/CSV</small>
+                <small class="text-muted">กระทบยอดบัญชี</small>
             </div>
         </div>
 
@@ -144,7 +144,7 @@
         <div id="resultSection" class="d-none">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
-                     <h6 class="mb-0 fw-bold text-secondary small"><i class="fas fa-list me-2"></i>ผลการตรวจสอบ</h6>
+                     <h6 class="mb-0 fw-bold text-secondary small"><i class="fas fa-list me-2"></i>ผลการกระทบยอด</h6>
                      <button class="btn btn-sm btn-success text-white fw-bold" onclick="exportToCSV()">
                         <i class="fas fa-file-download me-1"></i> Export CSV
                      </button>
@@ -154,17 +154,14 @@
                 <div class="filter-box d-flex flex-wrap gap-2 align-items-center">
                     <div class="input-group input-group-sm" style="width: auto; min-width: 200px;">
                         <span class="input-group-text bg-white text-muted border-end-0">ประเภท:</span>
-                        <!-- ID: filterSysType คือเป้าหมายที่เราจะเปลี่ยนค่าเมื่อกด Card -->
                         <select class="form-select border-start-0" id="filterSysType" onchange="filterTable()">
                             <option value="">ทั้งหมด</option>
-                            <!-- JS Populated -->
                         </select>
                     </div>
                     <div class="input-group input-group-sm" style="width: auto; min-width: 200px;">
                         <span class="input-group-text bg-white text-muted border-end-0">สถานะ:</span>
                         <select class="form-select border-start-0" id="filterSysStatus" onchange="filterTable()">
                             <option value="">ทั้งหมด</option>
-                            <!-- JS Populated -->
                         </select>
                     </div>
                     <div class="input-group input-group-sm ms-auto" style="width: 250px;">
@@ -203,6 +200,7 @@
   <script>
     let referenceData = {};
     let processedData = [];
+    let isRefDataLoaded = false; // 🌟 เพิ่มตัวแปรเช็คสถานะการโหลดข้อมูล
 
     window.onload = function() {
         // Active Menu
@@ -211,17 +209,43 @@
         const activeLink = document.querySelector('.nav-link-custom[data-page="account_verify"]');
         if(activeLink) activeLink.classList.add('active');
 
-        if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "ตรวจสอบบัญชี";
+        if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "กระทบยอดบัญชี";
         
         loadReferenceData();
         loadFromLocal();
     };
 
     function loadReferenceData() {
-        google.script.run.withSuccessHandler(res => {
-            referenceData = res.referenceData;
-            if(document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').textContent = res.currentUser;
-        }).getAccountVerifyReferenceData();
+        // 🌟 เพิ่ม withFailureHandler เพื่อดักจับ Error หากหลังบ้านพังหรือไม่มีฟังก์ชัน
+        google.script.run
+            .withSuccessHandler(res => {
+                isRefDataLoaded = true; // เปลี่ยนสถานะว่าโหลดเสร็จแล้ว
+                if (res && res.success) {
+                    referenceData = res.referenceData || {};
+                    
+                    // 🌟 แจ้งเตือนแอดมินหากฐานข้อมูลว่างเปล่า (หาคอลัมน์ไม่เจอ)
+                    const loadedCount = Object.keys(referenceData).length;
+                    if (loadedCount === 0) {
+                         Swal.fire({
+                             toast: true, position: 'top-end', icon: 'warning',
+                             title: 'โหลดเสร็จสิ้น แต่ไม่พบรายชื่อในฐานข้อมูล (อาจหาคอลัมน์เลขบัตรไม่เจอ)',
+                             showConfirmButton: false, timer: 5000
+                         });
+                    }
+                } else {
+                    console.error("Backend Error:", res ? res.message : "Unknown");
+                    Swal.fire('ดึงข้อมูลไม่สำเร็จ', 'เกิดข้อผิดพลาดที่หลังบ้าน: ' + (res ? res.message : ''), 'warning');
+                }
+                if(res && document.getElementById('userEmailDisplay')) {
+                    document.getElementById('userEmailDisplay').textContent = res.currentUser;
+                }
+            })
+            .withFailureHandler(err => {
+                isRefDataLoaded = true; // โหลดเสร็จแล้ว (แต่พัง)
+                console.error("RPC Error:", err);
+                Swal.fire('การเชื่อมต่อขัดข้อง', 'ไม่สามารถเชื่อมต่อฟังก์ชันหลังบ้านได้ (อาจลืม Deploy หรือโค้ด Code.gs มีปัญหา)', 'error');
+            })
+            .getAccountVerifyReferenceData();
     }
 
     function saveToLocal(data) {
@@ -268,7 +292,7 @@
                 // Clear filters
                 document.getElementById('filterSysType').innerHTML = '<option value="">ทั้งหมด</option>';
                 document.getElementById('filterSysStatus').innerHTML = '<option value="">ทั้งหมด</option>';
-                updateActiveSummaryUI(''); // Reset active state
+                updateActiveSummaryUI(''); 
             }
         });
     }
@@ -280,28 +304,57 @@
         }
     }
 
+    // 🌟 ปรับปรุง: แยกจังหวะการปิดวงล้อ Loading และดักจับ Error ป้องกันหน้าจอค้าง
     function handleFileSelect(input) {
         if (!input.files || input.files.length === 0) return;
         const file = input.files[0];
         
+        // เช็คนามสกุลไฟล์ก่อนเบื้องต้น
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
+            Swal.fire('รูปแบบไฟล์ไม่ถูกต้อง', 'กรุณาอัปโหลดไฟล์นามสกุล .csv, .xlsx หรือ .xls เท่านั้น', 'error');
+            input.value = ''; 
+            return;
+        }
+        
         const reader = new FileReader();
-        showLoading();
+        Swal.fire({ title: 'กำลังอ่านไฟล์...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
-            
-            processData(jsonData);
-            input.value = ""; 
-            hideLoading();
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                
+                Swal.close(); // ปิด Loading ทิ้งก่อน เพื่อไม่ให้มันทับกล่อง Alert ด้านล่าง
+                
+                // ถัดมาจึงโยนเข้ากระบวนการตรวจสอบ
+                processData(jsonData);
+                
+            } catch (error) {
+                Swal.fire('ไม่สามารถอ่านไฟล์ได้', 'ไฟล์อาจจะเสีย หรือรูปแบบไม่ถูกต้อง: ' + error.message, 'error');
+            } finally {
+                input.value = ""; // ต้องล้างค่าช่องเลือกไฟล์เสมอ
+            }
         };
+        
+        reader.onerror = function() {
+            Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอ่านไฟล์ได้', 'error');
+            input.value = '';
+        };
+
         reader.readAsArrayBuffer(file);
     }
 
     function processData(rows) {
-        if (!referenceData || Object.keys(referenceData).length === 0) {
-             Swal.fire('ระบบกำลังเตรียมข้อมูล', 'กรุณารอสักครู่แล้วลองใหม่', 'info'); return;
+        // 🌟 เปลี่ยนเงื่อนไขการเช็ค ให้ดูที่สถานะโหลดแทน Object เปล่า
+        if (!isRefDataLoaded) {
+             Swal.fire('ระบบกำลังเตรียมข้อมูล', 'กรุณารอสักครู่ให้ระบบดึงฐานข้อมูลเสร็จก่อน แล้วลองเลือกไฟล์ใหม่อีกครั้ง', 'info'); 
+             return;
+        }
+
+        if (!rows || rows.length === 0) {
+             Swal.fire('ไฟล์ว่างเปล่า', 'ไม่พบข้อมูลในไฟล์ที่แนบ', 'warning'); return;
         }
 
         processedData = [];
@@ -422,18 +475,13 @@
         });
     }
     
-    // --- New: Filter by Summary Logic ---
     function filterBySummary(type) {
-        // Update the dropdown value to match the clicked card
         const typeDropdown = document.getElementById('filterSysType');
         typeDropdown.value = type;
-        
-        // Trigger main filter function
         filterTable();
     }
     
     function updateActiveSummaryUI(activeType) {
-        // Helper to visual highlight the active card
         document.querySelectorAll('.summary-item').forEach(el => {
             if (el.dataset.filterType === activeType) {
                 el.classList.add('active');
@@ -448,7 +496,6 @@
         const typeFilter = document.getElementById('filterSysType').value;
         const statusFilter = document.getElementById('filterSysStatus').value;
         
-        // Update UI based on current filter state
         updateActiveSummaryUI(typeFilter);
 
         const filtered = processedData.filter(d => {
@@ -470,7 +517,6 @@
         
         let csvContent = "ลำดับ,ชื่อ (จากไฟล์),เลขบัตร (จากไฟล์),สถานะ (จากไฟล์),ประเภทผู้ให้บริการ (ระบบ),สถานะในระบบ,ชื่อในระบบ\n";
         
-        // Filter by current view
         const txt = document.getElementById('searchInput').value.toLowerCase();
         const typeFilter = document.getElementById('filterSysType').value;
         const statusFilter = document.getElementById('filterSysStatus').value;
