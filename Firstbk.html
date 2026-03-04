@@ -18,7 +18,7 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 
-  <?!= include('_Styles'); ?>
+  <?!= include('_Styles') ?>
 
   <style>
     /* Specific Styles for Star Rating */
@@ -95,10 +95,10 @@
 </head>
 <body>
 
-  <?!= include('_Sidebar'); ?>
+  <?!= include('_Sidebar') ?>
 
   <div class="main-content">
-    <?!= include('_Navbar'); ?>
+    <?!= include('_Navbar') ?>
     
     <div class="container-fluid">
         <!-- Header -->
@@ -176,7 +176,7 @@
             <div class="tab-pane fade show active" id="pane-pre">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
+                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%" class="text-center">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
                         <tbody id="tablePre"></tbody>
                     </table>
                 </div>
@@ -186,7 +186,7 @@
             <div class="tab-pane fade" id="pane-wait">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
+                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%" class="text-center">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
                         <tbody id="tableWait"></tbody>
                     </table>
                 </div>
@@ -196,7 +196,7 @@
             <div class="tab-pane fade" id="pane-post">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
+                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%" class="text-center">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
                         <tbody id="tablePost"></tbody>
                     </table>
                 </div>
@@ -206,7 +206,7 @@
             <div class="tab-pane fade" id="pane-done">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำงาน</th><th width="10%" class="text-center">รีวิว</th><th>คอมเม้น</th><th width="10%">รหัสปัญหา</th><th width="10%" class="text-center">จัดการ</th></tr></thead>
+                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%" class="text-center">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำงาน</th><th width="10%" class="text-center">รีวิว</th><th>คอมเม้น</th><th width="10%">รหัสปัญหา</th><th width="10%" class="text-center">จัดการ</th></tr></thead>
                         <tbody id="tableDone"></tbody>
                     </table>
                 </div>
@@ -223,7 +223,7 @@
         <div class="modal-header bg-white border-bottom-0 pb-0 d-flex justify-content-between">
           <h5 class="modal-title fw-bold text-primary" id="modalTitleText">จัดการข้อมูล</h5>
           <div>
-              <!-- Admin Config Button (Can enable if needed for local config toggle) -->
+              <!-- Admin Config Button -->
               <button class="btn btn-sm btn-light rounded-circle me-2 d-none" id="btnConfigChecklist" onclick="openConfigModal()" title="จัดการคำถาม">
                   <i class="fas fa-cog text-muted"></i>
               </button>
@@ -247,23 +247,20 @@
                   <div class="row g-3">
                       <div class="col-md-6"><label class="form-label small fw-bold text-muted">รหัสการจอง</label><input type="text" class="form-control" id="fj_bookingCode" placeholder="#xxxxxx"></div>
                       <div class="col-md-6"><label class="form-label small fw-bold text-muted">รหัสงาน (Job ID)</label><input type="text" class="form-control" id="fj_jobId"></div>
-                      <div class="col-md-6"><label class="form-label small fw-bold text-muted">วันที่กดรับงาน</label><input type="text" class="form-control datepicker" id="fj_acceptDate"></div>
+                      <div class="col-md-6"><label class="form-label small fw-bold text-muted">วันที่กดรับงาน</label><input type="text" class="form-control datepicker-assign" id="fj_acceptDate"></div>
                       
                       <!-- Date and Time Picker -->
                       <div class="col-md-4">
                         <label class="form-label small fw-bold text-muted">วันที่ทำความสะอาด</label>
                         <div class="input-group">
                              <span class="input-group-text bg-white"><i class="far fa-calendar-alt"></i></span>
-                             <!-- CORRECTED ID -->
-                             <input type="text" class="form-control datepicker-th" id="fj_cleanDate_date" placeholder="เลือกวันที่..." readonly>
+                             <input type="text" class="form-control datepicker-clean" id="fj_cleanDate_date" placeholder="เลือกวันที่..." readonly>
                         </div>
                       </div>
                       <div class="col-md-2">
                         <label class="form-label small fw-bold text-muted">เวลา</label>
-                        <!-- CORRECTED ID -->
                         <select class="form-select text-center" id="fj_cleanDate_time">
                              <option value="" selected disabled>-</option>
-                             <!-- Populated by JS -->
                         </select>
                       </div>
 
@@ -317,7 +314,7 @@
                           </div>
                       </div>
                       <div class="mb-3">
-                          <label class="form-label small fw-bold text-primary">คำแนะนำจากเทรนเนอร์</label>
+                          <label class="form-label small fw-bold text-primary" id="adviceLabelTitle">คำแนะนำจากเทรนเนอร์</label>
                           <textarea class="form-control" id="fj_advice" rows="2" placeholder="ระบุคำแนะนำ..."></textarea>
                       </div>
                   </div>
@@ -338,12 +335,16 @@
   <div class="modal fade" id="historyModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-bottom-0"><h5 class="modal-title fw-bold text-secondary">ประวัติการติดตาม</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body bg-light"><div id="timelineContainer" style="max-height: 400px; overflow-y: auto;"></div></div></div></div></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <?!= include('_Scripts'); ?>
+  <?!= include('_Scripts') ?>
+  
   <script>
     let rawData = [], currentUser = "", isUserAdmin = false;
     let actionModal, historyModal, summaryModal, configModal, rangePicker;
     let currentViewingId = null;
     let checklistQuestions = []; // Load from server
+    
+    // ประกาศตัวแปรเก็บ instance ของ flatpickr แยกกัน
+    let datepickerAssignInstance, datepickerCleanInstance;
 
     window.onload = function() {
         const navLinks = document.querySelectorAll('.nav-link-custom');
@@ -356,8 +357,8 @@
         summaryModal = new bootstrap.Modal(document.getElementById('summaryModal'));
         configModal = new bootstrap.Modal(document.getElementById('configModal'));
         
-        flatpickr(".datepicker", { dateFormat: "d/m/Y", locale: "th" });
-        flatpickr(".datepicker-th", { dateFormat: "j M Y", locale: "th" });
+        datepickerAssignInstance = flatpickr(".datepicker-assign", { dateFormat: "d/m/Y", locale: "th" });
+        datepickerCleanInstance = flatpickr(".datepicker-clean", { dateFormat: "j M Y", locale: "th" });
 
         // Range Filter (No Default to show ALL)
         rangePicker = flatpickr("#dateRangeFilter", {
@@ -573,20 +574,18 @@
         }).withFailureHandler(err => { hideLoading(); showError(err.message); }).getFirstBkData();
     }
 
-    // Function to handle Thai date parsing for comparison
     function parseThaiDateToDateObj(dateStr) {
         if(!dateStr) return null;
+        let str = String(dateStr).trim();
         
-        // Case 1: "1/2/2569" or "01/02/2569"
-        if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
-            const [d, m, y] = dateStr.split('/');
+        if (str.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+            const [d, m, y] = str.split('/');
             const year = parseInt(y) > 2400 ? parseInt(y) - 543 : parseInt(y);
             return new Date(year, parseInt(m) - 1, parseInt(d));
         }
         
-        // Case 2: "1 ก.พ. 2026"
         const thaiMonths = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
-        const match = dateStr.match(/^(\d{1,2})\s+(.*?)\s+(\d{4})/);
+        const match = str.match(/^(\d{1,2})\s+(.*?)\s+(\d{4})/);
         if (match) {
             const d = parseInt(match[1]);
             const mStr = match[2];
@@ -596,11 +595,13 @@
             if (mIndex !== -1) return new Date(year, mIndex, d);
         }
         
-        // Case 3: ISO like YYYY-MM-DD
-         if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-             const [y, m, d] = dateStr.split('-');
+         if (str.match(/^\d{4}-\d{2}-\d{2}/)) {
+             const [y, m, d] = str.substring(0, 10).split('-');
              return new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
          }
+
+        let parsed = new Date(str);
+        if (!isNaN(parsed.getTime())) return parsed;
 
         return null;
     }
@@ -695,29 +696,51 @@
                 if(!item.bookingCode) btnAction = `<button class="btn btn-sm btn-soft-primary rounded-pill" onclick="openModal('${item.id}', 'assign')">เพิ่มงาน</button>`;
                 else btnAction = `<button class="btn btn-sm btn-soft-info rounded-pill" onclick="openModal('${item.id}', 'precall')"><i class="fas fa-phone"></i> โทรเยี่ยม</button>`;
             } else if (type === 'wait') {
-                btnAction = `<button class="btn btn-sm btn-outline-danger rounded-pill me-1" onclick="returnJob('${item.id}')"><i class="fas fa-undo"></i> คืน</button><button class="btn btn-sm btn-outline-warning rounded-pill" onclick="openModal('${item.id}', 'assign')"><i class="fas fa-edit"></i></button>`;
+                btnAction = `
+                    <button class="btn btn-sm btn-soft-primary rounded-pill me-1" onclick="viewJobSummary('${item.id}')" title="ดูสรุปข้อมูล"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill me-1" onclick="returnJob('${item.id}')" title="คืนงาน"><i class="fas fa-undo"></i></button>
+                    <button class="btn btn-sm btn-outline-warning rounded-pill" onclick="openModal('${item.id}', 'assign')" title="แก้ไขการจ่ายงาน"><i class="fas fa-edit"></i></button>
+                `;
             } else if (type === 'post') {
-                btnAction = `<button class="btn btn-sm btn-warning text-dark rounded-pill" onclick="openModal('${item.id}', 'postcall')"><i class="fas fa-clipboard-check"></i> ติดตาม</button>`;
+                btnAction = `
+                    <button class="btn btn-sm btn-soft-primary rounded-pill me-1" onclick="viewJobSummary('${item.id}')" title="ดูสรุปข้อมูล"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-warning text-dark rounded-pill" onclick="openModal('${item.id}', 'postcall')"><i class="fas fa-clipboard-check"></i> ติดตาม</button>
+                `;
             } else {
                 btnAction = `<button class="btn btn-sm btn-soft-primary rounded-pill me-1" onclick="viewJobSummary('${item.id}')"><i class="fas fa-eye"></i></button><button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="openModal('${item.id}', 'postcall')"><i class="fas fa-pen"></i></button>`;
             }
             
-            let row = `<td class="text-center">${maidLink}</td><td class="${nameClass}">${item.name}</td><td>${item.center||'-'}</td><td>${item.phone||'-'}</td><td>${bookingDisplay}</td><td>${item.cleanDate||'-'}</td>`;
-            if (type === 'done') {
+            let histBtn = `<button class="btn btn-sm btn-light text-secondary border rounded-pill ms-1" onclick="viewHistory('${item.id}')" title="ประวัติ"><i class="fas fa-history"></i></button>`;
+            let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-outline-danger rounded-pill ms-1" onclick="deleteItem('${item.id}')" title="ลบข้อมูล"><i class="fas fa-trash"></i></button>` : '';
+
+            let row = `<td class="text-center text-muted">${index + 1}</td>`;
+            row += `<td class="text-center">${maidLink}</td>`; 
+            row += `<td class="${nameClass}">${item.name}</td>`; 
+
+            if (type !== 'done') {
+                row += `<td>${item.center||'-'}</td>`;
+                row += `<td>${item.phone||'-'}</td>`;
+                row += `<td>${bookingDisplay}</td>`;
+                row += `<td>${item.cleanDate||'-'}</td>`;
+                row += `<td class="text-center">${statusBadge}</td>`;
+            } else {
                 let stars = '-';
                 if(item.checklist?.reviewScore) {
                      if(item.checklist.reviewScore === "NO_REVIEW") stars = '<span class="badge bg-light text-muted">No Review</span>';
                      else stars = '<span class="text-warning">'+'★'.repeat(parseInt(item.checklist.reviewScore))+'</span>';
                 }
                 let problemDisplay = item.checklist?.problemId ? `<a href="https://admin-test.beneat.co/report-problems/${item.checklist.problemId}/edit" target="_blank" class="text-danger fw-bold text-decoration-none deeplink">${item.checklist.problemId}</a>` : '-';
-                row += `<td class="text-center">${stars}</td><td>${item.checklist?.customerComment||'-'}</td><td>${problemDisplay}</td>`;
-            } else {
-                row += `<td class="text-center">${statusBadge}</td>`;
+
+                row += `<td>${item.phone||'-'}</td>`;
+                row += `<td>${bookingDisplay}</td>`;
+                row += `<td>${item.cleanDate||'-'}</td>`;
+                row += `<td class="text-center">${stars}</td>`;
+                row += `<td>${item.checklist?.customerComment||'-'}</td>`;
+                row += `<td>${problemDisplay}</td>`;
             }
-            let histBtn = `<button class="btn btn-sm btn-light text-secondary border rounded-pill ms-1" onclick="viewHistory('${item.id}')" title="ประวัติ"><i class="fas fa-history"></i></button>`;
-            let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-outline-danger rounded-pill ms-1" onclick="deleteItem('${item.id}')" title="ลบข้อมูล"><i class="fas fa-trash"></i></button>` : '';
 
             row += `<td class="text-center"><div class="d-flex justify-content-center gap-1">${btnAction} ${histBtn} ${deleteBtn}</div></td>`;
+            
             tbody.innerHTML += `<tr>${row}</tr>`;
         });
     }
@@ -732,6 +755,35 @@
     
     function toggleNoData(elId, count) { document.getElementById(elId).classList.toggle('d-none', count > 0); }
     
+    // 🌟 🌟 🌟 Helper Function สำหรับดึงคำแนะนำจากประวัติ (History) แบบชั่วคราว (Fallback) 🌟 🌟 🌟
+    function extractAdviceFromHistory(historyArray, tag) {
+        if (!historyArray || !Array.isArray(historyArray)) return "-";
+        for (let h of historyArray) {
+            if (h.note && h.note.includes(tag)) {
+                let noteStr = h.note;
+                let match = noteStr.match(/(?:Note|คำแนะนำ)\s*:\s*([\s\S]*)/i);
+                if (match && match[1]) {
+                    let val = match[1].trim();
+                    if (val && val !== '-' && !val.includes('บันทึกข้อมูลเรียบร้อย')) {
+                        return val;
+                    }
+                }
+                
+                let cleanStr = noteStr.replace(/\[Pre-Call\]/ig, '')
+                                      .replace(/\[Post-Call\]/ig, '')
+                                      .replace(/อัปเดตข้อมูล/ig, '')
+                                      .replace(/บันทึกข้อมูลเรียบร้อย/ig, '')
+                                      .trim();
+                                      
+                if (cleanStr && cleanStr !== '-') {
+                    cleanStr = cleanStr.replace(/^[-:]\s*/, '');
+                    if (cleanStr) return cleanStr;
+                }
+            }
+        }
+        return "-";
+    }
+
     function openModal(id, mode) {
         const item = rawData.find(x => String(x.id) === String(id)); if(!item) return;
         document.getElementById('fj_id').value = item.id;
@@ -755,23 +807,40 @@
             if(m) { datePart = m[1]; timePart = m[2]; } else { datePart = item.cleanDate; }
         }
         
-        if (document.getElementById('fj_cleanDate_date')._flatpickr) {
-             if(datePart) document.getElementById('fj_cleanDate_date')._flatpickr.setDate(datePart);
-             else document.getElementById('fj_cleanDate_date')._flatpickr.clear();
+        let fpClean = document.getElementById('fj_cleanDate_date')._flatpickr;
+        if (fpClean) {
+             if(datePart) fpClean.setDate(datePart);
+             else fpClean.clear();
         }
         document.getElementById('fj_cleanDate_time').value = timePart || "";
 
         document.getElementById('fj_workHours').value = item.workHours || ""; 
         
-        if (item.acceptDate) {
-             const adObj = parseThaiDateToDateObj(item.acceptDate);
-             if(adObj) document.getElementById('fj_acceptDate')._flatpickr.setDate(adObj);
-             else document.getElementById('fj_acceptDate')._flatpickr.setDate(new Date()); 
-        } else {
-             document.getElementById('fj_acceptDate')._flatpickr.clear();
+        let fpAccept = document.getElementById('fj_acceptDate')._flatpickr;
+        if (fpAccept) {
+             if (item.acceptDate) {
+                 const adObj = parseThaiDateToDateObj(item.acceptDate);
+                 fpAccept.setDate(adObj || item.acceptDate);
+             } else {
+                 fpAccept.clear();
+             }
         }
 
         const titleText = document.getElementById('modalTitleText');
+        
+        // 🌟 🌟 กำหนดค่า Advice แบบแยก 2 ตัวแปร (Pre และ Post) 🌟 🌟
+        let preAdv = item.preAdvice || "";
+        let postAdv = item.postAdvice || "";
+
+        // Fallback หาข้อมูลเก่าเผื่อไว้ ในกรณีที่เพิ่งเปลี่ยนระบบมา
+        if (!preAdv && item.isPreCallDone) {
+            preAdv = extractAdviceFromHistory(item.history, '[Pre-Call]');
+            if (preAdv === "-") preAdv = item.checklist ? (item.checklist.advice || "") : "";
+        }
+        if (!postAdv && item.isPostCallDone) {
+            postAdv = item.checklist ? (item.checklist.advice || "") : "";
+        }
+
         if (mode === 'assign') {
             titleText.textContent = "บันทึก/แก้ไข ข้อมูลงานแรก";
             document.getElementById('jobDetailsSection').classList.remove('d-none');
@@ -779,16 +848,25 @@
             titleText.textContent = mode === 'precall' ? "โทรเยี่ยมก่อนเริ่มงาน" : "ติดตามผลหลังจบงาน";
             document.getElementById('checklistSection').classList.remove('d-none');
             
-            let preAdvice = "-";
-            if(item.checklist && item.checklist.advice && mode === 'postcall') preAdvice = item.checklist.advice;
-            if (item.history) { for (let h of item.history) if (h.note && h.note.includes('[Pre-Call]')) { preAdvice = h.note.split('Note:')[1]?.trim() || "-"; break; } }
-            
             document.getElementById('fj_callResult').value = "";
-            if(mode === 'precall') { resetChecklist(item.checklist, false); } 
+
+            if (mode === 'precall') {
+                // เปลี่ยนข้อความกำกับ Label ให้เป็น "ก่อนเริ่มงาน"
+                document.getElementById('adviceLabelTitle').textContent = "คำแนะนำก่อนเริ่มงาน (Pre-Start Advice)";
+                resetChecklist(item.checklist, false); 
+                document.getElementById('fj_advice').value = preAdv;
+            } 
             else { 
-                const adDiv = document.getElementById('preAdviceDisplay'); adDiv.textContent = "แนะนำก่อนเริ่มงาน: " + preAdvice; adDiv.classList.remove('d-none');
-                document.getElementById('feedbackSection').classList.remove('d-none');
+                // โหมด Post-call
+                document.getElementById('adviceLabelTitle').textContent = "คำแนะนำจากเทรนเนอร์หลังจบงาน (Post-Start Advice)";
                 resetChecklist(item.checklist, true); 
+                document.getElementById('feedbackSection').classList.remove('d-none');
+                
+                document.getElementById('fj_advice').value = postAdv;
+                
+                const adDiv = document.getElementById('preAdviceDisplay'); 
+                adDiv.innerHTML = `<strong>คำแนะนำที่ให้ไว้ก่อนเริ่มงาน:</strong> ${preAdv || "-"}`; 
+                adDiv.classList.remove('d-none');
             }
         }
         
@@ -811,7 +889,13 @@
         document.querySelectorAll('.checkbox-option').forEach(cb => cb.checked = false);
         document.querySelectorAll('.other-input-container').forEach(el => el.classList.add('d-none'));
 
-        ['fj_advice','fj_customerComment','fj_problemId'].forEach(id => document.getElementById(id).value = "");
+        // เอา fj_advice ออกจากการเคลียร์อัตโนมัติตรงนี้
+        ['fj_customerComment','fj_problemId'].forEach(id => {
+            let el = document.getElementById(id);
+            if(el) el.value = "";
+        });
+        document.getElementById('fj_advice').value = "";
+        
         document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
 
         if(data) {
@@ -885,8 +969,25 @@
     }
 
     function returnJob(id) {
-        Swal.fire({ title: 'คืนงาน', html: '<input id="returnReason" class="form-control" placeholder="สาเหตุ"><input id="returnProblemId" class="form-control mt-2" placeholder="Problem ID">', showCancelButton: true, confirmButtonText: 'ยืนยัน', preConfirm: () => { return {reason: document.getElementById('returnReason').value, problemId: document.getElementById('returnProblemId').value} } }).then((r) => {
-            if (r.isConfirmed && r.value.reason) { showLoading(); google.script.run.withSuccessHandler(res => { hideLoading(); Swal.fire('คืนงานเรียบร้อย', '', 'success'); loadData(); }).returnFirstJob(id, r.value.reason, currentUser, r.value.problemId); }
+        Swal.fire({ 
+            title: 'คืนงาน', 
+            html: '<input id="returnReason" class="form-control" placeholder="สาเหตุ"><input id="returnProblemId" class="form-control mt-2" placeholder="Problem ID (ถ้ามี)">', 
+            showCancelButton: true, 
+            confirmButtonText: 'ยืนยัน', 
+            preConfirm: () => { 
+                return {reason: document.getElementById('returnReason').value, problemId: document.getElementById('returnProblemId').value} 
+            } 
+        }).then((r) => {
+            if (r.isConfirmed && r.value.reason) { 
+                showLoading(); 
+                google.script.run.withSuccessHandler(res => { 
+                    hideLoading(); 
+                    Swal.fire('คืนงานเรียบร้อย', 'ข้อมูลถูกรีเซ็ตให้รอรับงานใหม่แล้ว', 'success'); 
+                    loadData(); 
+                }).returnFirstJob(id, r.value.reason, currentUser, r.value.problemId); 
+            } else if (r.isConfirmed && !r.value.reason) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาระบุสาเหตุการคืนงาน', 'warning');
+            }
         });
     }
 
@@ -912,6 +1013,7 @@
        historyModal.show();
     }
 
+    // 🌟 🌟 🌟 ปรับปรุงการดูสรุป ให้ดึง preAdvice / postAdvice ตรงๆ 🌟 🌟 🌟
     function viewJobSummary(id) {
        const item = rawData.find(x => String(x.id) === String(id)); if(!item) return;
        currentViewingId = id; 
@@ -925,15 +1027,31 @@
        checklistQuestions.forEach(q => {
            if(q.active === false) return; 
            const val = c[q.id] || '-';
-           const html = `<div class="d-flex justify-content-between mb-1"><span>${q.label}</span><span class="fw-bold text-end" style="max-width:50%">${val}</span></div>`;
+           const html = `
+               <div class="mb-3">
+                   <div class="text-secondary small fw-bold mb-1">${q.label}</div>
+                   <div class="fw-bold text-dark ps-2 py-1 border-start border-3 border-primary bg-light rounded-end" style="word-break: break-word;">${val}</div>
+               </div>`;
            if(q.section === 'pre') preH += html; else postH += html;
        });
        
        document.getElementById('sum_pre_list').innerHTML = preH;
        document.getElementById('sum_post_list').innerHTML = postH;
 
-       document.getElementById('sum_pre_advice').textContent = "-";
-       document.getElementById('sum_post_advice').textContent = c.advice || "-";
+       let preAdvice = item.preAdvice || "";
+       let postAdvice = item.postAdvice || "";
+
+       // Fallback for old data
+       if (!preAdvice && item.isPreCallDone) {
+            preAdvice = extractAdviceFromHistory(item.history, '[Pre-Call]');
+            if (preAdvice === "-") preAdvice = c.advice || "";
+       }
+       if (!postAdvice && item.isPostCallDone) {
+            postAdvice = c.advice || "";
+       }
+
+       document.getElementById('sum_pre_advice').textContent = preAdvice || "-";
+       document.getElementById('sum_post_advice').textContent = postAdvice || "-";
        
        let stars = "-";
        if(c.reviewScore && c.reviewScore !== "NO_REVIEW") stars = '★'.repeat(parseInt(c.reviewScore));
@@ -984,20 +1102,24 @@
             showLoading();
             google.script.run.withSuccessHandler(res => {
                 if(res.success) {
-                    if(isReturned) {
-                         const skipForm = {
-                             id: id, officer: currentUser, type: 'precall', callResult: 'contacted',
-                             advice: "ข้ามการโทรเยี่ยมเนื่องจากเป็นการคืนงานและรับงานใหม่"
+                    if (isReturned && item.checklist) {
+                         const skipForm = { 
+                             id: id, 
+                             officer: currentUser, 
+                             type: 'precall', 
+                             callResult: 'contacted',
+                             // 🌟 ส่งค่า preAdvice เดิมกลับเข้าไปเพื่อไม่ให้หาย 🌟
+                             preAdvice: item.preAdvice || item.checklist.advice || "ข้ามการโทรเยี่ยมเนื่องจากรับงานใหม่หลังคืนงาน"
                          };
-                         checklistQuestions.filter(q => q.section === 'pre').forEach(q => skipForm[q.id] = "-");
+                         checklistQuestions.filter(q => q.section === 'pre').forEach(q => {
+                             skipForm[q.id] = item.checklist[q.id] || "-";
+                         });
 
                          google.script.run.withSuccessHandler(res2 => {
-                             hideLoading();
-                             if(res2.success) { actionModal.hide(); Swal.fire('สำเร็จ', 'บันทึกงานและข้ามการโทรเยี่ยมเรียบร้อย', 'success'); loadData(); }
-                             else showError(res2.message);
+                             hideLoading(); actionModal.hide(); Swal.fire('สำเร็จ', 'บันทึกงานใหม่และข้ามการโทรเยี่ยมเรียบร้อย', 'success'); loadData();
                          }).saveFirstJobChecklist(skipForm);
                     } else {
-                        hideLoading(); actionModal.hide(); Swal.fire('สำเร็จ', '', 'success'); loadData();
+                         hideLoading(); actionModal.hide(); Swal.fire('สำเร็จ', '', 'success'); loadData();
                     }
                 } else { hideLoading(); showError(res.message); }
             }).saveFirstJobDetails(form);
@@ -1027,7 +1149,15 @@
              }
         });
         
-        ['advice','customerComment','problemId'].forEach(k => { const el = document.getElementById('fj_'+k); if(el) form[k] = el.value; });
+        // 🌟 🌟 🌟 เปลี่ยนวิธีการส่งค่าคำแนะนำ (Advice) ตามโหมดที่กดบันทึก 🌟 🌟 🌟
+        form.customerComment = document.getElementById('fj_customerComment') ? document.getElementById('fj_customerComment').value : "";
+        form.problemId = document.getElementById('fj_problemId') ? document.getElementById('fj_problemId').value : "";
+        
+        if (mode === 'precall') {
+            form.preAdvice = document.getElementById('fj_advice') ? document.getElementById('fj_advice').value : "";
+        } else if (mode === 'postcall') {
+            form.postAdvice = document.getElementById('fj_advice') ? document.getElementById('fj_advice').value : "";
+        }
         
         showLoading();
         google.script.run.withSuccessHandler(res => { 
@@ -1053,12 +1183,13 @@
         return 0;
     }
     function checkWorkHours(input) { document.getElementById('hourWarning').classList.toggle('d-none', parseFloat(input.value) <= 3); }
-    function exportReport() { showLoading(); google.script.run.withSuccessHandler(r => { hideLoading(); if(r.count>0) { const b=new Blob([r.content],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=r.filename; l.click(); } else Swal.fire('ไม่พบข้อมูล','','info'); }).exportFirstBkReport(); }
+    function exportReport() { showLoading(); google.script.run.withSuccessHandler(r => { hideLoading(); if(r.count>0) { const b=new Blob(["\ufeff"+r.content],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=r.filename; l.click(); } else Swal.fire('ไม่พบข้อมูล','','info'); }).exportFirstBkReport(); }
     
     // Helpers
     function showLoading() { Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); }
     function hideLoading() { Swal.close(); }
     function showError(msg) { Swal.fire('เกิดข้อผิดพลาด', msg, 'error'); }
+
   </script>
 </body>
 </html>
