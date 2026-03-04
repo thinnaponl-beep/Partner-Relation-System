@@ -4,14 +4,8 @@
   <base target="_top">
   <meta charset="UTF-8">
   <title>Onboard System</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- Flatpickr -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/style.css">
 
+  <!-- ดึง CSS กลางมาใช้ (มี Bootstrap, FontAwesome, SweetAlert2, Flatpickr เรียบร้อยแล้ว) -->
   <?!= include('_Styles'); ?>
 
   <style>
@@ -48,7 +42,7 @@
     
     .tag-label { 
        display: inline-block; padding: 6px 12px; border: 1px solid #dee2e6; border-radius: 20px; 
-       cursor: pointer; margin-right: 5px; font-size: 0.85rem; color: #6c757d; transition: all 0.2s; background: #fff;
+       cursor: pointer; margin-right: 5px; margin-bottom: 5px; font-size: 0.85rem; color: #6c757d; transition: all 0.2s; background: #fff;
     }
     .tag-checkbox:checked + .tag-label { background-color: #fff3cd; border-color: #ffc107; color: #856404; font-weight: 600; }
     .tag-checkbox { display: none; }
@@ -196,18 +190,19 @@
                         </select>
                       </div>
                       
-                      <!-- Manual FT Status Dropdown (New) -->
+                      <!-- Manual FT Status Dropdown -->
                       <div class="col-md-6" id="manualFtSection" style="display:none;">
                           <label class="form-label small fw-bold text-muted">ผลการตรวจ (Manual Status)</label>
                           <select class="form-select" id="manualFtStatus">
-                              <option value="">- ระบุผล -</option>
-                              <option value="Verified">Verified (ผ่าน)</option>
-                              <option value="Not Verified">Not Verified (ไม่ผ่าน)</option>
-                              <option value="Pending Result">Pending Result (รอผล)</option>
-                          </select>
+                            <option value="">- ระบุผล -</option>
+                            <option value="Sent">Sent (ส่งตรวจแล้ว)</option>
+                            <option value="Verified">Verified (ผ่าน)</option>
+                            <option value="Not Verified">Not Verified (ไม่ผ่าน)</option>
+                            <option value="Pending Result">Pending Result (รอผล)</option>
+                         </select>
                       </div>
                       
-                      <!-- Fast Track Alert Box (แสดงเมื่อเป็น Fast Track + มีเลขบัตร + มี recordId) -->
+                      <!-- Fast Track Alert Box -->
                       <div class="col-12" id="modalFastTrackAction" style="display:none;">
                           <div class="alert alert-warning border-warning d-flex align-items-center justify-content-between p-2 mb-0">
                               <div class="small fw-bold text-dark">
@@ -244,35 +239,28 @@
                         <input type="text" class="form-control" id="phone">
                       </div>
 
-                      <!-- Swapped: Status and Group -->
+                      <!-- Status and Group -->
                       <div class="col-md-6">
                         <label class="form-label small fw-bold text-muted">สถานะ (Status)</label> 
                         <select class="form-select fw-bold text-primary" id="type" onchange="updateStatusUI()">
                            <option value="">เลือกสถานะ...</option>
-                           <option value="อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ">อยู่ระหว่างเตรียมความพร้อม</option>
-                           <option value="เปิดระบบ">เปิดระบบ</option>
-                           <option value="ยุติการอบรม">ยุติการอบรม</option>
+                           <!-- JS Populated -->
                         </select>
                       </div>
                       <div class="col-md-6">
                         <label class="form-label small fw-bold text-muted">กลุ่ม</label>
                         <select class="form-select bg-light" id="group">
                              <option value="">เลือกกลุ่ม...</option>
-                             <option value="0">0</option>
-                             <option value="A">A</option>
-                             <option value="B">B</option>
-                             <option value="C">C</option>
+                             <!-- JS Populated -->
                         </select>
                       </div>
                       
+                      <!-- 🌟 ไดนามิก Tag Section 🌟 -->
                       <div class="col-12" id="tagSection" style="display:none;">
                           <div class="p-3 bg-light rounded border border-warning border-opacity-25">
                               <label class="form-label small fw-bold text-muted mb-2">สิ่งที่ต้องติดตาม (Tags):</label>
-                              <div>
-                                  <input type="checkbox" id="tag_profile" class="tag-checkbox" value="ระหว่างรอ/ตรวจสอบรูปโปรไฟล์">
-                                  <label for="tag_profile" class="tag-label"><i class="far fa-id-badge me-1"></i> รูปโปรไฟล์</label>
-                                  <input type="checkbox" id="tag_equipment" class="tag-checkbox" value="ระหว่างรอ/ตรวจสอบรูปอุปกรณ์">
-                                  <label for="tag_equipment" class="tag-label"><i class="fas fa-tools me-1"></i> รูปอุปกรณ์</label>
+                              <div id="dynamicTagsContainer" class="d-flex flex-wrap gap-1">
+                                  <!-- Tags จะถูกสร้างขึ้นมาตรงนี้ด้วย JavaScript -->
                               </div>
                           </div>
                       </div>
@@ -302,10 +290,9 @@
       </div>
     </div>
   </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+    
+  <!-- รวมสคริปต์กลางมาใช้ -->
+  <?!= include('_Scripts'); ?>
 
   <script>
     let globalData = [], currentUser = "", isUserAdmin = false; 
@@ -326,41 +313,26 @@
          onChange: function(selectedDates) { if(selectedDates.length===2) loadData(); }
        });
        flatpickr(".datepicker", { dateFormat: "Y-m-d", altInput: true, altFormat: "j F Y", locale: "th" });
-       loadData();
        
-       // Check Admin
-       google.script.run.withSuccessHandler(res => {
-           if(res.isAdmin && document.getElementById('nav-config')) {
-               document.getElementById('nav-config').classList.remove('d-none');
-           }
-       }).getClientConfig();
+       if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "ติดตามเปิดระบบ (Onboard)";
+       if(document.getElementById('pageSubtitle')) document.getElementById('pageSubtitle').textContent = "ตรวจสอบสถานะและติดตามคุณแม่บ้านใหม่";
 
-       // Highlight Sidebar
-       const navLinks = document.querySelectorAll('.nav-link-custom');
-       navLinks.forEach(link => link.classList.remove('active'));
-       const activeLink = document.querySelector('.nav-link-custom[data-page="onboard"]');
-       if(activeLink) activeLink.classList.add('active');
+       loadData();
     };
-    
-    // --- Sidebar Toggle ---
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const mainContent = document.getElementById('mainContent');
-        const overlay = document.getElementById('overlay');
-        if (window.innerWidth <= 768) { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); } 
-        else { sidebar.classList.toggle('collapsed'); mainContent.classList.toggle('expanded'); }
-    }
 
     function loadData() {
        const rangeVal = document.getElementById('dateRangeFilter').value; 
        showLoading();
        google.script.run.withSuccessHandler(res => {
           hideLoading();
-          globalData = res.data||[]; currentUser = res.currentUser; isUserAdmin = res.isAdmin;
-          centerOptions = res.onboardCenters||[]; groupOptions = res.groups||[]; masterTypeOptions = res.masterTypes || [];
+          globalData = res.data||[]; 
+          currentUser = res.currentUser; 
+          isUserAdmin = res.isAdmin;
+          centerOptions = res.onboardCenters||[]; 
+          groupOptions = res.groups||[]; 
+          masterTypeOptions = res.masterTypes || [];
           
           const ctrSel = document.getElementById('center');
-          // Allow empty selection
           ctrSel.innerHTML = '<option value="">เลือกศูนย์...</option>';
           centerOptions.forEach(x => ctrSel.add(new Option(x, x)));
 
@@ -370,14 +342,57 @@
 
           const grpSel = document.getElementById('group');
           grpSel.innerHTML = '<option value="">เลือกกลุ่ม...</option>';
-          ['0','A','B','C'].forEach(x => grpSel.add(new Option(x, x)));
+          if(groupOptions.length > 0) {
+              groupOptions.forEach(x => grpSel.add(new Option(x, x)));
+          } else {
+              ['0','A','B','C'].forEach(x => grpSel.add(new Option(x, x)));
+          }
+
+          // ล็อก 3 สถานะหลักที่ระบบจำเป็นต้องใช้
+          const coreStatuses = ['อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ', 'เปิดระบบ', 'ยุติการอบรม'];
+          let dynamicStatuses = res.onboardTypes || [];
+          let allStatuses = [...new Set([...coreStatuses, ...dynamicStatuses])].filter(s => s.trim() !== "");
+
+          const statusFilterSel = document.getElementById('statusFilter');
+          const currentFilterStatus = statusFilterSel.value;
+          statusFilterSel.innerHTML = '<option value="">ทั้งหมด</option>';
+          allStatuses.forEach(x => {
+              let label = x === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' ? 'อยู่ระหว่างเตรียมความพร้อม' : x;
+              statusFilterSel.add(new Option(label, x));
+          });
+          statusFilterSel.value = currentFilterStatus;
+
+          const typeSel = document.getElementById('type');
+          const currentTypeVal = typeSel.value;
+          typeSel.innerHTML = '<option value="">เลือกสถานะ...</option>';
+          allStatuses.forEach(x => {
+             let label = x === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' ? 'อยู่ระหว่างเตรียมความพร้อม' : x;
+             typeSel.add(new Option(label, x));
+          });
+          typeSel.value = currentTypeVal;
           
-          // ** FIX: Update Sidebar User Email **
-          if(document.getElementById('userEmail')) document.getElementById('userEmail').textContent = currentUser;
+          // 🌟 สร้าง Tag Checkbox ไดนามิกจาก Config
+          let tagsHtml = '';
+          let configTags = res.onboardTags || ['ระหว่างรอ/ตรวจสอบรูปโปรไฟล์', 'ระหว่างรอ/ตรวจสอบรูปอุปกรณ์']; 
+          if(configTags.length === 0) configTags = ['ระหว่างรอ/ตรวจสอบรูปโปรไฟล์', 'ระหว่างรอ/ตรวจสอบรูปอุปกรณ์']; // Fallback
+          
+          configTags.forEach((tag, idx) => {
+              let tagId = 'dynamic_tag_' + idx;
+              tagsHtml += `
+                  <div>
+                      <input type="checkbox" id="${tagId}" class="tag-checkbox dynamic-tag" value="${tag}">
+                      <label for="${tagId}" class="tag-label"><i class="fas fa-tag me-1 text-muted"></i> ${tag}</label>
+                  </div>
+              `;
+          });
+          document.getElementById('dynamicTagsContainer').innerHTML = tagsHtml;
 
           renderCenterTabs();
           filterTable();
-       }).withFailureHandler(e => { hideLoading(); showError(e.message); }).getOnboardData(rangeVal);
+       }).withFailureHandler(e => { 
+          hideLoading(); 
+          showError(e.message); 
+       }).getOnboardData(rangeVal);
     }
 
     function renderCenterTabs() {
@@ -478,8 +493,6 @@
        renderTable(filtered);
     }
 
-    // --- Modal Logic ---
-
     function openAddModal() {
        document.getElementById('dataForm').reset();
        document.getElementById('recordId').value = "";
@@ -495,11 +508,12 @@
        else document.getElementById('center').value = "";
        
        document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
-
-       // *** FIX: Set Default to BeNeat fast Track & Hide Manual/Alert Sections ***
        document.getElementById('verificationMethod').value = "BeNeat fast Track"; 
        document.getElementById('modalFastTrackAction').style.display = 'none';
        document.getElementById('manualFtSection').style.display = 'none';
+
+       // เคลียร์ Checkbox Tag ทั้งหมด
+       document.querySelectorAll('.dynamic-tag').forEach(cb => cb.checked = false);
 
        updateStatusUI(); 
        currentHistory = []; renderTimeline();
@@ -529,10 +543,8 @@
        if(item.openDate) document.getElementById('openDate')._flatpickr.setDate(item.openDate);
        else document.getElementById('openDate')._flatpickr.clear();
 
-       // *** FIX: Set Dropdown based on skipFastTrack ***
        if (item.skipFastTrack === "TRUE" || item.skipFastTrack === true) {
            document.getElementById('verificationMethod').value = "ตรวจประวัติด้วยตนเอง";
-           // Populate Manual Status if available
            document.getElementById('manualFtStatus').value = item.fastTrackStatus || "";
        } else {
            document.getElementById('verificationMethod').value = "BeNeat fast Track";
@@ -541,9 +553,12 @@
        document.getElementById('hasFastTrackStatus').value = item.fastTrackStatus ? "1" : "";
        checkFastTrackBtnVisibility();
 
+       // 🌟 เช็คค่า Tag จากฐานข้อมูล
        const tags = item.tags || [];
-       document.getElementById('tag_profile').checked = tags.includes('ระหว่างรอ/ตรวจสอบรูปโปรไฟล์');
-       document.getElementById('tag_equipment').checked = tags.includes('ระหว่างรอ/ตรวจสอบรูปอุปกรณ์');
+       document.querySelectorAll('.dynamic-tag').forEach(cb => {
+           if (tags.includes(cb.value)) cb.checked = true;
+           else cb.checked = false;
+       });
 
        currentHistory = item.history || []; renderTimeline();
        updateStatusUI();
@@ -552,12 +567,21 @@
     }
 
     function updateStatusUI() {
-        const status = document.getElementById('type').value;
+        const status = document.getElementById('type').value || '';
         const tagSection = document.getElementById('tagSection');
         const openDateSection = document.getElementById('openDateSection');
-        tagSection.style.display = 'none'; openDateSection.style.display = 'none';
-        if(status === 'เปิดระบบ') { document.getElementById('group').value = 'A'; openDateSection.style.display = 'block'; } 
-        else if (status === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ') { document.getElementById('group').value = '0'; tagSection.style.display = 'block'; } 
+        
+        tagSection.style.display = 'none'; 
+        openDateSection.style.display = 'none';
+        
+        if (status === 'เปิดระบบ') { 
+            document.getElementById('group').value = 'A'; 
+            openDateSection.style.display = 'block'; 
+        } 
+        else if (status === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || status.includes('เตรียมความพร้อม')) { 
+            document.getElementById('group').value = '0'; 
+            tagSection.style.display = 'block'; 
+        } 
     }
     
     function checkFastTrackBtnVisibility() {
@@ -570,14 +594,12 @@
         
         if (method === "BeNeat fast Track") {
             manualDiv.style.display = 'none';
-            // Show button only if valid record and not yet sent
             if (!hasStatus && idCard && recId) {
                 btnDiv.style.display = 'block';
             } else {
                 btnDiv.style.display = 'none';
             }
         } else {
-            // Manual
             btnDiv.style.display = 'none';
             manualDiv.style.display = 'block';
         }
@@ -639,16 +661,16 @@
        }
 
        let tags = [];
-       if (newStatus === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ') {
-           if(document.getElementById('tag_profile').checked) tags.push(document.getElementById('tag_profile').value);
-           if(document.getElementById('tag_equipment').checked) tags.push(document.getElementById('tag_equipment').value);
+       // 🌟 กวาดค่า Tag ทั้งหมดที่ถูกติ๊กมาบันทึก
+       if (newStatus === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || newStatus.includes('เตรียมความพร้อม')) {
+           document.querySelectorAll('.dynamic-tag:checked').forEach(cb => {
+               tags.push(cb.value);
+           });
        }
        
-       // ** FIX: Determine skipFastTrack from Dropdown directly **
        const vMethod = document.getElementById('verificationMethod').value;
        const isSkip = (vMethod === "ตรวจประวัติด้วยตนเอง");
        
-       // ** Get Manual Status **
        let manualStatus = "";
        if (isSkip) {
            manualStatus = document.getElementById('manualFtStatus').value;
@@ -669,7 +691,7 @@
           trainer: document.getElementById('trainer').value,
           tags: tags, history: currentHistory,
           skipFastTrack: isSkip,
-          manualFtStatus: manualStatus // Send Manual Status
+          manualFtStatus: manualStatus
        };
 
        if(!form.name) { Swal.fire('ข้อมูลไม่ครบ', 'ระบุชื่อ-นามสกุล', 'warning'); return; }
@@ -679,6 +701,9 @@
           hideLoading();
           if(res.success) { formModal.hide(); Swal.fire({ icon:'success', title:'บันทึกเรียบร้อย', timer: 1000, showConfirmButton:false }); loadData(); } 
           else showError(res.message);
+       }).withFailureHandler(err => {
+          hideLoading();
+          showError(err.message);
        }).saveOnboardData(form);
     }
 
@@ -686,7 +711,14 @@
         Swal.fire({ title: 'ยืนยันลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((r) => {
             if (r.isConfirmed) {
                 showLoading();
-                google.script.run.withSuccessHandler(() => { hideLoading(); Swal.fire('Deleted!', '', 'success'); loadData(); }).deleteOnboardData(id);
+                google.script.run.withSuccessHandler(() => { 
+                    hideLoading(); 
+                    Swal.fire('Deleted!', '', 'success'); 
+                    loadData(); 
+                }).withFailureHandler(err => {
+                    hideLoading();
+                    showError(err.message);
+                }).deleteOnboardData(id);
             }
         });
     }
@@ -706,12 +738,22 @@
        else { input.classList.add('is-invalid'); return false; }
     }
     
-    function exportReport() { showLoading(); google.script.run.withSuccessHandler(r => { hideLoading(); if(r.count>0) { const b=new Blob([r.content],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=r.filename; l.click(); } else Swal.fire('ไม่พบข้อมูล','','info'); }).exportOnboardReport(document.getElementById('dateRangeFilter').value); }
-    
-    // Helpers
-    function showLoading() { Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); }
-    function hideLoading() { Swal.close(); }
-    function showError(msg) { Swal.fire('เกิดข้อผิดพลาด', msg, 'error'); }
+    function exportReport() { 
+        showLoading(); 
+        google.script.run.withSuccessHandler(r => { 
+            hideLoading(); 
+            if(r.count>0) { 
+                const b=new Blob([r.content],{type:'text/csv'}); 
+                const l=document.createElement('a'); 
+                l.href=URL.createObjectURL(b); 
+                l.download=r.filename; 
+                l.click(); 
+            } else Swal.fire('ไม่พบข้อมูล','','info'); 
+        }).withFailureHandler(err => {
+            hideLoading();
+            showError(err.message);
+        }).exportOnboardReport(document.getElementById('dateRangeFilter').value); 
+    }
   </script>
 </body>
 </html>
