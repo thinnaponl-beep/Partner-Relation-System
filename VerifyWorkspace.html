@@ -398,7 +398,7 @@
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-light border-bottom-0">
-          <h5 class="modal-title fw-bold text-secondary"><i class="fas fa-history me-2"></i>ประวัติการอัปเดตผลตรวจจาก App Man</h5>
+          <h5 class="modal-title fw-bold text-secondary"><i class="fas fa-history me-2"></i>ประวัติการอัปเดตผลตรวจจาก App Man </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body p-0">
@@ -1015,11 +1015,12 @@
             document.getElementById('a_idCard').value = formatIdCard(item.idCard);
             setFlatpickrValue('a_birthDate', item.birthDate);
             document.getElementById('a_phone').value = item.phone;
-            document.getElementById('a_consentStatus').value = item.consentStatus;
+            document.getElementById('a_consentStatus').value = (item.consentStatus||"").trim();
             document.getElementById('a_amount').value = item.amount;
             document.getElementById('a_outstanding').value = item.outstanding;
             document.getElementById('a_deductionStatus').value = item.deductionStatus;
             document.getElementById('a_channel').value = item.channel;
+            updateStatusOptions();
             document.getElementById('a_statusProcess').value = item.statusProcess;
             setFlatpickrValue('a_resultDate', item.resultDate);
             document.getElementById('a_result').value = item.result || "";
@@ -1403,10 +1404,11 @@
     // =====================================
     function viewHistory() {
         showLoading();
+        // 🌟 เรียกใช้ฟังก์ชันใหม่ที่สร้างขึ้นเพื่อดึงจาก Data Beat (มีระบบ Fallback ให้)
         google.script.run.withSuccessHandler(logs => {
             hideLoading();
             const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
-            if(!logs || logs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่มีประวัติ</td></tr>'; return; }
+            if(!logs || logs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่มีประวัติจาก</td></tr>'; return; }
             logs.forEach((log, idx) => {
                 if(!window.uploadLogsData) window.uploadLogsData = []; window.uploadLogsData[idx] = log;
                 tbody.innerHTML += `
@@ -1425,7 +1427,7 @@
                 `;
             });
             historyModal.show();
-        }).getUploadLogs('UNIFIED_VERIFY');
+        }).getUploadLogs('UNIFIED_VERIFY'); // <-- แก้ไขตรงนี้ครับ
     }
 
     // 🌟 ฟังก์ชันแสดงรายละเอียดใน Popup 🌟
