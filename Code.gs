@@ -1522,7 +1522,9 @@ function getFastReportData(dateRange, centerFilter) {
         onboard: { total: 0, openSystem: 0, waiting: 0, stopped: 0 },
         firstJob: { total: 0, waitingJob: 0, waitingCall: 0, callDone: 0, completed: 0, avgRating: 0, jobList: [] },
         newVerify: { total: 0, verified: 0, pending: 0, notVerified: 0 },
-        annualVerify: { total: 0, verified: 0, paid: 0, unpaid: 0 }
+        annualVerify: { total: 0, verified: 0, paid: 0, unpaid: 0 },
+        // 🌟 1. เพิ่ม Object สำหรับเก็บข้อมูลกลุ่ม H
+        groupH: { total: 0, pending: 0, openSystem: 0, completed: 0, cancelled: 0 }
     };
 
     const obData = getOnboardData(dateRange).data; 
@@ -1636,6 +1638,34 @@ function getFastReportData(dateRange, centerFilter) {
             if (pay === 'ชำระครบ' || pay === 'หักสำเร็จ') result.annualVerify.paid++;
             else result.annualVerify.unpaid++;
         });
+    }
+
+    // 🌟 2. เพิ่มส่วนดึงข้อมูล กลุ่ม H (Hold) เข้ามาคำนวณ
+    try {
+        const holdSheetName = typeof HOLD_SHEET_NAME !== 'undefined' ? HOLD_SHEET_NAME : 'Database_Hold';
+        const hSheet = getSheet(holdSheetName);
+        if (hSheet) {
+            const hRows = hSheet.getLastRow();
+            if (hRows > 1) {
+                // ดึงข้อมูลถึงคอลัมน์ O (15 คอลัมน์) สถานะจะอยู่ที่ index 14
+                const hValues = hSheet.getRange(2, 1, hRows - 1, 15).getValues();
+                
+                hValues.forEach(row => {
+                    // หากต้องการกรองศูนย์ด้วย สามารถเช็คจาก row[8] (คอลัมน์ I) ได้
+                    // if (centerFilter !== 'ALL' && row[8] !== centerFilter) return;
+                    
+                    let status = String(row[14] || "").trim(); // คอลัมน์ O: สถานะ
+                    
+                    result.groupH.total++;
+                    if (status === 'รอดำเนินการ') result.groupH.pending++;
+                    else if (status === 'เปิดระบบ') result.groupH.openSystem++;
+                    else if (status === 'เสร็จสิ้น') result.groupH.completed++;
+                    else if (status === 'ยกเลิก') result.groupH.cancelled++;
+                });
+            }
+        }
+    } catch(e) {
+        Logger.log("Error loading Group H data: " + e.message);
     }
 
     return result;
