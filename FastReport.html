@@ -71,6 +71,7 @@
     .bg-soft-warning { background-color: #fff3cd; color: #ffc107; }
     .bg-soft-danger { background-color: #f8d7da; color: #dc3545; }
     .bg-soft-info { background-color: #e1f5fe; color: #0dcaf0; }
+    .bg-soft-purple { background-color: #f3e8ff; color: #6f42c1; } /* สีใหม่สำหรับกลุ่ม H */
     
     .text-trend-up { color: #198754; font-size: 0.8rem; }
     .text-trend-down { color: #dc3545; font-size: 0.8rem; }
@@ -124,9 +125,9 @@
             </div>
         </div>
 
-        <!-- Row 1: KPI Highlights -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6 col-lg-3">
+        <!-- Row 1: KPI Highlights (เพิ่มคอลัมน์ให้เป็น 5 กล่อง) -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-6 col-xl">
                 <div class="kpi-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -142,7 +143,7 @@
                 </div>
             </div>
             
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-xl">
                 <div class="kpi-card">
                      <div class="d-flex justify-content-between align-items-start">
                         <div>
@@ -157,12 +158,29 @@
                     <small class="text-muted mt-2 d-block" id="sub-firstjob">คะแนนเฉลี่ย 0.0 ดาว</small>
                 </div>
             </div>
-            
-            <div class="col-md-6 col-lg-3">
+
+            <!-- 🌟 เพิ่มกล่องใหม่ สำหรับ กลุ่ม H 🌟 -->
+            <div class="col-md-6 col-xl">
                 <div class="kpi-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="kpi-label">ผ่านการตรวจประวัติ (ใหม่)</div>
+                            <div class="kpi-label">กลุ่ม H (Return)</div>
+                            <div class="kpi-value text-purple" style="color: #6f42c1;" id="kpi-grouph">0</div>
+                        </div>
+                        <div class="kpi-icon-box bg-soft-purple"><i class="fas fa-undo-alt"></i></div>
+                    </div>
+                     <div class="progress mt-3" style="height: 6px;">
+                        <div class="progress-bar bg-purple" style="background-color: #6f42c1;" id="prog-grouph" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block" id="sub-grouph">เปิดระบบแล้ว 0 คน</small>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-xl">
+                <div class="kpi-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="kpi-label">ตรวจประวัติ (ใหม่)</div>
                             <div class="kpi-value text-info" id="kpi-verify">0</div>
                         </div>
                         <div class="kpi-icon-box bg-soft-info"><i class="fas fa-file-signature"></i></div>
@@ -174,11 +192,11 @@
                 </div>
             </div>
             
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-xl">
                 <div class="kpi-card">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <div class="kpi-label">ตรวจประวัติรายปีสำเร็จ</div>
+                            <div class="kpi-label">ตรวจประวัติรายปี</div>
                             <div class="kpi-value text-warning" id="kpi-annual">0</div>
                         </div>
                         <div class="kpi-icon-box bg-soft-warning"><i class="fas fa-calendar-check"></i></div>
@@ -262,21 +280,25 @@
                 </div>
             </div>
             
-            <!-- 3. Verification Comparison -->
+            <!-- 3. Verification Comparison (เพิ่มกราฟที่ 3 เข้าไป) -->
             <div class="col-12">
                 <div class="chart-container">
                     <div class="chart-header">
-                        <h5 class="fw-bold mb-0 text-secondary">3. สถานะการตรวจสอบประวัติ (Verification Status)</h5>
+                        <h5 class="fw-bold mb-0 text-secondary">3. สถานะต่างๆ แยกตามกลุ่ม (Verification & Return Status)</h5>
                     </div>
                     
                     <div class="row">
-                        <div class="col-md-6 border-end">
-                            <h6 class="text-center fw-bold text-info mb-3">ผู้ให้บริการใหม่ (New)</h6>
+                        <div class="col-md-4 border-end">
+                            <h6 class="text-center fw-bold text-info mb-3">ตรวจประวัติใหม่ (New)</h6>
                             <canvas id="chartNewVerify" style="max-height: 250px;"></canvas>
                         </div>
-                         <div class="col-md-6">
-                            <h6 class="text-center fw-bold text-warning mb-3">รายปี (Annual)</h6>
+                         <div class="col-md-4 border-end">
+                            <h6 class="text-center fw-bold text-warning mb-3">ตรวจประวัติรายปี (Annual)</h6>
                             <canvas id="chartAnnualVerify" style="max-height: 250px;"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-center fw-bold mb-3" style="color: #6f42c1;">กลุ่ม H (Return)</h6>
+                            <canvas id="chartGroupH" style="max-height: 250px;"></canvas>
                         </div>
                     </div>
                     
@@ -421,6 +443,14 @@
         animateValue("kpi-firstjob", data.firstJob.completed);
         animateValue("kpi-verify", data.newVerify.verified);
         animateValue("kpi-annual", data.annualVerify.verified); 
+        
+        // 🌟 ส่วนใหม่ สำหรับกลุ่ม H 🌟
+        if(data.groupH) {
+            animateValue("kpi-grouph", data.groupH.total);
+            updateProgress("prog-grouph", "sub-grouph", data.groupH.openSystem, data.groupH.total, "เปิดระบบ");
+            document.getElementById('sub-grouph').textContent = `เปิดระบบแล้ว ${data.groupH.openSystem} คน`;
+            renderGroupHChart(data.groupH);
+        }
 
         updateProgress("prog-onboard", "sub-onboard", data.onboard.openSystem, data.onboard.total, "ผู้เข้าอบรม");
         updateProgress("prog-firstjob", "sub-firstjob", data.firstJob.completed, data.onboard.openSystem, "จากคนที่เปิดระบบ"); 
@@ -645,6 +675,23 @@
                 datasets: [{
                     data: [annualData.verified, (annualData.total - annualData.verified)],
                     backgroundColor: ['#198754', '#0dcaf0']
+                }]
+            },
+            options: { plugins: { legend: { position: 'right' } } }
+        });
+    }
+
+    // 🌟 ฟังก์ชันกราฟกลุ่ม H ใหม่ 🌟
+    function renderGroupHChart(hData) {
+        const ctxH = document.getElementById('chartGroupH').getContext('2d');
+        if (charts.groupH) charts.groupH.destroy();
+        charts.groupH = new Chart(ctxH, {
+            type: 'pie',
+            data: {
+                labels: ['รอดำเนินการ', 'เปิดระบบแล้ว', 'เสร็จสิ้น 4 งาน', 'ยกเลิก'],
+                datasets: [{
+                    data: [hData.pending, hData.openSystem, hData.completed, hData.cancelled],
+                    backgroundColor: ['#ffc107', '#6f42c1', '#198754', '#dc3545']
                 }]
             },
             options: { plugins: { legend: { position: 'right' } } }
