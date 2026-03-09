@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <title>ติดตามคุณแม่บ้านกลุ่ม H</title>
+
+  <?!= include('_Styles'); ?>
+
+  <style>
+    /* Premium UI Styles */
+    .status-card { 
+        transition: all 0.25s ease; 
+        cursor: pointer; 
+        background: #fff;
+        border-radius: 16px;
+        border: none;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+    .status-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .status-card.active { border: 2px solid var(--ci-primary); background-color: #f0fbff; }
+
+    .bg-success-soft { background-color: #e8f5e9; }
+    .bg-primary-soft { background-color: #e3f2fd; }
+    .bg-warning-soft { background-color: #fff8e1; }
+    .bg-info-soft { background-color: #e1f5fe; }
+    .bg-danger-soft { background-color: #ffebee; }
+    .bg-secondary-soft { background-color: #f8f9fa; }
+
+    /* 🌟 Alert Row Highlights (3-Tier Alert) - แก้ไขให้บังคับสีลง td 🌟 */
+    .row-alert-20 td { background-color: #fffde6 !important; border-bottom-color: #ffe8a1 !important; } /* Soft Yellow */
+    
+    .row-alert-10 td { background-color: #fff0e6 !important; border-bottom-color: #ffd8b8 !important; } /* Soft Orange */
+    
+    .row-alert-5 td  { background-color: #ffebeb !important; border-bottom-color: #ffc2c2 !important; } /* Soft Red */
+    .row-alert-5 td:nth-child(2) .fw-bold { color: #dc3545 !important; } /* เน้นชื่อเป็นสีแดง */
+
+    /* Timeline Styles */
+    .timeline { border-left: 2px solid #e9ecef; padding-left: 20px; margin-left: 10px; position: relative; }
+    .timeline-item { margin-bottom: 20px; position: relative; }
+    .timeline-item::before { 
+       content: ''; position: absolute; left: -26.5px; top: 5px; width: 13px; height: 13px; 
+       background: #ff9800; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px #e9ecef;
+    }
+    .timeline-date { font-size: 0.8rem; font-weight: 700; color: #495057; margin-bottom: 4px; display: block;}
+    .timeline-content { background: #f8f9fa; padding: 12px 15px; border-radius: 12px; font-size: 0.85rem; margin-top: 2px; border: 1px solid #eef2f5; }
+    
+    /* Tags Styles */
+    .tag-label { 
+       display: inline-block; padding: 6px 12px; border: 1px solid #dee2e6; border-radius: 20px; 
+       cursor: pointer; margin-right: 5px; margin-bottom: 5px; font-size: 0.8rem; color: #6c757d; transition: all 0.2s; background: #fff;
+    }
+    .tag-checkbox:checked + .tag-label { background-color: #fff3cd; border-color: #ffc107; color: #856404; font-weight: 600; }
+    .tag-checkbox { display: none; }
+
+    /* KPI Styles */
+    .kpi-row {
+        background-color: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    .kpi-row:hover { border-color: var(--ci-primary); }
+    .kpi-num { width: 26px; height: 26px; background: #e9ecef; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold; color: #6c757d; flex-shrink: 0;}
+
+    /* Auto-complete dropdown styling */
+    .autocomplete-items {
+      position: absolute; border: 1px solid #d4d4d4; border-bottom: none; border-top: none;
+      z-index: 1060; 
+      top: 100%; left: 0; right: 0; max-height: 250px; overflow-y: auto;
+      background-color: #fff; border-radius: 0 0 12px 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .autocomplete-items div { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 0.9rem; transition: background-color 0.2s; }
+    .autocomplete-items div:hover { background-color: #f0f8ff; color: var(--ci-primary); }
+
+    /* Fix SweetAlert Input Focus */
+    .swal2-container { z-index: 2000 !important; }
+  </style>
+</head>
+<body>
+
+  <?!= include('_Sidebar'); ?>
+
+  <div class="main-content" id="mainContent">
+    <?!= include('_Navbar'); ?>
+    
+    <div class="container-fluid">
+        <!-- Top Bar -->
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-undo-alt me-2 text-warning"></i>ติดตามคุณแม่บ้านกลุ่ม H </h4>
+                <small class="text-muted">จัดการคุณแม่บ้านโดนปลด ที่ต้องการกลับมารับงานใหม่</small>
+            </div>
+            <div class="d-flex gap-2">
+                 <button class="btn btn-soft-success rounded-pill px-3 shadow-sm fw-bold" onclick="exportReport()">
+                    <i class="fas fa-file-excel me-1"></i> Export Report
+                 </button>
+                 <button class="btn btn-primary-theme fw-bold rounded-pill shadow-sm px-4" onclick="openAddModal()">
+                       <i class="fas fa-plus me-2"></i> เพิ่มรายการ
+                 </button>
+            </div>
+        </div>
+
+        <!-- Premium Dashboard Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-2">
+                <div class="card status-card p-3 active shadow-sm" id="stat-total" onclick="filterBySummary('')">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">ทั้งหมด</small>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <h3 class="mb-0 fw-bold" id="countTotal">0</h3>
+                        <div class="rounded-circle bg-light p-2"><i class="fas fa-users text-muted opacity-50"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card status-card p-3 shadow-sm" id="stat-pending" onclick="filterBySummary('รอดำเนินการ')">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">รอดำเนินการ</small>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <h3 class="mb-0 fw-bold text-warning" id="countPending">0</h3>
+                        <div class="rounded-circle bg-warning-soft p-2"><i class="fas fa-clock text-warning"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card status-card p-3 shadow-sm" id="stat-open" onclick="filterBySummary('เปิดระบบ')">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">เปิดระบบแล้ว</small>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <h3 class="mb-0 fw-bold text-success" id="countOpen">0</h3>
+                        <div class="rounded-circle bg-success-soft p-2"><i class="fas fa-check-circle text-success"></i></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Completed Status Card -->
+            <div class="col-md-3">
+                <div class="card status-card p-3 shadow-sm" id="stat-completed" onclick="filterBySummary('เสร็จสิ้น')">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">เสร็จสิ้น (ครบ 4 งาน)</small>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <h3 class="mb-0 fw-bold text-primary" id="countCompleted">0</h3>
+                        <div class="rounded-circle bg-primary-soft p-2"><i class="fas fa-flag-checkered text-primary"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card status-card p-3 shadow-sm" id="stat-cancel" onclick="filterBySummary('ยกเลิก')">
+                    <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">ยกเลิก</small>
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <h3 class="mb-0 fw-bold text-danger" id="countCancel">0</h3>
+                        <div class="rounded-circle bg-danger-soft p-2"><i class="fas fa-times-circle text-danger"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Controls -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-3">
+                <div class="row g-3 align-items-center">
+                  <!-- 🌟 ปรับขนาด Layout ให้รองรับตัวกรอง 3 อัน 🌟 -->
+                  <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0 shadow-none" id="searchInput" placeholder="ค้นหาชื่อ, รหัสแม่บ้าน, เบอร์โทร..." onkeyup="filterTable()">
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select shadow-none fw-bold text-secondary" id="kpiFilter" onchange="filterTable()">
+                        <option value="">⏳ ระยะเวลาคงเหลือ</option>
+                        <option value="20">🟡 เหลือไม่เกิน 20 วัน</option>
+                        <option value="10">🟠 เหลือไม่เกิน 10 วัน</option>
+                        <option value="5">🔴 เหลือ 5 วัน หรือเลยกำหนด</option>
+                    </select>
+                  </div>
+                  <div class="col-md-4">
+                    <select class="form-select shadow-none" id="statusFilter" onchange="filterTable()">
+                        <option value="">ทุกสถานะภาพรวม</option>
+                        <option value="รอดำเนินการ">รอดำเนินการ</option>
+                        <option value="เปิดระบบ">เปิดระบบ (เข้ากลุ่ม A)</option>
+                        <option value="เสร็จสิ้น">เสร็จสิ้น (ครบ 4 งาน)</option>
+                        <option value="ยกเลิก">ยกเลิก</option>
+                    </select>
+                  </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Data Table -->
+        <div class="table-container shadow-sm border-0">
+          <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th width="10%">รหัส/ID</th>
+                    <th width="15%">ชื่อ-นามสกุล</th>
+                    <th width="8%">ติดต่อ</th>
+                    <th width="10%">โดนปลด</th>
+                    <th width="10%" class="text-center">สถานะ FT</th> 
+                    <th width="12%" class="text-center">สถานะ</th> 
+                    <th width="10%">เปิดระบบ</th>
+                    <th width="15%" class="text-center">เป้าหมาย 4 งาน (30 วัน)</th>
+                    <th width="10%" class="text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+              </table>
+          </div>
+          <div id="noData" class="text-center py-5 text-muted d-none">
+              <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i><br>ไม่พบข้อมูล
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับเพิ่ม/แก้ไขข้อมูล -->
+  <div class="modal fade" id="formModal" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-white border-bottom pb-3">
+          <h5 class="modal-title fw-bold text-dark" id="modalTitle">บันทึกคุณแม่บ้านขอกลับมาทำใหม่ (กลุ่ม H)</h5>
+          <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-4 bg-light">
+          <form id="dataForm" autocomplete="off">
+            <input type="hidden" id="recordId">
+            <input type="hidden" id="hasFastTrackStatus">
+            
+            <div class="row g-4">
+               <!-- ฝั่งซ้าย: ข้อมูลพื้นฐาน และการเช็คประวัติ -->
+               <div class="col-lg-7">
+                  
+                  <div class="card border-0 shadow-sm mb-3 rounded-4">
+                      <div class="card-body p-4">
+                          <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-user-circle me-2"></i>1. ข้อมูลส่วนตัว</h6>
+                          <div class="row g-3">
+                              <div class="col-md-6 position-relative">
+                                <label class="form-label small fw-bold text-muted">รหัส/ชื่อแม่บ้าน (พิมพ์เพื่อค้นหา) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control border-primary shadow-none" id="maidCode" placeholder="คลิก หรือ พิมพ์ค้นหา..." required oninput="searchMaidAuto(this.value)" onclick="searchMaidAuto(this.value)" onfocus="searchMaidAuto(this.value)">
+                                    <span class="input-group-text bg-white border-primary border-start-0 text-primary" id="searchIcon">
+                                        <i class="fas fa-search" id="staticSearchIcon"></i>
+                                        <i class="fas fa-spinner fa-spin d-none" id="spinningSearchIcon"></i>
+                                    </span>
+                                </div>
+                                <div id="autocomplete-list" class="autocomplete-items"></div>
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">ช่องทางที่ติดต่อมา</label>
+                                <select class="form-select shadow-none" id="contactChannel">
+                                    <option value="Line OA">Line OA</option>
+                                    <option value="โทรศัพท์">โทรศัพท์</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="อื่นๆ">อื่นๆ</option>
+                                </select>
+                              </div>
+                              <div class="col-12">
+                                 <label class="form-label small fw-bold text-muted">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+                                 <input type="text" class="form-control fw-bold shadow-none" id="name" required>
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">เลขบัตรประชาชน (13 หลัก)</label>
+                                <input type="text" class="form-control shadow-none" id="idCard" maxlength="17" oninput="formatIdCard(this)">
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">เบอร์โทรศัพท์</label>
+                                <input type="text" class="form-control shadow-none" id="phone">
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="card border-0 shadow-sm mb-3 rounded-4">
+                      <div class="card-body p-4">
+                          <h6 class="text-warning text-dark border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-shield-alt me-2"></i>2. ตรวจสอบเงื่อนไข Retrain & ประวัติอาชญากรรม</h6>
+                          <div class="row g-3">
+                              <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">วันที่หยุดรับงาน / โดนปลด</label>
+                                <input type="text" class="form-control datepicker shadow-none" id="holdDate" onchange="checkHoldDateRetrain()">
+                              </div>
+                              <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">ต้องการ Retrain หรือไม่?</label>
+                                <select class="form-select shadow-none" id="needsRetrain" onchange="toggleRetrain()">
+                                    <option value="ไม่ต้อง">ไม่ต้อง (ไม่เกิน 60 วัน)</option>
+                                    <option value="ต้อง Retrain">ต้อง Retrain (เกิน 60 วัน)</option>
+                                </select>
+                              </div>
+                              <div class="col-md-6" id="retrainCenterDiv" style="display:none;">
+                                <label class="form-label small fw-bold text-danger">ศูนย์เทรน <span class="text-danger">*</span></label>
+                                <select class="form-select shadow-none" id="trainingCenter"><option value="">เลือกศูนย์...</option></select>
+                              </div>
+                              <div class="col-md-6">
+                                  <label class="form-label small fw-bold text-muted">ประเภทผู้ให้บริการ (Master)</label>
+                                  <select class="form-select shadow-none" id="masterType"><option value="">เลือกประเภท...</option></select>
+                              </div>
+
+                              <div class="col-12 mt-3">
+                                  <div class="p-3 bg-light rounded border">
+                                      <div class="row g-2 align-items-center">
+                                          <div class="col-md-6">
+                                              <label class="form-label small fw-bold text-primary">วันที่ผลตรวจประวัติเดิม "ผ่าน"</label>
+                                              <input type="text" class="form-control datepicker bg-white shadow-none" id="lastVerifyDate" onchange="calculateVerifyValidity()" placeholder="ระบุวันที่...">
+                                          </div>
+                                          <div class="col-md-6" id="verifyValidityAlert">
+                                              <div class="alert alert-secondary py-2 mb-0 small">กรุณาระบุวันที่เพื่อคำนวณอายุผลตรวจ</div>
+                                          </div>
+                                      </div>
+                                      
+                                      <div class="mt-3" id="verifyMethodSection">
+                                          <label class="form-label small fw-bold">การจัดการตรวจประวัติ</label>
+                                          <select class="form-select fw-bold shadow-none" id="verifyMethod" onchange="toggleVerifyAction()">
+                                              <option value="ใช้ผลตรวจเดิม">ใช้ผลตรวจเดิม (อายุเหลือมากกว่า 90 วัน)</option>
+                                              <option value="ต้องส่งตรวจใหม่ผ่านระบบ">ต้องส่งตรวจใหม่ผ่านระบบ (Fast Track)</option>
+                                              <option value="มีใบตรวจประวัติมาเอง">มีใบตรวจประวัติมาเอง</option>
+                                          </select>
+                                      </div>
+                                      
+                                      <div class="mt-2 text-end" id="fastTrackActionDiv" style="display:none;">
+                                          <div class="d-flex align-items-center justify-content-between">
+                                              <span class="small text-muted" id="currentFtStatus">สถานะ: -</span>
+                                              <button type="button" class="btn btn-sm btn-primary shadow-sm" id="btnSendFastTrackModal" onclick="sendToFastTrackFromModal()"><i class="fas fa-paper-plane me-1"></i> ส่งตรวจ Fast Track</button>
+                                          </div>
+                                      </div>
+
+                                      <div class="mt-2" id="manualFtStatusDiv" style="display:none;">
+                                          <label class="form-label small fw-bold text-muted">สถานะผลตรวจ (ระบุเอง)</label>
+                                          <select class="form-select shadow-none" id="manualFtStatus">
+                                              <option value="">- เลือกสถานะ -</option>
+                                              <option value="Verified">Verified (ผ่าน)</option>
+                                              <option value="Pending Result">Pending Result (รอผล)</option>
+                                              <option value="Not Verified">Not Verified (ไม่ผ่าน)</option>
+                                          </select>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+               </div>
+               
+               <!-- ฝั่งขวา: Status, Tags, KPI 4 งาน และ ประวัติการโทร -->
+               <div class="col-lg-5">
+
+                  <div class="card border-0 shadow-sm mb-3 rounded-4">
+                      <div class="card-body p-4">
+                          <h6 class="text-info border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-flag me-2"></i>3. สถานะ และสิ่งที่ต้องตาม</h6>
+                          
+                          <div class="row g-3">
+                              <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">สถานะปัจจุบัน</label> 
+                                <select class="form-select fw-bold text-primary border-primary shadow-none" id="status" onchange="toggleKpiSection()">
+                                   <option value="รอดำเนินการ">รอดำเนินการ</option>
+                                   <option value="เปิดระบบ">เปิดระบบ (เข้ากลุ่ม A)</option>
+                                   <option value="เสร็จสิ้น">เสร็จสิ้น</option> 
+                                   <option value="ยกเลิก">ยกเลิก</option>
+                                </select>
+                              </div>
+                              <div class="col-md-6" id="reactivationDateDiv" style="display:none;">
+                                 <label class="form-label small fw-bold text-success">วันที่เปิดระบบใหม่ <span class="text-danger">*</span></label>
+                                 <input type="text" class="form-control datepicker shadow-none bg-white" id="reactivationDate" onchange="calculateKpiDeadline()" placeholder="เลือกวันที่เปิดระบบ...">
+                              </div>
+                          </div>
+
+                          <div class="mt-3" id="tagsSectionWrapper">
+                              <label class="form-label small fw-bold text-muted mb-2">เอกสารที่ต้องส่งใหม่ (Tags):</label>
+                              <div id="dynamicTagsContainer" class="d-flex flex-wrap gap-1"></div>
+                          </div>
+                          
+                          <!-- KPI Section -->
+                          <div class="mt-3 d-none" id="kpiSection">
+                              <div class="bg-success-soft p-3 rounded-3 border border-success border-opacity-10">
+                                  <h6 class="text-success fw-bold mb-1 small text-uppercase"><i class="fas fa-star me-2"></i>เป้าหมายรับ 4 งาน ภายใน 1 เดือน</h6>
+                                  <div class="small text-muted mb-3" id="kpiDeadlineText">กำหนดวันเปิดระบบเพื่อดูวันครบกำหนด</div>
+                                  <div id="kpiInputs">
+                                      <!-- Gen ด้วย JS -->
+                                  </div>
+                                  <!-- Complete Button -->
+                                  <div class="text-end mt-3 d-none" id="completeBtnDiv">
+                                      <button type="button" class="btn btn-sm btn-primary fw-bold px-4 rounded-pill" onclick="markComplete()"><i class="fas fa-check-circle me-1"></i> บันทึกเสร็จสิ้น</button>
+                                  </div>
+                              </div>
+                          </div>
+
+                      </div>
+                  </div>
+
+                  <div class="card border-0 shadow-sm rounded-4">
+                      <div class="card-body p-4">
+                          <h6 class="text-secondary border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-history me-2"></i>ประวัติการติดตาม</h6>
+                          <div class="bg-light p-2 rounded-3 mb-3 border">
+                              <textarea class="form-control mb-2 border-0 bg-transparent shadow-none" id="newFollowNote" rows="2" placeholder="เพิ่มบันทึกการติดตาม/รายละเอียดเพิ่มเติม..."></textarea>
+                              <button type="button" class="btn btn-sm btn-outline-secondary w-100 rounded-pill shadow-none" onclick="addManualLog()"><i class="fas fa-plus me-1"></i> เพิ่มบันทึก</button>
+                          </div>
+                          <div id="timelineContainer" style="max-height: 250px; overflow-y: auto; padding-right:5px;"></div>
+                      </div>
+                  </div>
+
+               </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer border-top-0 bg-white p-3">
+          <button type="button" class="btn btn-light rounded-pill px-4 shadow-none" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-warning text-dark rounded-pill px-5 fw-bold shadow-sm" onclick="saveData()">บันทึกข้อมูลทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+  </div>
+    
+  <?!= include('_Scripts'); ?>
+
+  <script>
+    let globalData = [], currentUser = "", isUserAdmin = false; 
+    let centerOptions = [], masterTypeOptions = [], providerMap = {};
+    let formModal;
+    let currentHistory = [];
+    let searchTimeout;
+
+    // 🌟 1. แก้ไขปัญหา SweetAlert พิมพ์ไม่ได้ใน Bootstrap Modal 🌟
+    document.addEventListener('focusin', function (e) {
+        if (e.target.closest('.swal2-container')) {
+            e.stopImmediatePropagation();
+        }
+    }, true);
+
+    // 🌟 ฟังก์ชันจัดการวันที่ให้ถูกต้อง 🌟
+    function convertToYMD(dateStr) {
+        if (!dateStr) return "";
+        if (typeof dateStr !== 'string') return dateStr;
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.substring(0, 10);
+        if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+            const parts = dateStr.split(/[/\s:]/);
+            let d = parts[0].padStart(2, '0');
+            let m = parts[1].padStart(2, '0');
+            let y = parseInt(parts[2], 10);
+            if (y > 2400) y -= 543;
+            return `${y}-${m}-${d}`;
+        }
+        return dateStr;
+    }
+
+    // 🌟 ฟังก์ชันคำนวณวันคงเหลือ
+    function calculateDaysLeft(reactivationDateStr) {
+        if (!reactivationDateStr) return null;
+        let openDate;
+        
+        if (reactivationDateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const [y, m, d] = reactivationDateStr.split('-');
+            let year = parseInt(y, 10);
+            if (year > 2400) year -= 543;
+            openDate = new Date(year, parseInt(m, 10) - 1, parseInt(d, 10));
+        } else if (reactivationDateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+            const parts = reactivationDateStr.split(/[/\s:]/);
+            let day = parseInt(parts[0], 10);
+            let m = parseInt(parts[1], 10) - 1;
+            let year = parseInt(parts[2], 10);
+            if (year > 2400) year -= 543;
+            openDate = new Date(year, m, day);
+        } else {
+            openDate = new Date(reactivationDateStr);
+        }
+        
+        if (isNaN(openDate.getTime())) return null;
+
+        let deadline = new Date(openDate);
+        deadline.setDate(deadline.getDate() + 30); 
+        
+        const today = new Date(); today.setHours(0,0,0,0);
+        return Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 3600 * 24));
+    }
+
+    window.onload = function() {
+       formModal = new bootstrap.Modal(document.getElementById('formModal'));
+       // Initialize flatpickr
+       flatpickr(".datepicker", { 
+           dateFormat: "Y-m-d", 
+           altInput: true, 
+           altFormat: "j M Y", 
+           locale: "th",
+           allowInput: true 
+       });
+       
+       loadData(); // 🌟 โหลดข้อมูลทันที
+    };
+
+    function loadData() {
+       showLoading();
+       
+       // 1. ดึงข้อมูลตาราง Hold
+       google.script.run.withSuccessHandler(holdRes => {
+          globalData = holdRes.data || []; 
+          currentUser = holdRes.currentUser; 
+          isUserAdmin = holdRes.isAdmin;
+          centerOptions = holdRes.onboardCenters || []; 
+          masterTypeOptions = holdRes.masterTypes || [];
+          
+          const ctrSel = document.getElementById('trainingCenter');
+          ctrSel.innerHTML = '<option value="">เลือกศูนย์...</option>';
+          centerOptions.forEach(x => ctrSel.add(new Option(x, x)));
+
+          const mtSel = document.getElementById('masterType');
+          mtSel.innerHTML = '<option value="">เลือกประเภท...</option>';
+          masterTypeOptions.forEach(x => mtSel.add(new Option(x, x)));
+
+          let tagsHtml = '';
+          let configTags = holdRes.onboardTags || ['รูปโปรไฟล์', 'รูปอุปกรณ์']; 
+          configTags.forEach((tag, idx) => {
+              let tagId = 'dynamic_tag_' + idx;
+              tagsHtml += `
+                  <div>
+                      <input type="checkbox" id="${tagId}" class="tag-checkbox dynamic-tag" value="${tag}">
+                      <label for="${tagId}" class="tag-label"><i class="fas fa-tag me-1 text-muted"></i> ${tag}</label>
+                  </div>
+              `;
+          });
+          document.getElementById('dynamicTagsContainer').innerHTML = tagsHtml;
+
+          // 🌟 2. สั่งให้หน้าบ้านไปดึงข้อมูล Master (ตารางตรวจประวัติ) มาทำ Map เอง 🌟
+          google.script.run.withSuccessHandler(masterRes => {
+              hideLoading();
+              let masterData = masterRes.data || [];
+              providerMap = {};
+              
+              masterData.forEach(m => {
+                  let cleanId = String(m.idCard).replace(/\D/g, '');
+                  if(cleanId && !providerMap[cleanId]) {
+                      providerMap[cleanId] = {
+                          ftStatus: m.ftStatus,
+                          verifyDate: m.resultDate || m.submitDate,
+                          code: m.code,
+                          name: m.name
+                      };
+                  }
+              });
+
+              updateStats();
+              filterTable();
+          }).withFailureHandler(e => { hideLoading(); showError(e.message); }).getInitialData('');
+
+       }).withFailureHandler(e => { hideLoading(); showError(e.message); }).getHoldData();
+    }
+
+    function updateStats() {
+        document.getElementById('countTotal').textContent = globalData.length;
+        document.getElementById('countPending').textContent = globalData.filter(x => x.status === 'รอดำเนินการ').length;
+        document.getElementById('countOpen').textContent = globalData.filter(x => x.status === 'เปิดระบบ').length;
+        document.getElementById('countCompleted').textContent = globalData.filter(x => x.status === 'เสร็จสิ้น').length; 
+        document.getElementById('countCancel').textContent = globalData.filter(x => x.status === 'ยกเลิก').length;
+    }
+
+    function filterBySummary(status) {
+        document.querySelectorAll('.status-card').forEach(c => c.classList.remove('active'));
+        if(status === '') document.getElementById('stat-total').classList.add('active');
+        else if(status === 'รอดำเนินการ') document.getElementById('stat-pending').classList.add('active');
+        else if(status === 'เปิดระบบ') document.getElementById('stat-open').classList.add('active');
+        else if(status === 'เสร็จสิ้น') document.getElementById('stat-completed').classList.add('active'); 
+        else if(status === 'ยกเลิก') document.getElementById('stat-cancel').classList.add('active');
+        
+        document.getElementById('statusFilter').value = status;
+        filterTable();
+    }
+
+    function formatDateDisplay(d) {
+        if (!d) return '-';
+        let parsedDate;
+        if (typeof d === 'string') {
+            if (d.match(/^\d{4}-\d{2}-\d{2}/)) {
+                const [y, m, day] = d.split('-');
+                let year = parseInt(y, 10);
+                if (year > 2400) year -= 543;
+                parsedDate = new Date(year, parseInt(m, 10) - 1, parseInt(day, 10));
+            } else if (d.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+                const parts = d.split(/[/\s:]/);
+                let day = parseInt(parts[0], 10);
+                let m = parseInt(parts[1], 10) - 1;
+                let year = parseInt(parts[2], 10);
+                if (year > 2400) year -= 543;
+                parsedDate = new Date(year, m, day);
+            } else {
+                parsedDate = new Date(d);
+            }
+        } else {
+            parsedDate = new Date(d);
+        }
+        
+        if (isNaN(parsedDate.getTime())) return d;
+        return parsedDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
+    }
+
+    function getDeadlineDisplay(reactivationDateStr) {
+        let daysLeft = calculateDaysLeft(reactivationDateStr);
+        if (daysLeft === null) return '<span class="text-muted small">-</span>';
+        
+        let colorClass = daysLeft <= 5 ? "text-danger" : (daysLeft <= 10 ? "text-warning text-dark" : "text-primary");
+        let textDisplay = daysLeft < 0 ? "เกินกำหนด" : `เหลือ ${daysLeft} วัน`;
+        
+        let icon = daysLeft <= 10 ? '<i class="fas fa-exclamation-triangle"></i>' : '<i class="far fa-clock"></i>';
+
+        return `<div class="small fw-bold ${colorClass} mb-1">${icon} ${textDisplay}</div>`;
+    }
+
+    function renderTable(data) {
+       const tbody = document.getElementById('tableBody'); tbody.innerHTML = "";
+       if(!data || data.length === 0) { document.getElementById('noData').classList.remove('d-none'); return; }
+       document.getElementById('noData').classList.add('d-none');
+
+       data.forEach(row => {
+          let tr = document.createElement('tr');
+
+          let idCardClean = String(row.idCard || "").replace(/\D/g, '');
+          let maidCodeClean = String(row.maidCode || "").trim().toLowerCase();
+          
+          let mapData = providerMap[idCardClean];
+          if (!mapData && maidCodeClean) {
+              let matchedKey = Object.keys(providerMap).find(k => providerMap[k].code && String(providerMap[k].code).toLowerCase() === maidCodeClean);
+              if (matchedKey) mapData = providerMap[matchedKey];
+          }
+
+          let displayFtStatus = row.fastTrackStatus || ""; // สถานะที่ติดมากับชีต Hold (เช่น Sent หรือว่างเปล่า)
+
+          // 🌟 ถ้าผู้ใช้บอกว่า "ต้องส่งตรวจใหม่ผ่านระบบ"
+          if (row.verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+              if (displayFtStatus === '') {
+                  // ถ้ามันยังว่างแปลว่า "ยังไม่ได้กดปุ่มส่งตรวจ"
+                  // ไม่ต้องทำอะไร ให้รอโชว์ปุ่ม
+              } else {
+                  // ถ้ามันไม่ว่าง (แปลว่าเคยกดปุ่มส่ง จนเป็น Sent หรือรอตรวจสอบแล้ว)
+                  // ให้วิ่งไปดูหน้า Master ว่ามีการอัปเดตผลแล้วหรือยัง!
+                  if (mapData && mapData.ftStatus) {
+                      displayFtStatus = mapData.ftStatus; 
+                      // 🌟 ถ้าหน้า Master ถูกสร้างขึ้นมาแล้วมันเป็น "รอตรวจสอบ" เราจะโชว์ว่า Sent ตามความต้องการ
+                      if (displayFtStatus === 'รอตรวจสอบ') {
+                          displayFtStatus = 'Sent';
+                      }
+                  }
+              }
+          }
+
+          // จัดการแสดงผลป้าย Badge
+          let ftBadge = '<span class="text-muted">-</span>';
+          if (displayFtStatus) {
+              let colorClass = 'bg-secondary';
+              if (displayFtStatus === 'Verified') colorClass = 'bg-success';
+              else if (displayFtStatus === 'Not Verified') colorClass = 'bg-danger';
+              else if (['Pending Result', 'Sent', 'รอตรวจสอบ', 'In Progress'].includes(displayFtStatus)) colorClass = 'bg-warning text-dark';
+              
+              ftBadge = `<span class="badge ${colorClass}">${displayFtStatus}</span>`;
+          } else if (row.verifyMethod === 'มีใบตรวจประวัติมาเอง') {
+              ftBadge = `<span class="badge bg-light text-muted border">ตรวจเอง</span>`;
+          } else {
+              // ปุ่มส่งตรวจ จะโชว์เมื่อ displayFtStatus ว่างเปล่าเท่านั้น!
+              ftBadge = `<button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 shadow-sm fw-bold" style="font-size:0.7rem;" onclick="sendToFastTrackDirect('${row.id}')"><i class="fas fa-paper-plane me-1"></i>ส่งตรวจ</button>`;
+          }
+
+          let statBadge = 'bg-secondary';
+          if(row.status === 'เปิดระบบ') statBadge = 'bg-success';
+          else if (row.status === 'รอดำเนินการ') statBadge = 'bg-warning text-dark';
+          else if (row.status === 'เสร็จสิ้น') statBadge = 'bg-primary'; 
+          else if (row.status === 'ยกเลิก') statBadge = 'bg-danger';
+
+          // 🌟 จัดการ 3-Tier Alert Highlight 🌟
+          let rowClass = "";
+          if (row.status === 'เปิดระบบ') {
+              let dLeft = calculateDaysLeft(row.reactivationDate);
+              if (dLeft !== null) {
+                  if (dLeft <= 5) rowClass = "row-alert-5";
+                  else if (dLeft <= 10) rowClass = "row-alert-10";
+                  else if (dLeft <= 20) rowClass = "row-alert-20";
+              }
+          }
+          tr.className = rowClass; 
+
+          let tagsHtml = "";
+          if (row.tags && Array.isArray(row.tags) && row.tags.length > 0) {
+              tagsHtml = '<div class="mt-2 d-flex flex-wrap gap-1 justify-content-center">';
+              row.tags.forEach(t => {
+                  tagsHtml += `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size:0.65rem;">${t}</span>`;
+              });
+              tagsHtml += '</div>';
+          }
+
+          let kpiDisplay = `<span class="text-muted small">-</span>`;
+          if (row.status === 'เปิดระบบ' || row.status === 'เสร็จสิ้น') {
+              let deadlineHtml = getDeadlineDisplay(row.reactivationDate);
+              let bookingsHtml = '';
+              let kpiCount = 0;
+
+              if (row.kpiJobs && Array.isArray(row.kpiJobs)) {
+                  let validBookings = row.kpiJobs.filter(j => j.booking && j.booking.trim() !== "");
+                  kpiCount = validBookings.length;
+                  
+                  if (validBookings.length > 0) {
+                      let badges = validBookings.map(j => {
+                          const targetId = j.job ? j.job.trim() : j.booking.trim();
+                          return `<a href="https://admin-test.beneat.co/order/${targetId}/edit" target="_blank" class="badge bg-light text-dark border border-secondary-subtle mb-1 shadow-sm w-100 text-start text-decoration-none"><i class="fas fa-hashtag text-primary me-1"></i>${j.booking}</a>`;
+                      }).join('');
+                      bookingsHtml = `<div class="d-flex flex-column mt-2 w-100" style="max-width: 120px; margin: 0 auto;">${badges}</div>`;
+                  }
+              }
+              
+              kpiDisplay = `
+                  ${row.status === 'เปิดระบบ' ? deadlineHtml : ''}
+                  <span class="badge bg-primary-subtle text-primary border px-2 py-1">${kpiCount} / 4 งาน</span>
+                  ${bookingsHtml}
+              `;
+          }
+
+          let maidLink = row.maidCode ? `<a href="https://admin-test.beneat.co/professional/${row.maidCode}/profile" target="_blank" class="fw-bold text-primary text-decoration-none shadow-sm rounded-1 px-1" style="background:#f8f9fa;">${row.maidCode}</a>` : '-';
+          let deleteBtn = isUserAdmin ? `<button class="btn btn-icon btn-soft-danger btn-sm rounded-pill shadow-sm" onclick="deleteItem('${row.id}')" title="ลบ"><i class="fas fa-trash-alt"></i></button>` : '';
+
+          tr.innerHTML = `
+             <td>${maidLink}</td>
+             <td><div class="fw-bold text-dark">${row.name}</div><div class="small text-muted">${row.phone || '-'}</div></td>
+             <td><span class="badge bg-light text-dark border fw-normal">${row.contactChannel || '-'}</span></td>
+             <td class="text-danger small">${formatDateDisplay(row.holdDate)}</td>
+             <td class="text-center align-middle">${ftBadge}</td> 
+             <td class="text-center align-middle">
+                 <span class="badge ${statBadge} px-3 py-2 rounded-pill">${row.status || '-'}</span>
+                 ${tagsHtml}
+             </td>
+             <td class="text-success small fw-bold">${formatDateDisplay(row.reactivationDate)}</td>
+             <td class="text-center align-middle">${kpiDisplay}</td>
+             <td class="text-center align-middle">
+                <div class="d-flex justify-content-center gap-1 flex-wrap">
+                    <button class="btn btn-icon btn-soft-primary btn-sm rounded-pill shadow-sm" onclick="openEditModalById('${row.id}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
+                    ${deleteBtn}
+                </div>
+             </td>
+          `;
+          tbody.appendChild(tr);
+       });
+    }
+
+    function filterTable() {
+       const txt = document.getElementById('searchInput').value.toLowerCase();
+       const status = document.getElementById('statusFilter').value;
+       const kpiAlert = document.getElementById('kpiFilter').value;
+
+       const filtered = globalData.filter(x => {
+          const name = String(x.name || "").toLowerCase();
+          const code = String(x.maidCode || "").toLowerCase();
+          const phone = String(x.phone || "").toLowerCase();
+          
+          const matchText = name.includes(txt) || code.includes(txt) || phone.includes(txt);
+          const matchStatus = status === "" || String(x.status) === status;
+          
+          let matchKpi = true;
+          if (kpiAlert !== "") {
+              if (x.status !== 'เปิดระบบ') {
+                  matchKpi = false;
+              } else {
+                  let dLeft = calculateDaysLeft(x.reactivationDate);
+                  if (dLeft === null) {
+                      matchKpi = false;
+                  } else {
+                      if (kpiAlert === '5') matchKpi = (dLeft <= 5);
+                      else if (kpiAlert === '10') matchKpi = (dLeft > 5 && dLeft <= 10);
+                      else if (kpiAlert === '20') matchKpi = (dLeft > 10 && dLeft <= 20);
+                  }
+              }
+          }
+
+          return matchText && matchStatus && matchKpi;
+       });
+       renderTable(filtered);
+    }
+
+    function searchMaidAuto(val) {
+        const listContainer = document.getElementById('autocomplete-list');
+        const staticIcon = document.getElementById('staticSearchIcon');
+        const spinningIcon = document.getElementById('spinningSearchIcon');
+        
+        const cleanVal = val.trim();
+        const searchVal = cleanVal.toLowerCase();
+
+        let localMatches = [];
+        
+        if (cleanVal === "") {
+            localMatches = Object.keys(providerMap)
+                .map(id => ({ id: id, data: providerMap[id] }))
+                .slice(0, 10)
+                .map(item => item.id);
+        } else {
+            localMatches = Object.keys(providerMap).filter(idKey => {
+                const data = providerMap[idKey];
+                return String(data.code || "").toLowerCase().includes(searchVal) || 
+                       String(data.name || "").toLowerCase().includes(searchVal) || 
+                       String(idKey || "").includes(searchVal); 
+            });
+        }
+
+        if (localMatches.length === 0 && cleanVal !== "") {
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-plus-circle me-1"></i> สร้างเป็นรายการใหม่ด้วยรหัส "${cleanVal}"</span>`;
+            div.onclick = function() {
+                document.getElementById('maidCode').value = cleanVal;
+                listContainer.innerHTML = '';
+            };
+            listContainer.appendChild(div);
+            return;
+        } else if (localMatches.length === 0 && cleanVal === "") {
+            listContainer.innerHTML = '<div class="p-2 text-muted small text-center">ยังไม่มีข้อมูลในระบบ</div>';
+            return;
+        }
+
+        renderAutocompleteList(localMatches.map(id => ({
+            idCard: id,
+            name: providerMap[id].name,
+            code: providerMap[id].code,
+            verifyDate: providerMap[id].verifyDate
+        })), cleanVal);
+
+        if (cleanVal === "") {
+            clearTimeout(searchTimeout);
+            return;
+        }
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            staticIcon.classList.add('d-none');
+            spinningIcon.classList.remove('d-none');
+            
+            google.script.run.withSuccessHandler(res => {
+                staticIcon.classList.remove('d-none');
+                spinningIcon.classList.add('d-none');
+                
+                if (res.success && res.data.length > 0) {
+                    const serverResults = res.data.filter(item => {
+                        const cid = item.idCard.replace(/\D/g, '');
+                        return !localMatches.includes(cid);
+                    });
+                    if(serverResults.length > 0) {
+                        appendServerResults(serverResults, cleanVal);
+                    }
+                }
+            }).globalSmartSearch(cleanVal);
+        }, 500);
+    }
+
+    function renderAutocompleteList(items, query) {
+        const listContainer = document.getElementById('autocomplete-list');
+        listContainer.innerHTML = '';
+        
+        items.slice(0, 8).forEach(item => {
+            const div = document.createElement('div');
+            let vDateDisplay = item.verifyDate ? `<br><small class="text-success"><i class="fas fa-check-circle"></i> ผ่านล่าสุด: ${formatDateDisplay(item.verifyDate)}</small>` : '';
+            
+            div.innerHTML = `<strong>${item.code || '-'}</strong> - ${item.name} <br><small class="text-muted">บัตร: ${item.idCard}</small>${vDateDisplay}`;
+            div.onclick = function() { selectMaid(item); };
+            listContainer.appendChild(div);
+        });
+        
+        if (query !== "") {
+            appendCreateNewButton(query);
+        }
+    }
+
+    function appendServerResults(serverItems, query) {
+        const listContainer = document.getElementById('autocomplete-list');
+        const existingNewBtn = listContainer.querySelector('.create-new-btn');
+        if (existingNewBtn) existingNewBtn.remove();
+
+        serverItems.slice(0, 8).forEach(item => {
+            const cleanId = item.idCard.replace(/\D/g, '');
+            const localDetail = providerMap[cleanId] || {};
+            
+            const div = document.createElement('div');
+            div.className = "bg-light";
+            let vDate = item.verifyDate || localDetail.verifyDate;
+            let vDateDisplay = vDate ? `<br><small class="text-success"><i class="fas fa-check-circle"></i> ผ่านล่าสุด: ${formatDateDisplay(vDate)}</small>` : '';
+            
+            div.innerHTML = `<span class="badge bg-info-soft text-info mb-1" style="font-size:0.6rem">Global Result</span><br><strong>${item.code || '-'}</strong> - ${item.name} <br><small class="text-muted">บัตร: ${item.idCard}</small>${vDateDisplay}`;
+            div.onclick = function() {
+                selectMaid({
+                    idCard: cleanId,
+                    name: item.name,
+                    code: item.code,
+                    verifyDate: vDate
+                });
+            };
+            listContainer.appendChild(div);
+        });
+        
+        appendCreateNewButton(query);
+    }
+
+    function appendCreateNewButton(query) {
+        const listContainer = document.getElementById('autocomplete-list');
+        const divNew = document.createElement('div');
+        divNew.className = "create-new-btn border-top";
+        divNew.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-plus-circle me-1"></i> ใช้ข้อมูลนี้เป็นรายการใหม่ "${query}"</span>`;
+        divNew.onclick = function() {
+            document.getElementById('maidCode').value = query;
+            listContainer.innerHTML = '';
+        };
+        listContainer.appendChild(divNew);
+    }
+
+    function selectMaid(item) {
+        document.getElementById('maidCode').value = item.code || "";
+        document.getElementById('name').value = item.name || "";
+        document.getElementById('idCard').value = item.idCard || ""; 
+        formatIdCard(document.getElementById('idCard')); 
+        
+        const listContainer = document.getElementById('autocomplete-list');
+        listContainer.innerHTML = '';
+
+        let fp = document.getElementById('lastVerifyDate')._flatpickr;
+        if (item.verifyDate) {
+            if (fp) {
+                fp.setDate(item.verifyDate, true); 
+            } else {
+                document.getElementById('lastVerifyDate').value = item.verifyDate;
+                calculateVerifyValidity();
+            }
+        } else {
+            if (fp) fp.clear();
+            document.getElementById('verifyValidityAlert').innerHTML = `<div class="alert alert-warning py-2 mb-0 small fw-bold"><i class="fas fa-exclamation-triangle me-1"></i> ไม่พบประวัติผลตรวจเดิมในระบบ - ต้องตรวจใหม่</div>`;
+            document.getElementById('verifyMethod').value = "ต้องส่งตรวจใหม่ผ่านระบบ";
+            toggleVerifyAction();
+        }
+    }
+    
+    document.addEventListener("click", function(e) {
+        if(e.target.id !== "maidCode" && !e.target.closest('.input-group')) {
+            document.getElementById('autocomplete-list').innerHTML = '';
+        }
+    });
+
+    function openAddModal() {
+       document.getElementById('dataForm').reset();
+       document.getElementById('recordId').value = "";
+       document.getElementById('hasFastTrackStatus').value = "";
+       document.getElementById('modalTitle').textContent = "บันทึกคุณแม่บ้านขอกลับมาทำใหม่ (กลุ่ม H)";
+       
+       document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
+       
+       document.querySelectorAll('.dynamic-tag').forEach(cb => cb.checked = false);
+       currentHistory = []; renderTimeline();
+       
+       toggleRetrain();
+       toggleVerifyAction();
+       document.getElementById('verifyValidityAlert').innerHTML = `<div class="alert alert-secondary py-2 mb-0 small">กรุณาระบุวันที่เพื่อคำนวณอายุผลตรวจ</div>`;
+       document.getElementById('status').value = "รอดำเนินการ";
+       document.getElementById('lastVerifyDate')._flatpickr.clear(); 
+
+       toggleKpiSection();
+       renderKpiInputs([]);
+
+       formModal.show();
+    }
+
+    function openEditModalById(id) {
+       const item = globalData.find(x => String(x.id) === String(id));
+       if (item) {
+           document.getElementById('modalTitle').textContent = "แก้ไขข้อมูลคุณแม่บ้านกลุ่ม H";
+           document.getElementById('recordId').value = item.id;
+           document.getElementById('maidCode').value = item.maidCode;
+           document.getElementById('name').value = item.name;
+           document.getElementById('idCard').value = item.idCard || ""; formatIdCard(document.getElementById('idCard'));
+           document.getElementById('phone').value = item.phone;
+           document.getElementById('contactChannel').value = item.contactChannel;
+           
+           if(item.holdDate) document.getElementById('holdDate')._flatpickr.setDate(convertToYMD(item.holdDate)); else document.getElementById('holdDate')._flatpickr.clear();
+           
+           document.getElementById('needsRetrain').value = item.needsRetrain || "ไม่ต้อง";
+           document.getElementById('trainingCenter').value = item.trainingCenter || "";
+           toggleRetrain();
+
+           document.getElementById('masterType').value = item.masterType || "";
+
+           // 🌟 ใช้ค่า FT Status จากหลังบ้านตรงๆ
+           let displayFtStatus = item.fastTrackStatus || "";
+           
+           // 🌟 ดึงแค่วันที่ตรวจล่าสุดมาโชว์ใน Input (ไม่กวนสถานะ FT)
+           let idCardClean = String(item.idCard || "").replace(/\D/g, '');
+           let maidCodeClean = String(item.maidCode || "").trim().toLowerCase();
+           let mapData = providerMap[idCardClean] || Object.values(providerMap).find(m => m.code && m.code.toLowerCase() === maidCodeClean);
+           
+           if (mapData && !item.lastVerifyDate && mapData.verifyDate) {
+               item.lastVerifyDate = mapData.verifyDate; 
+           }
+
+           if(item.lastVerifyDate) document.getElementById('lastVerifyDate')._flatpickr.setDate(convertToYMD(item.lastVerifyDate)); else document.getElementById('lastVerifyDate')._flatpickr.clear();
+           
+           document.getElementById('verifyMethod').value = item.verifyMethod || "ใช้ผลตรวจเดิม";
+           
+           // อัปเดตสถานะแบบ Real-time เวลาเปิด Form
+           if (item.verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+               if (displayFtStatus === '') {
+                   // ไม่ต้องทำอะไร ให้รอโชว์ปุ่มส่ง
+               } else if (mapData && mapData.ftStatus) {
+                   displayFtStatus = mapData.ftStatus; 
+                   if (displayFtStatus === 'รอตรวจสอบ') displayFtStatus = 'Sent';
+               }
+           }
+           document.getElementById('hasFastTrackStatus').value = displayFtStatus;
+           
+           if (item.verifyMethod === 'มีใบตรวจประวัติมาเอง') {
+               document.getElementById('manualFtStatus').value = item.fastTrackStatus || "";
+           }
+
+           calculateVerifyValidity();
+           toggleVerifyAction();
+
+           const tags = item.tags || [];
+           document.querySelectorAll('.dynamic-tag').forEach(cb => { cb.checked = tags.includes(cb.value); });
+
+           document.getElementById('status').value = item.status || "รอดำเนินการ";
+           if(item.reactivationDate) document.getElementById('reactivationDate')._flatpickr.setDate(convertToYMD(item.reactivationDate)); else document.getElementById('reactivationDate')._flatpickr.clear();
+           
+           toggleKpiSection();
+           renderKpiInputs(item.kpiJobs || []);
+
+           currentHistory = item.history || []; renderTimeline();
+           document.getElementById('newFollowNote').value = "";
+           formModal.show();
+       }
+    }
+
+    function checkHoldDateRetrain() {
+        const dateStr = document.getElementById('holdDate').value;
+        if (!dateStr) return;
+
+        let passedDate;
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const [y, m, d] = dateStr.split('-');
+            let year = parseInt(y, 10);
+            if (year > 2400) year -= 543;
+            passedDate = new Date(year, parseInt(m, 10) - 1, parseInt(d, 10));
+        } else {
+            passedDate = new Date(dateStr);
+        }
+
+        if (isNaN(passedDate.getTime())) return;
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        passedDate.setHours(0,0,0,0);
+
+        const timeDiff = today.getTime() - passedDate.getTime();
+        const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+
+        const retrainSel = document.getElementById('needsRetrain');
+        if (daysDiff > 60) {
+            retrainSel.value = "ต้อง Retrain";
+        } else {
+            retrainSel.value = "ไม่ต้อง";
+        }
+        toggleRetrain();
+    }
+
+    function toggleRetrain() {
+        const val = document.getElementById('needsRetrain').value;
+        const div = document.getElementById('retrainCenterDiv');
+        if (val === 'ต้อง Retrain') div.style.display = 'block'; else div.style.display = 'none';
+    }
+
+    function calculateVerifyValidity() {
+        const dateStr = document.getElementById('lastVerifyDate').value;
+        const alertDiv = document.getElementById('verifyValidityAlert');
+        const methodSel = document.getElementById('verifyMethod');
+        
+        if (!dateStr) {
+            alertDiv.innerHTML = `<div class="alert alert-secondary py-2 mb-0 small">กรุณาระบุวันที่เพื่อคำนวณอายุผลตรวจ</div>`;
+            return;
+        }
+
+        let passedDate;
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const [y, m, d] = dateStr.split('-');
+            let year = parseInt(y, 10);
+            if (year > 2400) year -= 543;
+            passedDate = new Date(year, parseInt(m, 10) - 1, parseInt(d, 10));
+        } else {
+            passedDate = new Date(dateStr);
+        }
+        
+        if (isNaN(passedDate.getTime())) return;
+
+        const expiryDate = new Date(passedDate);
+        expiryDate.setFullYear(expiryDate.getFullYear() + 1); 
+        
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const timeDiff = expiryDate.getTime() - today.getTime();
+        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        
+        if (daysLeft < 0) {
+            alertDiv.innerHTML = `<div class="alert alert-danger py-2 mb-0 small fw-bold"><i class="fas fa-times-circle me-1"></i> หมดอายุแล้ว (เกิน 1 ปี) - ต้องตรวจใหม่</div>`;
+            methodSel.value = "ต้องส่งตรวจใหม่ผ่านระบบ";
+        } else if (daysLeft < 90) {
+            alertDiv.innerHTML = `<div class="alert alert-warning py-2 mb-0 small fw-bold text-dark"><i class="fas fa-exclamation-triangle me-1"></i> อายุเหลือน้อยกว่า 90 วัน (${daysLeft} วัน) - ต้องตรวจใหม่</div>`;
+            methodSel.value = "ต้องส่งตรวจใหม่ผ่านระบบ";
+        } else {
+            alertDiv.innerHTML = `<div class="alert alert-success py-2 mb-0 small fw-bold"><i class="fas fa-check-circle me-1"></i> ใช้งานได้ (เหลือ ${daysLeft} วัน)</div>`;
+            methodSel.value = "ใช้ผลตรวจเดิม";
+        }
+        toggleVerifyAction();
+    }
+
+    function toggleVerifyAction() {
+        const val = document.getElementById('verifyMethod').value;
+        const btnDiv = document.getElementById('fastTrackActionDiv');
+        const manualFtDiv = document.getElementById('manualFtStatusDiv');
+        const verifyMethodSection = document.getElementById('verifyMethodSection');
+        
+        const currentStatus = document.getElementById('hasFastTrackStatus').value;
+        
+        if (val === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+            if (!currentStatus || currentStatus === '') {
+                if (btnDiv) btnDiv.style.display = 'block';
+                if (manualFtDiv) manualFtDiv.style.display = 'none';
+                let statusDisplay = document.getElementById('ftStatusDisplayLabel');
+                if(statusDisplay) statusDisplay.style.display = 'none';
+            } else {
+                if (btnDiv) btnDiv.style.display = 'none';
+                if (manualFtDiv) manualFtDiv.style.display = 'none';
+                
+                let colorClass = 'text-secondary';
+                if (currentStatus === 'Verified') colorClass = 'text-success';
+                else if (currentStatus === 'Not Verified') colorClass = 'text-danger';
+                else if (['Pending Result', 'Sent', 'รอตรวจสอบ', 'In Progress'].includes(currentStatus)) colorClass = 'text-warning text-dark';
+
+                let statusDisplay = document.getElementById('ftStatusDisplayLabel');
+                if(!statusDisplay) {
+                     statusDisplay = document.createElement('div');
+                     statusDisplay.id = 'ftStatusDisplayLabel';
+                     if (verifyMethodSection) {
+                         verifyMethodSection.parentNode.insertBefore(statusDisplay, verifyMethodSection.nextSibling);
+                     }
+                }
+                statusDisplay.className = `mt-3 p-2 bg-light rounded border small fw-bold text-center ${colorClass}`;
+                statusDisplay.innerHTML = `<i class="fas fa-info-circle me-1"></i>สถานะตรวจประวัติปัจจุบัน: ${currentStatus}`;
+                statusDisplay.style.display = 'block';
+            }
+        } else if (val === 'มีใบตรวจประวัติมาเอง') {
+            if (btnDiv) btnDiv.style.display = 'none';
+            if (manualFtDiv) manualFtDiv.style.display = 'block';
+            let statusDisplay = document.getElementById('ftStatusDisplayLabel');
+            if(statusDisplay) statusDisplay.style.display = 'none';
+        } else {
+            if (btnDiv) btnDiv.style.display = 'none';
+            if (manualFtDiv) manualFtDiv.style.display = 'none';
+            let statusDisplay = document.getElementById('ftStatusDisplayLabel');
+            if(statusDisplay) statusDisplay.style.display = 'none';
+        }
+    }
+
+    function toggleKpiSection() {
+        const stat = document.getElementById('status').value;
+        const kpiSec = document.getElementById('kpiSection');
+        const reactDiv = document.getElementById('reactivationDateDiv');
+        const tagsWrapper = document.getElementById('tagsSectionWrapper');
+        const completeBtnDiv = document.getElementById('completeBtnDiv');
+        
+        kpiSec.removeEventListener('input', validateKpiInputs);
+        kpiSec.addEventListener('input', validateKpiInputs);
+
+        if (stat === 'เปิดระบบ' || stat === 'เสร็จสิ้น') {
+            kpiSec.classList.remove('d-none');
+            reactDiv.style.display = 'block';
+            if(tagsWrapper) tagsWrapper.style.display = 'none'; 
+            if(!document.getElementById('reactivationDate').value) document.getElementById('reactivationDate')._flatpickr.setDate(new Date());
+            calculateKpiDeadline();
+            validateKpiInputs(); 
+        } else if (stat === 'รอดำเนินการ') {
+            kpiSec.classList.add('d-none');
+            reactDiv.style.display = 'none';
+            if(tagsWrapper) tagsWrapper.style.display = 'block'; 
+        } else {
+            kpiSec.classList.add('d-none');
+            reactDiv.style.display = 'none';
+            if(tagsWrapper) tagsWrapper.style.display = 'none'; 
+        }
+    }
+
+    function validateKpiInputs() {
+        const bInputs = document.querySelectorAll('.kpi-booking');
+        let count = 0;
+        bInputs.forEach(input => {
+            if (input.value.trim() !== '') count++;
+        });
+        
+        const completeBtnDiv = document.getElementById('completeBtnDiv');
+        const stat = document.getElementById('status').value;
+
+        if (count === 4 && stat === 'เปิดระบบ') {
+            completeBtnDiv.classList.remove('d-none');
+        } else {
+            completeBtnDiv.classList.add('d-none');
+        }
+    }
+
+    function markComplete() {
+        Swal.fire({
+            title: 'ยืนยันเสร็จสิ้น?',
+            text: 'รับงานครบ 4 งานแล้ว ต้องการเปลี่ยนสถานะเป็น "เสร็จสิ้น" ใช่หรือไม่?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            confirmButtonText: 'ยืนยัน',
+            cancelButtonText: 'ยกเลิก'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('status').value = 'เสร็จสิ้น';
+                toggleKpiSection(); 
+                Swal.fire('เปลี่ยนสถานะแล้ว', 'กรุณากด "บันทึกข้อมูลทั้งหมด" เพื่ออัปเดตลงระบบ', 'success');
+            }
+        });
+    }
+
+    function calculateKpiDeadline() {
+        const dateStr = document.getElementById('reactivationDate').value;
+        const textDiv = document.getElementById('kpiDeadlineText');
+        if (!dateStr) { textDiv.textContent = "กำหนดวันเปิดระบบเพื่อดูวันครบกำหนด"; return; }
+        
+        let openDate;
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const [y, m, d] = dateStr.split('-');
+            let year = parseInt(y, 10);
+            if (year > 2400) year -= 543;
+            openDate = new Date(year, parseInt(m, 10) - 1, parseInt(d, 10));
+        } else {
+            openDate = new Date(dateStr);
+        }
+        
+        if (isNaN(openDate.getTime())) return;
+
+        let deadline = new Date(openDate);
+        deadline.setDate(deadline.getDate() + 30); 
+        
+        const today = new Date(); today.setHours(0,0,0,0);
+        const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 3600 * 24));
+        
+        let color = daysLeft < 0 ? "text-danger fw-bold" : (daysLeft <= 5 ? "text-warning fw-bold text-dark" : "text-primary fw-bold");
+        let thDate = deadline.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'numeric'});
+        
+        textDiv.innerHTML = `ครบกำหนด: <b>${thDate}</b> <span class="${color}">(${daysLeft < 0 ? 'เกินกำหนด' : 'เหลือ ' + daysLeft + ' วัน'})</span>`;
+    }
+
+    function renderKpiInputs(savedData) {
+        const container = document.getElementById('kpiInputs');
+        container.innerHTML = "";
+        for (let i = 0; i < 4; i++) {
+            let booking = "", job = "";
+            if (savedData && savedData[i]) { booking = savedData[i].booking || ""; job = savedData[i].job || ""; }
+            
+            container.innerHTML += `
+                <div class="kpi-row">
+                    <div class="kpi-num">${i+1}</div>
+                    <input type="text" class="form-control form-control-sm kpi-booking border-0 shadow-none bg-transparent" placeholder="ระบุ Booking Code" value="${booking}">
+                    <input type="text" class="form-control form-control-sm kpi-jobid border-0 shadow-none bg-transparent" placeholder="Job ID (ถ้ามี)" value="${job}">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle" onclick="returnJobFromModal(${i})" title="คืนงานนี้"><i class="fas fa-undo"></i></button>
+                </div>
+            `;
+        }
+        validateKpiInputs(); 
+    }
+
+    function formatIdCard(input) {
+      let v = input.value.replace(/\D/g, ''); if(v.length>13) v=v.substring(0,13);
+      let f = ''; if(v.length>0) f+=v.substring(0,1); if(v.length>1) f+='-'+v.substring(1,5); if(v.length>5) f+='-'+v.substring(5,10); if(v.length>10) f+='-'+v.substring(10,12); if(v.length>12) f+='-'+v.substring(12,13);
+      input.value = f;
+      if(v.length===13) validateIdCard(input); else input.classList.remove('is-invalid', 'is-valid');
+    }
+    function validateIdCard(input) {
+       const id = input.value.replace(/-/g, ''); if(id.length!==13) { input.classList.add('is-invalid'); return false; }
+       let sum=0; for(let i=0; i<12; i++) sum+=parseFloat(id.charAt(i))*(13-i);
+       if((11-(sum%11))%10 === parseFloat(id.charAt(12))) { input.classList.remove('is-invalid'); input.classList.add('is-valid'); return true; }
+       else { input.classList.add('is-invalid'); return false; }
+    }
+
+    function addManualLog() {
+        const note = document.getElementById('newFollowNote').value.trim();
+        if(!note) return;
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        currentHistory.unshift({ date: dateStr, note: note, user: currentUser });
+        renderTimeline();
+        document.getElementById('newFollowNote').value = "";
+    }
+    function renderTimeline() {
+        const c = document.getElementById('timelineContainer'); c.innerHTML = "";
+        if (!currentHistory.length) { c.innerHTML = '<div class="text-center text-muted small py-3">ยังไม่มีประวัติ</div>'; return; }
+        let html = '<div class="timeline">';
+        currentHistory.forEach((h, i) => {
+             const u = h.user ? ` <small class="text-muted">(${h.user})</small>` : '';
+             html += `<div class="timeline-item"><div class="timeline-date">${formatDateDisplay(h.date)}${u}</div>
+                      <div class="timeline-content d-flex justify-content-between"><div>${h.note}</div><button class="btn btn-sm text-danger p-0 ms-2 border-0" onclick="removeLog(${i})">&times;</button></div></div>`;
+        });
+        html += '</div>'; c.innerHTML = html;
+    }
+    function removeLog(index) { currentHistory.splice(index, 1); renderTimeline(); }
+
+    function sendToFastTrackDirect(id) {
+        Swal.fire({
+            title: 'ยืนยันการส่งตรวจ?',
+            text: 'ระบบจะส่งข้อมูลไปยังส่วนตรวจสอบประวัติ',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd'
+        }).then(r => {
+            if(r.isConfirmed) {
+                showLoading();
+                google.script.run.withSuccessHandler(res => {
+                    hideLoading();
+                    if(res.success) { 
+                        Swal.fire('ส่งตรวจสำเร็จ', 'ส่งข้อมูลไปยัง Fast Track แล้ว', 'success'); 
+                        loadData(); 
+                    }
+                    else showError(res.message);
+                }).sendHoldToFastTrack(id);
+            }
+        });
+    }
+
+    function sendToFastTrackFromModal() {
+        const id = document.getElementById('recordId').value;
+        if (!id) { 
+            Swal.fire({
+                title: 'คำเตือน', 
+                text: 'กรุณาบันทึกข้อมูลหลักก่อนส่งตรวจ Fast Track', 
+                icon: 'warning'
+            }); 
+            return; 
+        }
+        Swal.fire({ 
+            title: 'ยืนยันส่งตรวจ?', 
+            icon: 'question', 
+            showCancelButton: true 
+        }).then(r => {
+            if(r.isConfirmed) {
+                showLoading();
+                google.script.run.withSuccessHandler(res => {
+                    hideLoading();
+                    if(res.success) { Swal.fire('สำเร็จ', 'ส่งข้อมูลไปยังส่วนตรวจสอบประวัติแล้ว', 'success'); loadData(); formModal.hide(); }
+                    else showError(res.message);
+                }).sendHoldToFastTrack(id);
+            }
+        });
+    }
+
+    function saveData() {
+       const idInput = document.getElementById('idCard');
+       if(idInput.value && !validateIdCard(idInput)) { 
+           Swal.fire({title: 'เลขบัตรไม่ถูกต้อง', text: '', icon: 'warning'}); 
+           return; 
+       }
+       
+       let tags = [];
+       document.querySelectorAll('.dynamic-tag:checked').forEach(cb => { tags.push(cb.value); });
+       
+       let kpiData = [];
+       if (document.getElementById('status').value === 'เปิดระบบ' || document.getElementById('status').value === 'เสร็จสิ้น') {
+           const bInputs = document.querySelectorAll('.kpi-booking');
+           const jInputs = document.querySelectorAll('.kpi-jobid');
+           for(let i=0; i<4; i++) {
+               kpiData.push({ booking: bInputs[i].value.trim(), job: jInputs[i].value.trim() });
+           }
+       }
+
+       let finalFtStatus = document.getElementById('hasFastTrackStatus').value || "";
+       let verifyMethod = document.getElementById('verifyMethod').value;
+
+       if (verifyMethod === 'มีใบตรวจประวัติมาเอง') {
+          finalFtStatus = document.getElementById('manualFtStatus').value || finalFtStatus;
+       } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+          finalFtStatus = 'Verified';
+       } else if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+          // ถ้าเปลี่ยนกลับมาเป็นต้องส่งตรวจใหม่ และสถานะเดิมเป็น Verified (จากการใช้ผลตรวจเดิมรอบที่แล้ว) ให้ล้างค่าทิ้งเพื่อให้ปุ่มส่งโผล่
+          if (finalFtStatus === 'Verified') {
+              finalFtStatus = ''; 
+          }
+       }
+
+       const form = {
+         id: document.getElementById('recordId').value,
+         maidCode: document.getElementById('maidCode').value,
+         name: document.getElementById('name').value,
+         idCard: document.getElementById('idCard').value.replace(/-/g, ''),
+         phone: document.getElementById('phone').value,
+         contactChannel: document.getElementById('contactChannel').value,
+         holdDate: document.getElementById('holdDate').value,
+         needsRetrain: document.getElementById('needsRetrain').value,
+         trainingCenter: document.getElementById('trainingCenter').value,
+         lastVerifyDate: document.getElementById('lastVerifyDate').value,
+         verifyMethod: document.getElementById('verifyMethod').value,
+         masterType: document.getElementById('masterType').value,
+         tags: tags,
+         status: document.getElementById('status').value,
+         reactivationDate: document.getElementById('reactivationDate').value,
+         kpiJobs: kpiData,
+         history: currentHistory,
+         officer: currentUser,
+         fastTrackStatus: finalFtStatus, 
+         manualFtStatus: finalFtStatus
+       };
+
+       if(!form.name || !form.maidCode) { 
+           Swal.fire({title: 'ข้อมูลไม่ครบ', text: 'ระบุรหัส และ ชื่อ-นามสกุล', icon: 'warning'}); 
+           return; 
+       }
+
+       showLoading();
+       google.script.run.withSuccessHandler(res => {
+         hideLoading();
+         if(res.success) { formModal.hide(); Swal.fire({ icon:'success', title:'บันทึกเรียบร้อย', timer: 1000, showConfirmButton:false }); loadData(); } 
+         else showError(res.message);
+       }).withFailureHandler(err => {
+         hideLoading(); showError(err.message);
+       }).saveHoldData(form);
+    }
+
+    // 🌟 ฟังก์ชันคืนงาน พิมพ์ได้ 100% แน่นอน 🌟
+    function returnJobFromModal(index) {
+        Swal.fire({
+            target: document.getElementById('formModal'), // <-- บังคับ Popup ให้อยู่ใน Modal
+            title: `ยืนยันคืนงานที่ ${index + 1}?`,
+            html: `
+                <div class="text-start">
+                    <label class="form-label small text-muted mb-1">รหัสปัญหา (Issue Code)</label>
+                    <input id="swal-input-issue" class="form-control mb-3 shadow-none" placeholder="เช่น E01, P02">
+                    <label class="form-label small text-muted mb-1">เหตุผลการคืนงาน <span class="text-danger">*</span></label>
+                    <input id="swal-input-reason-modal" class="form-control shadow-none" placeholder="ระบุเหตุผลการคืนงาน">
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            confirmButtonText: 'คืนงาน',
+            cancelButtonText: 'ยกเลิก',
+            focusConfirm: false, // ปิดกันการดึงเคอร์เซอร์
+            preConfirm: () => {
+                const reason = document.getElementById('swal-input-reason-modal').value;
+                const issueCode = document.getElementById('swal-input-issue').value;
+                if (!reason) {
+                    Swal.showValidationMessage('กรุณาระบุเหตุผลการคืนงาน');
+                }
+                return { reason: reason, issueCode: issueCode };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const bInputs = document.querySelectorAll('.kpi-booking');
+                const jInputs = document.querySelectorAll('.kpi-jobid');
+                const bookingCode = bInputs[index].value;
+                
+                if(!bookingCode) {
+                     Swal.fire({target: document.getElementById('formModal'), title: 'ข้อผิดพลาด', text: 'ยังไม่มีการระบุรหัสการจองในช่องนี้', icon: 'warning'});
+                     return;
+                }
+
+                bInputs[index].value = "";
+                jInputs[index].value = "";
+                validateKpiInputs(); 
+
+                const issueText = result.value.issueCode ? ` [${result.value.issueCode}]` : '';
+                const note = `[Returned] คืนงานที่ ${index + 1} (${bookingCode})${issueText} เหตุผล: ${result.value.reason}`;
+                
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                currentHistory.unshift({ date: dateStr, note: note, user: currentUser });
+                renderTimeline();
+                
+                Swal.fire({target: document.getElementById('formModal'), title: 'คืนงานสำเร็จ', text: 'ล้างข้อมูลงานและบันทึกประวัติแล้ว (กรุณากดปุ่ม บันทึกข้อมูลทั้งหมด อีกครั้ง)', icon: 'success'});
+            }
+        });
+    }
+
+    function deleteItem(id) {
+        Swal.fire({ title: 'ยืนยันลบ?', text: "เฉพาะ Admin เท่านั้นที่ลบได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((r) => {
+            if (r.isConfirmed) {
+                showLoading();
+                google.script.run.withSuccessHandler((res) => { 
+                    hideLoading(); 
+                    if(res.success) { Swal.fire('ลบแล้ว!', '', 'success'); loadData(); } else { showError(res.message); }
+                }).deleteHoldData(id);
+            }
+        });
+    }
+
+    function exportReport() {
+        showLoading();
+        google.script.run.withSuccessHandler(url => {
+            hideLoading();
+            if(url) {
+                window.open(url, '_blank');
+            } else {
+                showError('ไม่สามารถสร้างไฟล์ Export ได้ หรือไม่มีข้อมูล');
+            }
+        }).withFailureHandler(err => {
+            hideLoading();
+            if (err.message.includes("is not a function")) {
+                showError('ระบบหลังบ้านยังไม่รองรับฟังก์ชัน Export (โปรดเพิ่มฟังก์ชัน exportHoldData ใน Code.gs)');
+            } else {
+                showError(err.message);
+            }
+        }).exportHoldData();
+    }
+
+  </script>
+</body>
+</html>
