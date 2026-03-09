@@ -16,6 +16,7 @@ const CONFIG_SHEET_NAME = "Config";
 const CONFIG_CHECKLIST_SHEET_NAME = "Config_Checklist"; 
 const HOLD_SHEET_NAME = "Database_Hold"; // 🌟 ชีตใหม่สำหรับกลุ่ม H
 
+
 // ==========================================
 // --- 1. CORE & ROUTING ---
 // ==========================================
@@ -2154,13 +2155,100 @@ function processUnifiedBulkUpdate(records, fileName, userEmail) {
   }
 }
 
+/**
+ * ฟังก์ชันดึงรายชื่อผู้ให้บริการทั้งหมดพร้อมวันที่ตรวจสอบประวัติล่าสุด (ผ่าน)
+ * ปรับปรุง: รองรับโครงสร้างตามภาพหน้าจอ (Result Date อยู่คอลัมน์ที่ 9)
+ */
+function getGlobalProviderMapWithVerifyDate() {
+  try {
+    const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+    const map = {};
+    const cleanId = (id) => String(id || "").replace(/'/g, "").replace(/\D/g, '').trim();
+    
+    // 1. ดึงจาก Database_Master
+    const mSheet = ss.getSheetByName(SHEET_NAME);
+    if (mSheet) {
+      const mValues = mSheet.getDataRange().getValues();
+      if (mValues.length > 1) {
+        const h = mValues[0].map(v => String(v).toLowerCase().trim());
+        const idIdx = h.findIndex(x => x.includes('บัตร') || x.includes('id card'));
+        const nameIdx = h.findIndex(x => x.includes('ชื่อ') || x.includes('name'));
+        const codeIdx = h.findIndex(x => x.includes('รหัส') || x.includes('code'));
+        const rDateIdx = h.findIndex(x => x.includes('result date') || x.includes('วันรับผล'));
+
+        for(let i = 1; i < mValues.length; i++) {
+          const row = mValues[i];
+          const id = cleanId(row[idIdx]);
+          if (!id) continue;
+          
+          if (!map[id]) {
+            map[id] = { name: row[nameIdx] || "-", code: row[codeIdx] || "-", verifyDate: "", verifyTimestamp: 0 };
+          }
+
+          const rDate = rDateIdx >= 0 ? row[rDateIdx] : "";
+          
+          // ดึงวันที่จาก Result Date ทันทีโดยไม่ต้องเช็คสถานะ Verified
+          if (rDate && String(rDate).trim() !== "") {
+            const t = parseDateForSort(rDate);
+            if (t > 0 && t > map[id].verifyTimestamp) {
+              map[id].verifyTimestamp = t;
+              map[id].verifyDate = Utilities.formatDate(new Date(t), Session.getScriptTimeZone(), "yyyy-MM-dd");
+            }
+          }
+        }
+      }
+    }
+
+    // 2. ดึงจาก Database_Annual
+    const aSheet = ss.getSheetByName(ANNUAL_SHEET_NAME);
+    if (aSheet) {
+      const aValues = aSheet.getDataRange().getValues();
+      if (aValues.length > 1) {
+        const h = aValues[0].map(v => String(v).toLowerCase().trim());
+        const idIdx = h.findIndex(x => x.includes('บัตร') || x.includes('id card'));
+        const nameIdx = h.findIndex(x => x.includes('ชื่อ') || x.includes('name'));
+        const codeIdx = h.findIndex(x => x.includes('รหัส') || x.includes('ref'));
+        const rDateIdx = h.findIndex(x => x.includes('วันรับผล') || x.includes('result date'));
+
+        for(let i = 1; i < aValues.length; i++) {
+          const row = aValues[i];
+          const id = cleanId(row[idIdx]);
+          if (!id) continue;
+
+          if (!map[id]) {
+            map[id] = { name: row[nameIdx] || "-", code: row[codeIdx] || "-", verifyDate: "", verifyTimestamp: 0 };
+          }
+
+          const rDate = rDateIdx >= 0 ? row[rDateIdx] : "";
+          
+          // ดึงวันที่จาก Result Date ทันทีโดยไม่ต้องเช็คสถานะ Verified
+          if (rDate && String(rDate).trim() !== "") {
+            const t = parseDateForSort(rDate);
+            if (t > 0 && t > map[id].verifyTimestamp) {
+              map[id].verifyTimestamp = t;
+              map[id].verifyDate = Utilities.formatDate(new Date(t), Session.getScriptTimeZone(), "yyyy-MM-dd");
+            }
+          }
+        }
+      }
+    }
+    return map;
+  } catch(e) { return {}; }
+}
+
+/**
+ * ปรับปรุงฟังก์ชันค้นหาให้ส่งค่า verifyDate กลับมาด้วย
+ */
 function globalSmartSearch(keyword) {
   if (!keyword || keyword.length < 3) return { success: true, data: [] };
-  
+
   keyword = keyword.toLowerCase().trim();
   const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
-  
+
   let results = [];
+  
+  // ดึง Map วันที่ตรวจสอบล่าสุดมาล่วงหน้าเพื่อแนบไปกับผลการค้นหา
+  const verifyMap = getGlobalProviderMapWithVerifyDate();
 
   function getColIndex(headers, possibleNames) {
       return headers.findIndex(h => {
@@ -2172,7 +2260,7 @@ function globalSmartSearch(keyword) {
   function searchInSheet(sheetName, moduleName) {
       const sheet = ss.getSheetByName(sheetName);
       if (!sheet) return;
-      
+
       const data = sheet.getDataRange().getDisplayValues();
       if (data.length <= 1) return;
 
@@ -2186,13 +2274,13 @@ function globalSmartSearch(keyword) {
           const name = nameIdx >= 0 ? String(row[nameIdx]) : "";
           const idCard = idIdx >= 0 ? String(row[idIdx]) : "";
           const code = codeIdx >= 0 ? String(row[codeIdx]) : "";
-          
+
           const searchStr = (name + " " + idCard + " " + code).toLowerCase();
-          
+
           if (searchStr.includes(keyword)) {
               const cleanId = idCard.replace(/\D/g, '');
               const uniqueKey = cleanId || name;
-              
+
               let existing = results.find(r => r.key === uniqueKey);
               if (existing) {
                   if (!existing.foundIn.includes(moduleName)) {
@@ -2205,7 +2293,8 @@ function globalSmartSearch(keyword) {
                       name: name || "-",
                       idCard: idCard || "-",
                       code: code || "",
-                      foundIn: [moduleName]
+                      foundIn: [moduleName],
+                      verifyDate: verifyMap[cleanId] ? verifyMap[cleanId].verifyDate : "" // แทรกรหัสวันที่จาก verifyMap
                   });
               }
           }
@@ -2277,6 +2366,9 @@ function getHoldData() {
   const currentUser = Session.getActiveUser().getEmail();
   let data = [];
 
+  // ดึง Map วันที่ตรวจสอบและสถานะล่าสุดมาล่วงหน้า
+  const verifyMap = getGlobalProviderMapWithVerifyDate();
+
   if (lastRow > 1) {
     const values = sheet.getRange(2, 1, lastRow - 1, 19).getDisplayValues();
     
@@ -2290,26 +2382,49 @@ function getHoldData() {
         let history = [];
         try { if (row[18]) history = JSON.parse(row[18]); } catch(e) {}
 
+        let holdFtStatus = String(row[11] || "").trim(); // ค่าจาก Hold 
+        let verifyMethod = String(row[10] || "").trim();
+        let idCardClean = String(row[3]).replace(/\D/g, ''); 
+        let maidCodeClean = String(row[1]).trim().toLowerCase(); 
+        
+        let mapData = verifyMap[idCardClean];
+        if (!mapData && maidCodeClean) {
+            let matchedKey = Object.keys(verifyMap).find(k => verifyMap[k].code && String(verifyMap[k].code).toLowerCase() === maidCodeClean);
+            if (matchedKey) mapData = verifyMap[matchedKey];
+        }
+
+        let ftStatus = holdFtStatus; 
+
+        // 🌟 แก้ไข: ถ้าเลือกว่าต้องส่งใหม่ และเคยกดส่งไปแล้ว ให้อัปเดตสถานะตาม Master ทันที 🌟
+        if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+            if (!holdFtStatus) {
+                ftStatus = ''; // ปล่อยว่างเพื่อให้โชว์ปุ่มส่งตรวจ
+            } else {
+                if (mapData && mapData.ftStatus) {
+                    ftStatus = mapData.ftStatus; // เอาสถานะล่าสุดจาก Master มาทับ (เช่น Verified, Pending Result)
+                }
+            }
+        } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+            ftStatus = 'Verified'; 
+        } else if (verifyMethod === 'มีใบตรวจประวัติมาเอง') {
+            ftStatus = holdFtStatus;
+        }
+
+        // ป้องกันเคสคนใหม่ ไม่มีประวัติเก่า
+        if (!mapData || mapData.verifyTimestamp === 0) {
+            if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+                verifyMethod = 'ต้องส่งตรวจใหม่ผ่านระบบ';
+                ftStatus = ''; 
+            }
+        }
+
         return {
-            id: row[0],
-            maidCode: row[1],
-            name: row[2],
-            idCard: row[3],
-            phone: row[4],
-            contactChannel: row[5],
-            holdDate: row[6],
-            needsRetrain: row[7],
-            trainingCenter: row[8],
-            lastVerifyDate: row[9],
-            verifyMethod: row[10],
-            fastTrackStatus: row[11],
-            masterType: row[12],
-            tags: tags,
-            status: row[14],
-            reactivationDate: row[15],
-            kpiJobs: kpiJobs,
-            officer: row[17],
-            history: history
+            id: row[0], maidCode: row[1], name: row[2], idCard: row[3], phone: row[4],
+            contactChannel: row[5], holdDate: row[6], needsRetrain: row[7], trainingCenter: row[8],
+            lastVerifyDate: row[9], verifyMethod: verifyMethod,
+            fastTrackStatus: ftStatus, // สถานะที่ถูกต้องเป๊ะๆ
+            masterType: row[12], tags: tags, status: row[14], reactivationDate: row[15],
+            kpiJobs: kpiJobs, officer: row[17], history: history
         };
     });
     // Sort เอาคนล่าสุดขึ้นก่อน
@@ -2323,6 +2438,7 @@ function getHoldData() {
     onboardCenters: configs.onboardCenters,
     masterTypes: configs.masterTypes,
     onboardTags: configs.onboardTags,
+    providerMap: verifyMap, // 🌟 แนบ Map กลับไปให้หน้าบ้านด้วยเลย เพื่อลดภาระการโหลดซ้ำ!
     data: data 
   };
 }
@@ -2361,6 +2477,11 @@ function saveHoldData(form) {
     let currentFastTrackStatus = "";
     if (form.id) {
         currentFastTrackStatus = sheet.getRange(rowNumber, 12).getValue();
+    }
+    
+    // ถ้า form มีการ override ค่าให้เอาจากฟอร์ม แต่ถ้าเป็นค่าว่างเอาจากชีตมาใส่
+    if(form.fastTrackStatus) {
+        currentFastTrackStatus = form.fastTrackStatus;
     }
     
     if (form.history && form.history.length > 0) {
@@ -2461,6 +2582,76 @@ function deleteHoldData(id) {
     finally { lock.releaseLock(); }
 }
 
+function exportHoldData() {
+  try {
+    const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(HOLD_SHEET_NAME);
+    if (!sheet) return null;
+
+    // สร้าง Spreadsheet ใหม่ชั่วคราวเพื่อ Export
+    const newSs = SpreadsheetApp.create("Export_Hold_Data_" + Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd_HHmmss"));
+    const newSheet = newSs.getSheets()[0];
+    
+    // คัดลอกข้อมูลทั้งหมดไป
+    const data = sheet.getDataRange().getValues();
+
+    // 🌟🌟🌟 อัปเดตข้อมูล FT Status ก่อนเขียนลงไฟล์ใหม่ 🌟🌟🌟
+    const verifyMap = getGlobalProviderMapWithVerifyDate();
+    const headers = data[0].map(h => String(h).toLowerCase());
+    const ftStatusColIndex = headers.indexOf('fasttrack status') > -1 ? headers.indexOf('fasttrack status') : 11; // index 11
+    const idCardColIndex = headers.indexOf('id card') > -1 ? headers.indexOf('id card') : 3;
+    const maidCodeColIndex = headers.indexOf('maid code') > -1 ? headers.indexOf('maid code') : 1;
+    const verifyMethodColIndex = headers.indexOf('verify method') > -1 ? headers.indexOf('verify method') : 10;
+
+    for (let i = 1; i < data.length; i++) {
+        let row = data[i];
+        let holdFtStatus = String(row[ftStatusColIndex] || "").trim();
+        let verifyMethod = String(row[verifyMethodColIndex] || "").trim();
+        let cleanId = String(row[idCardColIndex] || "").replace(/\D/g, '');
+        let cleanCode = String(row[maidCodeColIndex] || "").trim().toLowerCase();
+        
+        let mapData = verifyMap[cleanId];
+        if (!mapData && cleanCode) {
+            let matchedKey = Object.keys(verifyMap).find(k => verifyMap[k].code && String(verifyMap[k].code).toLowerCase() === cleanCode);
+            if (matchedKey) mapData = verifyMap[matchedKey];
+        }
+
+        let exportFtStatus = holdFtStatus;
+
+        // 🌟 Logic เดียวกับหน้าบ้าน
+        if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+            if (!holdFtStatus) {
+                exportFtStatus = 'ยังไม่ส่งตรวจ';
+            } else {
+                if (mapData && mapData.ftStatus) {
+                    exportFtStatus = mapData.ftStatus;
+                }
+            }
+        } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+            exportFtStatus = 'Verified';
+        } else if (verifyMethod === 'มีใบตรวจประวัติมาเอง') {
+            exportFtStatus = holdFtStatus || 'ยังไม่ระบุ';
+        }
+
+        if (!mapData || mapData.verifyTimestamp === 0) {
+            if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+                 data[i][verifyMethodColIndex] = 'ต้องส่งตรวจใหม่ผ่านระบบ';
+                 exportFtStatus = 'ยังไม่ส่งตรวจ';
+            }
+        }
+        
+        data[i][ftStatusColIndex] = exportFtStatus || 'ยังไม่ส่งตรวจ';
+    }
+
+    newSheet.getRange(1, 1, data.length, data[0].length).setValues(data);
+    newSs.addViewer("anyone");
+    return newSs.getUrl();
+    
+  } catch (e) {
+    return null;
+  }
+}
+
 // ==========================================
 // 🌟 ฟังก์ชันพิเศษสำหรับดึงรายชื่อ + วันที่ตรวจประวัติล่าสุด (สำหรับหน้า Hold) 🌟
 // ==========================================
@@ -2468,77 +2659,144 @@ function getGlobalProviderMapWithVerifyDate() {
   try {
     const ss = SPREADSHEET_ID ? SpreadsheetApp.openById(SPREADSHEET_ID) : SpreadsheetApp.getActiveSpreadsheet();
     const map = {};
-    const cleanId = (id) => String(id).replace(/\D/g, '');
-
-    // 1. ดึงจาก Master (ประวัติใหม่)
+    const cleanId = (id) => String(id || "").replace(/'/g, "").replace(/\D/g, '').trim();
+    
+    // 1. ดึงจาก Database_Master
     const mSheet = ss.getSheetByName(SHEET_NAME);
     if (mSheet) {
-        const mData = mSheet.getDataRange().getValues(); // 🌟 เปลี่ยนเป็น getValues() เพื่อให้อ่าน Date Object ได้
-        if (mData.length > 1) {
-            const h = mData[0];
-            const idIdx = h.findIndex(x => String(x).toLowerCase().includes('บัตร'));
-            const nameIdx = h.findIndex(x => String(x).toLowerCase().includes('ชื่อ'));
-            const codeIdx = h.findIndex(x => String(x).toLowerCase().includes('รหัส') || String(x).toLowerCase().includes('code'));
-            const rDateIdx = h.findIndex(x => String(x).includes('รับผล') || String(x).toLowerCase().includes('result'));
-            const ftStatusIdx = h.findIndex(x => String(x).toLowerCase().includes('สถานะ ft') || String(x).toLowerCase().includes('ft'));
-            
-            for(let i=1; i<mData.length; i++) {
-                let id = idIdx >= 0 ? cleanId(mData[i][idIdx]) : "";
-                let code = codeIdx >= 0 ? mData[i][codeIdx] : "-";
-                let name = nameIdx >= 0 ? mData[i][nameIdx] : "-";
-                let rDate = rDateIdx >= 0 ? mData[i][rDateIdx] : "";
-                let ftStatus = ftStatusIdx >= 0 ? mData[i][ftStatusIdx] : "";
-                
-                if (id) {
-                    if (!map[id]) map[id] = { name: name||"-", code: code||"-", verifyDate: "", verifyTimestamp: 0 };
-                    // ดึงเฉพาะเคสที่ผ่านการตรวจสอบ
-                    if (ftStatus === 'Verified' && rDate) {
-                        let t = parseDateForSort(rDate);
-                        if (t > map[id].verifyTimestamp) {
-                            map[id].verifyTimestamp = t;
-                            map[id].verifyDate = Utilities.formatDate(new Date(t), Session.getScriptTimeZone(), "yyyy-MM-dd"); // Format แบบสากลให้ Flatpickr
-                        }
-                    }
-                }
+      const mValues = mSheet.getDataRange().getValues();
+      if (mValues.length > 1) {
+        const h = mValues[0].map(v => String(v).toLowerCase().trim());
+        const idIdx = h.findIndex(x => x.includes('บัตร') || x.includes('id card'));
+        const nameIdx = h.findIndex(x => x.includes('ชื่อ') || x.includes('name'));
+        const codeIdx = h.findIndex(x => x.includes('รหัส') || x.includes('code'));
+        const rDateIdx = h.findIndex(x => x.includes('result date') || x.includes('วันรับผล'));
+        const statusIdx = h.findIndex(x => x.includes('ft status') || x.includes('สถานะ ft')); 
+        const submitDateIdx = h.findIndex(x => x.includes('submit date') || x.includes('วันที่ส่ง')); // 🌟 เพิ่มหาคอลัมน์วันที่ส่ง
+
+        for(let i = 1; i < mValues.length; i++) {
+          const row = mValues[i];
+          const id = cleanId(row[idIdx]);
+          if (!id) continue;
+          
+          const status = statusIdx >= 0 ? String(row[statusIdx]).trim() : "";
+          const rDate = rDateIdx >= 0 ? row[rDateIdx] : "";
+          const sDate = submitDateIdx >= 0 ? row[submitDateIdx] : "";
+          const sTime = sDate ? parseDateForSort(sDate) : 0; // 🌟 คำนวณเวลาส่ง
+          
+          if (!map[id]) {
+            map[id] = { name: row[nameIdx] || "-", code: row[codeIdx] || "-", verifyDate: "", verifyTimestamp: 0, ftStatus: status, lastSubmitTime: sTime };
+          } else {
+             // 🌟 ถ้าระบบเจอแถวที่ "ส่งตรวจใหม่กว่า (เวลามากกว่า)" ให้เอาสถานะใหม่มาทับทันที!
+             if (sTime >= map[id].lastSubmitTime) {
+                 map[id].ftStatus = status;
+                 map[id].lastSubmitTime = sTime;
+             }
+          }
+
+          const lowerStatus = status.toLowerCase();
+          const isSuccess = ['verified', 'ผ่าน', 'ไม่พบประวัติ'].includes(lowerStatus) || (rDate !== "" && rDate != null);
+
+          if (isSuccess || (rDate !== "" && rDate != null)) {
+            const t = rDate ? parseDateForSort(rDate) : new Date().getTime(); 
+            if (t > map[id].verifyTimestamp) {
+              map[id].verifyTimestamp = t;
+              map[id].verifyDate = Utilities.formatDate(new Date(t), Session.getScriptTimeZone(), "yyyy-MM-dd");
             }
+          }
         }
+      }
     }
 
-    // 2. ดึงจาก Annual (รายปี) เพื่ออัปเดตถ้ามีข้อมูลที่ใหม่กว่า
+    // 2. ดึงจาก Database_Annual
     const aSheet = ss.getSheetByName(ANNUAL_SHEET_NAME);
     if (aSheet) {
-        const aData = aSheet.getDataRange().getValues(); // 🌟 เปลี่ยนเป็น getValues()
-        if (aData.length > 1) {
-            const h = aData[0];
-            const idIdx = h.findIndex(x => String(x).toLowerCase().includes('บัตร'));
-            const nameIdx = h.findIndex(x => String(x).toLowerCase().includes('ชื่อ'));
-            const codeIdx = h.findIndex(x => String(x).toLowerCase().includes('รหัส') || String(x).toLowerCase().includes('ref'));
-            const statusProcessIdx = h.findIndex(x => String(x).includes('สถานะส่ง') || String(x).toLowerCase().includes('status process'));
-            const rDateIdx = h.findIndex(x => String(x).includes('รับผล') || String(x).toLowerCase().includes('result'));
-            
-            for(let i=1; i<aData.length; i++) {
-                let id = idIdx >= 0 ? cleanId(aData[i][idIdx]) : "";
-                let code = codeIdx >= 0 ? aData[i][codeIdx] : "-";
-                let name = nameIdx >= 0 ? aData[i][nameIdx] : "-";
-                let statusProcess = statusProcessIdx >= 0 ? aData[i][statusProcessIdx] : "";
-                let rDate = rDateIdx >= 0 ? aData[i][rDateIdx] : "";
-                
-                if (id) {
-                    if (!map[id]) map[id] = { name: name||"-", code: code||"-", verifyDate: "", verifyTimestamp: 0 };
-                    if (statusProcess === 'ผลตรวจออกแล้ว' && rDate) {
-                         let t = parseDateForSort(rDate);
-                         if (t > map[id].verifyTimestamp) {
-                             map[id].verifyTimestamp = t;
-                             map[id].verifyDate = Utilities.formatDate(new Date(t), Session.getScriptTimeZone(), "yyyy-MM-dd");
-                         }
-                    }
-                }
+      const aValues = aSheet.getDataRange().getValues();
+      if (aValues.length > 1) {
+        const h = aValues[0].map(v => String(v).toLowerCase().trim());
+        const idIdx = h.findIndex(x => x.includes('บัตร') || x.includes('id card'));
+        const nameIdx = h.findIndex(x => x.includes('ชื่อ') || x.includes('name'));
+        const codeIdx = h.findIndex(x => x.includes('รหัส') || x.includes('ref'));
+        const resultIdx = h.findIndex(x => x === 'result' || x.includes('ผลตรวจ'));
+        const rDateIdx = h.findIndex(x => x.includes('วันรับผล') || x.includes('result date'));
+
+        for(let i = 1; i < aValues.length; i++) {
+          const row = aValues[i];
+          const id = cleanId(row[idIdx]);
+          if (!id) continue;
+
+          if (!map[id]) {
+            map[id] = { name: row[nameIdx] || "-", code: row[codeIdx] || "-", verifyDate: "", verifyTimestamp: 0, ftStatus: "" };
+          }
+
+          const rDate = rDateIdx >= 0 ? row[rDateIdx] : "";
+          const resultStr = resultIdx >= 0 ? String(row[resultIdx]).trim() : "";
+          
+          let mappedStatus = map[id].ftStatus; 
+          let lowerResult = resultStr.toLowerCase();
+          
+          if (lowerResult.includes('ได้รับผลแล้ว') || lowerResult.includes('อนุมัติโดยพนักงาน') || lowerResult.includes('ผ่าน')) {
+              mappedStatus = 'Verified';
+          } else if (lowerResult.includes('ไม่ผ่าน') || lowerResult.includes('kyc')) {
+              mappedStatus = 'Not Verified';
+          } else if (lowerResult.includes('รอผล') || lowerResult.includes('pending')) {
+              mappedStatus = 'Pending Result';
+          }
+
+          if (mappedStatus) {
+              map[id].ftStatus = mappedStatus;
+          }
+
+          const isSuccess = mappedStatus === 'Verified' || (rDate !== "" && rDate != null);
+
+          if (isSuccess || (rDate !== "" && rDate != null)) {
+            const t = rDate ? parseDateForSort(rDate) : new Date().getTime();
+            if (t > map[id].verifyTimestamp) {
+              map[id].verifyTimestamp = t;
+              map[id].verifyDate = Utilities.formatDate(new Date(t), Session.getScriptTimeZone(), "yyyy-MM-dd");
             }
+          }
         }
+      }
     }
     return map;
-  } catch(e) {
-    console.error("Error in getGlobalProviderMapWithVerifyDate: ", e);
-    return {};
+  } catch(e) { return {}; }
+}
+
+function exportHoldReport() {
+  const sheet = getSheet(HOLD_SHEET_NAME);
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return { content: "", count: 0 };
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 19).getDisplayValues();
+  let csvContent = "รหัสแม่บ้าน,ชื่อ-นามสกุล,เลขบัตร,เบอร์โทร,ช่องทางติดต่อ,วันที่โดนปลด,Retrain,ศูนย์เทรน,วันที่รับผลตรวจเดิม,สถานะ FT,สถานะปัจจุบัน,วันที่เปิดระบบใหม่,KPI-1,KPI-2,KPI-3,KPI-4,เจ้าหน้าที่\n";
+  let count = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const row = values[i];
+    count++;
+    
+    // ดึงข้อมูล KPI จาก JSON
+    let kpis = ["-","-","-","-"];
+    try {
+      const kpiJson = JSON.parse(row[16]);
+      if (Array.isArray(kpiJson)) {
+        kpiJson.forEach((k, idx) => { if(idx < 4) kpis[idx] = k.booking || "-"; });
+      }
+    } catch(e) {}
+
+    const rowString = [
+      row[1], row[2], row[3], `"${row[4]}"`, row[5], row[6], row[7], row[8], row[9], row[11], row[14], row[15],
+      kpis[0], kpis[1], kpis[2], kpis[3], row[17]
+    ].map(f => `"${String(f || "").replace(/"/g, '""').replace(/[\r\n]+/g, " ")}"`).join(",");
+    
+    csvContent += rowString + "\n";
   }
+  
+  const timestamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmm");
+  return { 
+    content: csvContent, 
+    count: count, 
+    filename: `Hold_Return_Report_${timestamp}.csv` 
+  };
 }
