@@ -29,13 +29,11 @@
     .bg-danger-soft { background-color: #ffebee; }
     .bg-secondary-soft { background-color: #f8f9fa; }
 
-    /* 🌟 Alert Row Highlights (3-Tier Alert) - แก้ไขให้บังคับสีลง td 🌟 */
-    .row-alert-20 td { background-color: #fffde6 !important; border-bottom-color: #ffe8a1 !important; } /* Soft Yellow */
-    
-    .row-alert-10 td { background-color: #fff0e6 !important; border-bottom-color: #ffd8b8 !important; } /* Soft Orange */
-    
-    .row-alert-5 td  { background-color: #ffebeb !important; border-bottom-color: #ffc2c2 !important; } /* Soft Red */
-    .row-alert-5 td:nth-child(2) .fw-bold { color: #dc3545 !important; } /* เน้นชื่อเป็นสีแดง */
+    /* 🌟 Alert Row Highlights (3-Tier Alert) 🌟 */
+    .row-alert-20 td { background-color: #fffde6 !important; border-bottom-color: #ffe8a1 !important; } 
+    .row-alert-10 td { background-color: #fff0e6 !important; border-bottom-color: #ffd8b8 !important; } 
+    .row-alert-5 td  { background-color: #ffebeb !important; border-bottom-color: #ffc2c2 !important; } 
+    .row-alert-5 td:nth-child(2) .fw-bold { color: #dc3545 !important; }
 
     /* Timeline Styles */
     .timeline { border-left: 2px solid #e9ecef; padding-left: 20px; margin-left: 10px; position: relative; }
@@ -95,7 +93,7 @@
         <!-- Top Bar -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
-                <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-undo-alt me-2 text-warning"></i>ติดตามคุณแม่บ้านกลุ่ม H </h4>
+                <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-undo-alt me-2 text-warning"></i>ติดตามกลุ่ม H (Return)</h4>
                 <small class="text-muted">จัดการคุณแม่บ้านโดนปลด ที่ต้องการกลับมารับงานใหม่</small>
             </div>
             <div class="d-flex gap-2">
@@ -137,7 +135,6 @@
                     </div>
                 </div>
             </div>
-            <!-- Completed Status Card -->
             <div class="col-md-3">
                 <div class="card status-card p-3 shadow-sm" id="stat-completed" onclick="filterBySummary('เสร็จสิ้น')">
                     <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">เสร็จสิ้น (ครบ 4 งาน)</small>
@@ -162,7 +159,6 @@
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body p-3">
                 <div class="row g-3 align-items-center">
-                  <!-- 🌟 ปรับขนาด Layout ให้รองรับตัวกรอง 3 อัน 🌟 -->
                   <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-search"></i></span>
@@ -171,15 +167,15 @@
                   </div>
                   <div class="col-md-4">
                     <select class="form-select shadow-none fw-bold text-secondary" id="kpiFilter" onchange="filterTable()">
-                        <option value="">⏳ ระยะเวลาคงเหลือ</option>
-                        <option value="20">🟡 เหลือไม่เกิน 20 วัน</option>
-                        <option value="10">🟠 เหลือไม่เกิน 10 วัน</option>
-                        <option value="5">🔴 เหลือ 5 วัน หรือเลยกำหนด</option>
+                        <option value="">⏳ ทุกระยะเวลาเป้าหมาย KPI</option>
+                        <option value="20">🟡 แจ้งเตือน: เหลือไม่เกิน 20 วัน</option>
+                        <option value="10">🟠 เร่งด่วน: เหลือไม่เกิน 10 วัน</option>
+                        <option value="5">🔴 วิกฤต: เหลือ 5 วัน หรือเลยกำหนด</option>
                     </select>
                   </div>
                   <div class="col-md-4">
                     <select class="form-select shadow-none" id="statusFilter" onchange="filterTable()">
-                        <option value="">ทุกสถานะภาพรวม</option>
+                        <option value="">🏷️ ทุกสถานะภาพรวม</option>
                         <option value="รอดำเนินการ">รอดำเนินการ</option>
                         <option value="เปิดระบบ">เปิดระบบ (เข้ากลุ่ม A)</option>
                         <option value="เสร็จสิ้น">เสร็จสิ้น (ครบ 4 งาน)</option>
@@ -202,7 +198,7 @@
                     <th width="10%">โดนปลด</th>
                     <th width="10%" class="text-center">สถานะ FT</th> 
                     <th width="12%" class="text-center">สถานะ</th> 
-                    <th width="10%">เปิดระบบ</th>
+                    <th width="10%" class="text-center">เปิดระบบ / ครบกำหนด</th>
                     <th width="15%" class="text-center">เป้าหมาย 4 งาน (30 วัน)</th>
                     <th width="10%" class="text-center">จัดการ</th>
                   </tr>
@@ -238,10 +234,11 @@
                       <div class="card-body p-4">
                           <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-user-circle me-2"></i>1. ข้อมูลส่วนตัว</h6>
                           <div class="row g-3">
-                              <div class="col-md-6 position-relative">
-                                <label class="form-label small fw-bold text-muted">รหัส/ชื่อแม่บ้าน (พิมพ์เพื่อค้นหา) <span class="text-danger">*</span></label>
+                              
+                              <div class="col-md-5 position-relative">
+                                <label class="form-label small fw-bold text-muted">รหัส/ชื่อ (ค้นหา) <span class="text-danger">*</span></label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control border-primary shadow-none" id="maidCode" placeholder="คลิก หรือ พิมพ์ค้นหา..." required oninput="searchMaidAuto(this.value)" onclick="searchMaidAuto(this.value)" onfocus="searchMaidAuto(this.value)">
+                                    <input type="text" class="form-control border-primary shadow-none" id="maidCode" placeholder="ค้นหา..." required oninput="searchMaidAuto(this.value)" onclick="searchMaidAuto(this.value)" onfocus="searchMaidAuto(this.value)">
                                     <span class="input-group-text bg-white border-primary border-start-0 text-primary" id="searchIcon">
                                         <i class="fas fa-search" id="staticSearchIcon"></i>
                                         <i class="fas fa-spinner fa-spin d-none" id="spinningSearchIcon"></i>
@@ -249,15 +246,21 @@
                                 </div>
                                 <div id="autocomplete-list" class="autocomplete-items"></div>
                               </div>
-                              <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">ช่องทางที่ติดต่อมา</label>
+                              <div class="col-md-4">
+                                <label class="form-label small fw-bold text-muted">ช่องทางติดต่อ</label>
                                 <select class="form-select shadow-none" id="contactChannel">
                                     <option value="Line OA">Line OA</option>
                                     <option value="โทรศัพท์">โทรศัพท์</option>
-                                    <option value="Facebook">Facebook</option>
+                                    <option value="Chat admin">Chat admin</option>
                                     <option value="อื่นๆ">อื่นๆ</option>
                                 </select>
                               </div>
+                              <!-- 🌟 เพิ่มช่อง วันที่ติดต่อเข้ามา 🌟 -->
+                              <div class="col-md-3">
+                                  <label class="form-label small fw-bold text-muted">วันที่ติดต่อ <span class="text-danger">*</span></label>
+                                  <input type="text" class="form-control datepicker bg-white shadow-none" id="contactDate" required>
+                              </div>
+
                               <div class="col-12">
                                  <label class="form-label small fw-bold text-muted">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
                                  <input type="text" class="form-control fw-bold shadow-none" id="name" required>
@@ -279,8 +282,8 @@
                           <h6 class="text-warning text-dark border-bottom pb-2 mb-3 fw-bold"><i class="fas fa-shield-alt me-2"></i>2. ตรวจสอบเงื่อนไข Retrain & ประวัติอาชญากรรม</h6>
                           <div class="row g-3">
                               <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">วันที่หยุดรับงาน / โดนปลด</label>
-                                <input type="text" class="form-control datepicker shadow-none" id="holdDate" onchange="checkHoldDateRetrain()">
+                                <label class="form-label small fw-bold text-muted">วันที่ออกจากระบบ</label>
+                                <input type="text" class="form-control datepicker bg-white shadow-none" id="holdDate" onchange="checkHoldDateRetrain()">
                               </div>
                               <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">ต้องการ Retrain หรือไม่?</label>
@@ -289,11 +292,18 @@
                                     <option value="ต้อง Retrain">ต้อง Retrain (เกิน 60 วัน)</option>
                                 </select>
                               </div>
+                              
                               <div class="col-md-6" id="retrainCenterDiv" style="display:none;">
                                 <label class="form-label small fw-bold text-danger">ศูนย์เทรน <span class="text-danger">*</span></label>
-                                <select class="form-select shadow-none" id="trainingCenter"><option value="">เลือกศูนย์...</option></select>
+                                <select class="form-select shadow-none border-danger" id="trainingCenter"><option value="">เลือกศูนย์...</option></select>
                               </div>
-                              <div class="col-md-6">
+                              <!-- 🌟 เพิ่มช่อง วันที่เข้า Retrain 🌟 -->
+                              <div class="col-md-6" id="retrainDateDiv" style="display:none;">
+                                  <label class="form-label small fw-bold text-danger">วันที่เข้า Retrain <span class="text-danger">*</span></label>
+                                  <input type="text" class="form-control datepicker bg-white shadow-none border-danger" id="retrainDate">
+                              </div>
+
+                              <div class="col-md-12">
                                   <label class="form-label small fw-bold text-muted">ประเภทผู้ให้บริการ (Master)</label>
                                   <select class="form-select shadow-none" id="masterType"><option value="">เลือกประเภท...</option></select>
                               </div>
@@ -420,14 +430,13 @@
     let currentHistory = [];
     let searchTimeout;
 
-    // 🌟 1. แก้ไขปัญหา SweetAlert พิมพ์ไม่ได้ใน Bootstrap Modal 🌟
+    // 1. แก้ไขปัญหา SweetAlert พิมพ์ไม่ได้ใน Bootstrap Modal 
     document.addEventListener('focusin', function (e) {
         if (e.target.closest('.swal2-container')) {
             e.stopImmediatePropagation();
         }
     }, true);
 
-    // 🌟 ฟังก์ชันจัดการวันที่ให้ถูกต้อง 🌟
     function convertToYMD(dateStr) {
         if (!dateStr) return "";
         if (typeof dateStr !== 'string') return dateStr;
@@ -443,7 +452,6 @@
         return dateStr;
     }
 
-    // 🌟 ฟังก์ชันคำนวณวันคงเหลือ
     function calculateDaysLeft(reactivationDateStr) {
         if (!reactivationDateStr) return null;
         let openDate;
@@ -484,7 +492,7 @@
            allowInput: true 
        });
        
-       loadData(); // 🌟 โหลดข้อมูลทันที
+       loadData(); // โหลดข้อมูลทันที
     };
 
     function loadData() {
@@ -519,7 +527,7 @@
           });
           document.getElementById('dynamicTagsContainer').innerHTML = tagsHtml;
 
-          // 🌟 2. สั่งให้หน้าบ้านไปดึงข้อมูล Master (ตารางตรวจประวัติ) มาทำ Map เอง 🌟
+          // 2. สั่งให้หน้าบ้านไปดึงข้อมูล Master (ตารางตรวจประวัติ) มาทำ Map เอง 
           google.script.run.withSuccessHandler(masterRes => {
               hideLoading();
               let masterData = masterRes.data || [];
@@ -620,19 +628,14 @@
               if (matchedKey) mapData = providerMap[matchedKey];
           }
 
-          let displayFtStatus = row.fastTrackStatus || ""; // สถานะที่ติดมากับชีต Hold (เช่น Sent หรือว่างเปล่า)
+          let displayFtStatus = row.fastTrackStatus || ""; 
 
-          // 🌟 ถ้าผู้ใช้บอกว่า "ต้องส่งตรวจใหม่ผ่านระบบ"
           if (row.verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
               if (displayFtStatus === '') {
-                  // ถ้ามันยังว่างแปลว่า "ยังไม่ได้กดปุ่มส่งตรวจ"
-                  // ไม่ต้องทำอะไร ให้รอโชว์ปุ่ม
+                  // Wait for user to push button
               } else {
-                  // ถ้ามันไม่ว่าง (แปลว่าเคยกดปุ่มส่ง จนเป็น Sent หรือรอตรวจสอบแล้ว)
-                  // ให้วิ่งไปดูหน้า Master ว่ามีการอัปเดตผลแล้วหรือยัง!
                   if (mapData && mapData.ftStatus) {
                       displayFtStatus = mapData.ftStatus; 
-                      // 🌟 ถ้าหน้า Master ถูกสร้างขึ้นมาแล้วมันเป็น "รอตรวจสอบ" เราจะโชว์ว่า Sent ตามความต้องการ
                       if (displayFtStatus === 'รอตรวจสอบ') {
                           displayFtStatus = 'Sent';
                       }
@@ -640,7 +643,7 @@
               }
           }
 
-          // จัดการแสดงผลป้าย Badge
+          // Badge Status
           let ftBadge = '<span class="text-muted">-</span>';
           if (displayFtStatus) {
               let colorClass = 'bg-secondary';
@@ -652,7 +655,6 @@
           } else if (row.verifyMethod === 'มีใบตรวจประวัติมาเอง') {
               ftBadge = `<span class="badge bg-light text-muted border">ตรวจเอง</span>`;
           } else {
-              // ปุ่มส่งตรวจ จะโชว์เมื่อ displayFtStatus ว่างเปล่าเท่านั้น!
               ftBadge = `<button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 shadow-sm fw-bold" style="font-size:0.7rem;" onclick="sendToFastTrackDirect('${row.id}')"><i class="fas fa-paper-plane me-1"></i>ส่งตรวจ</button>`;
           }
 
@@ -662,7 +664,7 @@
           else if (row.status === 'เสร็จสิ้น') statBadge = 'bg-primary'; 
           else if (row.status === 'ยกเลิก') statBadge = 'bg-danger';
 
-          // 🌟 จัดการ 3-Tier Alert Highlight 🌟
+          // 3-Tier Alert Highlight 
           let rowClass = "";
           if (row.status === 'เปิดระบบ') {
               let dLeft = calculateDaysLeft(row.reactivationDate);
@@ -685,7 +687,6 @@
 
           let kpiDisplay = `<span class="text-muted small">-</span>`;
           if (row.status === 'เปิดระบบ' || row.status === 'เสร็จสิ้น') {
-              let deadlineHtml = getDeadlineDisplay(row.reactivationDate);
               let bookingsHtml = '';
               let kpiCount = 0;
 
@@ -703,7 +704,6 @@
               }
               
               kpiDisplay = `
-                  ${row.status === 'เปิดระบบ' ? deadlineHtml : ''}
                   <span class="badge bg-primary-subtle text-primary border px-2 py-1">${kpiCount} / 4 งาน</span>
                   ${bookingsHtml}
               `;
@@ -711,6 +711,34 @@
 
           let maidLink = row.maidCode ? `<a href="https://admin-test.beneat.co/professional/${row.maidCode}/profile" target="_blank" class="fw-bold text-primary text-decoration-none shadow-sm rounded-1 px-1" style="background:#f8f9fa;">${row.maidCode}</a>` : '-';
           let deleteBtn = isUserAdmin ? `<button class="btn btn-icon btn-soft-danger btn-sm rounded-pill shadow-sm" onclick="deleteItem('${row.id}')" title="ลบ"><i class="fas fa-trash-alt"></i></button>` : '';
+
+          // 🌟 Logic การแสดงวันเปิดระบบ และ วันครบกำหนดในคอลัมน์เดียวกัน
+          let openDateStr = formatDateDisplay(row.reactivationDate);
+          let deadlineStr = "";
+          
+          if (row.reactivationDate && (row.status === 'เปิดระบบ' || row.status === 'เสร็จสิ้น')) {
+              let rDate;
+              let str = row.reactivationDate;
+              if (str.match(/^\d{4}-\d{2}-\d{2}/)) {
+                  const [y, m, d] = str.split('-');
+                  let year = parseInt(y, 10);
+                  if (year > 2400) year -= 543;
+                  rDate = new Date(year, parseInt(m, 10) - 1, parseInt(d, 10));
+              } else if (str.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+                  const parts = str.split(/[/\s:]/);
+                  let year = parseInt(parts[2], 10);
+                  if (year > 2400) year -= 543;
+                  rDate = new Date(year, parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+              } else {
+                  rDate = new Date(str);
+              }
+              
+              if (!isNaN(rDate.getTime())) {
+                  rDate.setDate(rDate.getDate() + 30);
+                  let thDate = rDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
+                  deadlineStr = `<div class="text-danger mt-1" style="font-size: 0.7rem;"><i class="fas fa-flag-checkered"></i> ครบ: ${thDate}</div>`;
+              }
+          }
 
           tr.innerHTML = `
              <td>${maidLink}</td>
@@ -722,8 +750,14 @@
                  <span class="badge ${statBadge} px-3 py-2 rounded-pill">${row.status || '-'}</span>
                  ${tagsHtml}
              </td>
-             <td class="text-success small fw-bold">${formatDateDisplay(row.reactivationDate)}</td>
-             <td class="text-center align-middle">${kpiDisplay}</td>
+             <td class="text-center align-middle">
+                <div class="text-success small fw-bold">${openDateStr}</div>
+                ${deadlineStr}
+             </td>
+             <td class="text-center align-middle">
+                ${row.status === 'เปิดระบบ' ? getDeadlineDisplay(row.reactivationDate) : ''}
+                ${kpiDisplay}
+             </td>
              <td class="text-center align-middle">
                 <div class="d-flex justify-content-center gap-1 flex-wrap">
                     <button class="btn btn-icon btn-soft-primary btn-sm rounded-pill shadow-sm" onclick="openEditModalById('${row.id}')" title="แก้ไข"><i class="fas fa-edit"></i></button>
@@ -937,6 +971,9 @@
        document.getElementById('hasFastTrackStatus').value = "";
        document.getElementById('modalTitle').textContent = "บันทึกคุณแม่บ้านขอกลับมาทำใหม่ (กลุ่ม H)";
        
+       // 🌟 ตั้งค่า วันที่ติดต่อ เป็นวันนี้ 🌟
+       document.getElementById('contactDate')._flatpickr.setDate(new Date());
+
        document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
        
        document.querySelectorAll('.dynamic-tag').forEach(cb => cb.checked = false);
@@ -965,18 +1002,26 @@
            document.getElementById('phone').value = item.phone;
            document.getElementById('contactChannel').value = item.contactChannel;
            
-           if(item.holdDate) document.getElementById('holdDate')._flatpickr.setDate(convertToYMD(item.holdDate)); else document.getElementById('holdDate')._flatpickr.clear();
+           // 🌟 Load Contact Date 🌟
+           if(item.contactDate) document.getElementById('contactDate')._flatpickr.setDate(convertToYMD(item.contactDate)); 
+           else document.getElementById('contactDate')._flatpickr.clear();
+
+           if(item.holdDate) document.getElementById('holdDate')._flatpickr.setDate(convertToYMD(item.holdDate)); 
+           else document.getElementById('holdDate')._flatpickr.clear();
            
            document.getElementById('needsRetrain').value = item.needsRetrain || "ไม่ต้อง";
            document.getElementById('trainingCenter').value = item.trainingCenter || "";
+           
+           // 🌟 Load Retrain Date 🌟
+           if(item.retrainDate) document.getElementById('retrainDate')._flatpickr.setDate(convertToYMD(item.retrainDate)); 
+           else document.getElementById('retrainDate')._flatpickr.clear();
+
            toggleRetrain();
 
            document.getElementById('masterType').value = item.masterType || "";
 
-           // 🌟 ใช้ค่า FT Status จากหลังบ้านตรงๆ
            let displayFtStatus = item.fastTrackStatus || "";
            
-           // 🌟 ดึงแค่วันที่ตรวจล่าสุดมาโชว์ใน Input (ไม่กวนสถานะ FT)
            let idCardClean = String(item.idCard || "").replace(/\D/g, '');
            let maidCodeClean = String(item.maidCode || "").trim().toLowerCase();
            let mapData = providerMap[idCardClean] || Object.values(providerMap).find(m => m.code && m.code.toLowerCase() === maidCodeClean);
@@ -985,14 +1030,14 @@
                item.lastVerifyDate = mapData.verifyDate; 
            }
 
-           if(item.lastVerifyDate) document.getElementById('lastVerifyDate')._flatpickr.setDate(convertToYMD(item.lastVerifyDate)); else document.getElementById('lastVerifyDate')._flatpickr.clear();
+           if(item.lastVerifyDate) document.getElementById('lastVerifyDate')._flatpickr.setDate(convertToYMD(item.lastVerifyDate)); 
+           else document.getElementById('lastVerifyDate')._flatpickr.clear();
            
            document.getElementById('verifyMethod').value = item.verifyMethod || "ใช้ผลตรวจเดิม";
            
-           // อัปเดตสถานะแบบ Real-time เวลาเปิด Form
            if (item.verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
                if (displayFtStatus === '') {
-                   // ไม่ต้องทำอะไร ให้รอโชว์ปุ่มส่ง
+                   // do nothing
                } else if (mapData && mapData.ftStatus) {
                    displayFtStatus = mapData.ftStatus; 
                    if (displayFtStatus === 'รอตรวจสอบ') displayFtStatus = 'Sent';
@@ -1011,7 +1056,8 @@
            document.querySelectorAll('.dynamic-tag').forEach(cb => { cb.checked = tags.includes(cb.value); });
 
            document.getElementById('status').value = item.status || "รอดำเนินการ";
-           if(item.reactivationDate) document.getElementById('reactivationDate')._flatpickr.setDate(convertToYMD(item.reactivationDate)); else document.getElementById('reactivationDate')._flatpickr.clear();
+           if(item.reactivationDate) document.getElementById('reactivationDate')._flatpickr.setDate(convertToYMD(item.reactivationDate)); 
+           else document.getElementById('reactivationDate')._flatpickr.clear();
            
            toggleKpiSection();
            renderKpiInputs(item.kpiJobs || []);
@@ -1056,8 +1102,17 @@
 
     function toggleRetrain() {
         const val = document.getElementById('needsRetrain').value;
-        const div = document.getElementById('retrainCenterDiv');
-        if (val === 'ต้อง Retrain') div.style.display = 'block'; else div.style.display = 'none';
+        const divCenter = document.getElementById('retrainCenterDiv');
+        const divDate = document.getElementById('retrainDateDiv'); // 🌟 Show/Hide ช่องวันที่
+        if (val === 'ต้อง Retrain') {
+            divCenter.style.display = 'block'; 
+            divDate.style.display = 'block';
+        } else {
+            divCenter.style.display = 'none';
+            divDate.style.display = 'none';
+            document.getElementById('trainingCenter').value = "";
+            document.getElementById('retrainDate')._flatpickr.clear();
+        }
     }
 
     function calculateVerifyValidity() {
@@ -1292,7 +1347,7 @@
         currentHistory.forEach((h, i) => {
              const u = h.user ? ` <small class="text-muted">(${h.user})</small>` : '';
              html += `<div class="timeline-item"><div class="timeline-date">${formatDateDisplay(h.date)}${u}</div>
-                      <div class="timeline-content d-flex justify-content-between"><div>${h.note}</div><button class="btn btn-sm text-danger p-0 ms-2 border-0" onclick="removeLog(${i})">&times;</button></div></div>`;
+                      <div class="timeline-content d-flex justify-content-between"><div>${h.note}</div><button type="button" class="btn btn-sm text-danger p-0 ms-2 border-0" onclick="removeLog(${i})">&times;</button></div></div>`;
         });
         html += '</div>'; c.innerHTML = html;
     }
@@ -1373,7 +1428,6 @@
        } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
           finalFtStatus = 'Verified';
        } else if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
-          // ถ้าเปลี่ยนกลับมาเป็นต้องส่งตรวจใหม่ และสถานะเดิมเป็น Verified (จากการใช้ผลตรวจเดิมรอบที่แล้ว) ให้ล้างค่าทิ้งเพื่อให้ปุ่มส่งโผล่
           if (finalFtStatus === 'Verified') {
               finalFtStatus = ''; 
           }
@@ -1386,9 +1440,11 @@
          idCard: document.getElementById('idCard').value.replace(/-/g, ''),
          phone: document.getElementById('phone').value,
          contactChannel: document.getElementById('contactChannel').value,
+         contactDate: document.getElementById('contactDate').value, // 🌟 ค่าใหม่ 🌟
          holdDate: document.getElementById('holdDate').value,
          needsRetrain: document.getElementById('needsRetrain').value,
          trainingCenter: document.getElementById('trainingCenter').value,
+         retrainDate: document.getElementById('retrainDate').value, // 🌟 ค่าใหม่ 🌟
          lastVerifyDate: document.getElementById('lastVerifyDate').value,
          verifyMethod: document.getElementById('verifyMethod').value,
          masterType: document.getElementById('masterType').value,
@@ -1417,10 +1473,9 @@
        }).saveHoldData(form);
     }
 
-    // 🌟 ฟังก์ชันคืนงาน พิมพ์ได้ 100% แน่นอน 🌟
     function returnJobFromModal(index) {
         Swal.fire({
-            target: document.getElementById('formModal'), // <-- บังคับ Popup ให้อยู่ใน Modal
+            target: document.getElementById('formModal'), 
             title: `ยืนยันคืนงานที่ ${index + 1}?`,
             html: `
                 <div class="text-start">
@@ -1435,7 +1490,7 @@
             confirmButtonColor: '#dc3545',
             confirmButtonText: 'คืนงาน',
             cancelButtonText: 'ยกเลิก',
-            focusConfirm: false, // ปิดกันการดึงเคอร์เซอร์
+            focusConfirm: false, 
             preConfirm: () => {
                 const reason = document.getElementById('swal-input-reason-modal').value;
                 const issueCode = document.getElementById('swal-input-issue').value;
