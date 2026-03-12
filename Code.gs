@@ -1647,12 +1647,16 @@ function getFastReportData(dateRange, centerFilter) {
         if (hSheet) {
             const hRows = hSheet.getLastRow();
             if (hRows > 1) {
-                // ดึงข้อมูลถึงคอลัมน์ O (15 คอลัมน์) สถานะจะอยู่ที่ index 14
-                const hValues = hSheet.getRange(2, 1, hRows - 1, 15).getValues();
+                // ดึงข้อมูล 21 คอลัมน์ เพื่อให้ครอบคลุมถึงวันที่ติดต่อ (คอลัมน์ T/Index 19)
+                const hValues = hSheet.getRange(2, 1, hRows - 1, 21).getValues();
                 
                 hValues.forEach(row => {
-                    // หากต้องการกรองศูนย์ด้วย สามารถเช็คจาก row[8] (คอลัมน์ I) ได้
-                    // if (centerFilter !== 'ALL' && row[8] !== centerFilter) return;
+                    // 🌟 1. กรองศูนย์ (Center)
+                    if (centerFilter !== 'ALL' && row[8] !== centerFilter) return;
+                    
+                    // 🌟 2. กรองวันที่ โดยให้ความสำคัญกับ: วันที่เปิดระบบ -> วันที่ติดต่อ -> วันที่หยุดรับงาน
+                    let targetDate = row[15] || row[19] || row[6]; 
+                    if (dateRange && !isDateMatchFilter(targetDate, dateRange)) return;
                     
                     let status = String(row[14] || "").trim(); // คอลัมน์ O: สถานะ
                     
@@ -1798,14 +1802,43 @@ function parseYearFromDate(dateStr) {
 
 function getDateStr() { return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd_HHmm"); }
 
-function isDateMatchFilter(dateStr, filterVal) {
-  if (!dateStr || !filterVal) return false;
-  dateStr = String(dateStr);
+// 🌟 ฟังก์ชันกรองวันที่ อัปเกรดใหม่รองรับทั้ง Date Object และ String ทุกรูปแบบ 🌟
+function isDateMatchFilter(dateVal, filterVal) {
+  if (!filterVal || String(filterVal).trim() === "") return true; // ไม่ได้กรอง ให้โชว์ทั้งหมด
+  if (!dateVal || dateVal === "") return false; // มีตัวกรองแต่ข้อมูลไม่มีวันที่ ให้ซ่อน
   
-  if (dateStr.includes(' ')) {
-      dateStr = dateStr.split(' ')[0];
+  let rowTime = 0;
+  
+  // 1. แปลงวันที่จากฐานข้อมูล (Sheet) ให้เป็น Timestamp (เพื่อใช้เปรียบเทียบ)
+  if (dateVal instanceof Date) {
+      // 🌟 กรณีค่าจาก Sheet เป็น Object Date แท้ๆ
+      rowTime = dateVal.getTime();
+  } else {
+      // 🌟 กรณีค่าจาก Sheet เป็น String เช่น "11/3/2026" หรือ "2026-03-11"
+      let dateStr = String(dateVal).trim().split(' ')[0]; // ตัดเวลาทิ้ง
+      
+      if (dateStr.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
+          let p = dateStr.split('-');
+          let y = parseInt(p[0], 10); if(y > 2400) y -= 543;
+          rowTime = new Date(y, parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+      } else if (dateStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+          let p = dateStr.split('/');
+          let y = parseInt(p[2], 10); if(y > 2400) y -= 543;
+          rowTime = new Date(y, parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime();
+      } else {
+          // พยายาม parse แบบทั่วไป
+          let d = new Date(dateStr);
+          if (!isNaN(d.getTime())) rowTime = d.getTime();
+      }
   }
+  
+  // ถ้าแปลงค่าวันที่จาก Sheet ไม่ได้ ให้ข้ามไป
+  if (rowTime === 0) return false;
+  let rDate = new Date(rowTime);
 
+  filterVal = String(filterVal).trim();
+  
+  // 2. เช็คตัวกรองแบบช่วงวันที่ (เช่น 01/03/2026 to 31/03/2026)
   let separator = null;
   if (filterVal.includes(" to ")) separator = " to ";
   else if (filterVal.includes(" ถึง ")) separator = " ถึง ";
@@ -1813,34 +1846,58 @@ function isDateMatchFilter(dateStr, filterVal) {
 
   if (separator) {
       const [startStr, endStr] = filterVal.split(separator);
-      const rowTime = parseDateForSort(dateStr);
-      const startTime = parseDateForSort(startStr);
-      const endTime = parseDateForSort(endStr) + (24 * 60 * 60 * 1000) - 1; // Include end of day
+      let parseFilterDate = function(dStr) {
+         dStr = dStr.trim();
+         if (dStr.match(/^\d{4}-\d{1,2}-\d{1,2}/)) {
+             let p = dStr.split('-');
+             return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+         } else if (dStr.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+             let p = dStr.split('/');
+             return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime();
+         }
+         return 0;
+      };
       
-      if (rowTime === 0 || startTime === 0 || endTime === 0) return false;
-      return rowTime >= startTime && rowTime <= endTime;
+      let startTime = parseFilterDate(startStr);
+      let endTime = parseFilterDate(endStr);
+      
+      if (startTime > 0 && endTime > 0) {
+         endTime += (24 * 60 * 60 * 1000) - 1; // รวมเวลาถึงสิ้นวัน (23:59:59)
+         return rowTime >= startTime && rowTime <= endTime;
+      }
   }
   
+  // 3. เช็คตัวกรองแบบรายเดือน YYYY-MM (จากหน้า Fast Report)
+  if (filterVal.match(/^\d{4}-\d{2}$/)) {
+      let p = filterVal.split('-');
+      let fYear = parseInt(p[0], 10);
+      let fMonth = parseInt(p[1], 10);
+      return rDate.getFullYear() === fYear && (rDate.getMonth() + 1) === fMonth;
+  }
+
+  // 4. เช็คตัวกรองแบบระบุวันเดียว YYYY-MM-DD
   if (filterVal.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      const rowTime = parseDateForSort(dateStr);
-      const filterTime = parseDateForSort(filterVal);
-      if (rowTime === 0) return false; 
-      return rowTime === filterTime;
+      let p = filterVal.split('-');
+      let fTime = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+      return rowTime === fTime;
   }
   
-  return isDateInMonth(dateStr, filterVal);
+  // Fallback (สำรอง)
+  return isDateInMonth(String(dateVal), filterVal);
 }
 
 function isDateInMonth(dateStr, filter) {
   if (!dateStr || !filter) return false;
-  dateStr = String(dateStr);
-  
-  if (dateStr.includes(' ')) {
-      dateStr = dateStr.split(' ')[0];
-  }
+  dateStr = String(dateStr).trim();
+  if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0];
 
   let filterYear, filterMonth;
-  if (filter.indexOf('-') > -1) { [filterYear, filterMonth] = filter.split('-'); } else { filterYear = filter; }
+  if (filter.indexOf('-') > -1) { 
+      let p = filter.split('-');
+      filterYear = p[0]; filterMonth = p[1].padStart(2, '0');
+  } else { 
+      filterYear = filter; 
+  }
   
   if (dateStr.startsWith(filter)) return true;
   
@@ -1853,7 +1910,6 @@ function isDateInMonth(dateStr, filter) {
       if (y && m) {
         if (parseInt(y) > 2400) y = (parseInt(y) - 543).toString();
         m = m.toString().padStart(2, '0');
-        
         if (filterMonth) return y === filterYear && m === filterMonth; 
         else return y === filterYear;
       }
@@ -2400,7 +2456,8 @@ function getHoldData() {
   const verifyMap = getGlobalProviderMapWithVerifyDate();
 
   if (lastRow > 1) {
-    const values = sheet.getRange(2, 1, lastRow - 1, 19).getDisplayValues();
+    // 🌟 ขยายขอบเขตการดึงข้อมูลจาก 19 เป็น 21 เพื่อให้ครอบคลุมคอลัมน์ใหม่ (T, U)
+    const values = sheet.getRange(2, 1, lastRow - 1, 21).getDisplayValues();
     
     data = values.map((row, index) => {
         let tags = [];
@@ -2454,7 +2511,11 @@ function getHoldData() {
             lastVerifyDate: row[9], verifyMethod: verifyMethod,
             fastTrackStatus: ftStatus, // สถานะที่ถูกต้องเป๊ะๆ
             masterType: row[12], tags: tags, status: row[14], reactivationDate: row[15],
-            kpiJobs: kpiJobs, officer: row[17], history: history
+            kpiJobs: kpiJobs, officer: row[17], history: history,
+            
+            // 🌟 ดึงข้อมูลจากคอลัมน์ใหม่มาให้หน้าเว็บ (T = 19, U = 20) 🌟
+            contactDate: row[19] || "",
+            retrainDate: row[20] || ""
         };
     });
     // Sort เอาคนล่าสุดขึ้นก่อน
@@ -2537,9 +2598,14 @@ function saveHoldData(form) {
         formatDateForSheet(form.reactivationDate),
         JSON.stringify(form.kpiJobs || []),
         form.officer,
-        JSON.stringify(form.history || [])
+        JSON.stringify(form.history || []),
+        
+        // 🌟 บันทึกข้อมูลคอลัมน์ใหม่ (T, U) เข้า Sheet 🌟
+        formatDateForSheet(form.contactDate),
+        formatDateForSheet(form.retrainDate)
     ];
 
+    // sheet.getRange(rowNumber, 1, 1, rowData.length) จะคำนวณจำนวนคอลัมน์ตามความยาว array ของ rowData เอง (21 คอลัมน์)
     sheet.getRange(rowNumber, 1, 1, rowData.length).setValues([rowData]); 
     return { success: true, message: "บันทึกข้อมูลกลุ่ม H เรียบร้อย" };
   } catch(e) { return { success: false, message: e.toString() }; }
