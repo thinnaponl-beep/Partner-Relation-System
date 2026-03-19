@@ -74,7 +74,7 @@
     a.deeplink { text-decoration: none; transition: color 0.2s; }
     a.deeplink:hover { text-decoration: underline; color: #0a58ca !important; }
 
-    /* Badge Link Style */
+    /* Badge Maid Style */
     .badge-maid { 
         background-color: #e3f2fd; 
         color: #0d6efd; 
@@ -299,14 +299,21 @@
                               <div class="row g-3">
                                  <div class="col-md-5">
                                      <label class="form-label small fw-bold">คะแนนรีวิว <span class="text-danger">*</span></label>
+                                     
+                                     <!-- 🌟 เพิ่มการสลับ Checkbox อัตโนมัติใน HTML 🌟 -->
                                      <div class="rate">
-                                          <input type="radio" id="star5" name="rating" value="5" /><label for="star5">5</label>
-                                          <input type="radio" id="star4" name="rating" value="4" /><label for="star4">4</label>
-                                          <input type="radio" id="star3" name="rating" value="3" /><label for="star3">3</label>
-                                          <input type="radio" id="star2" name="rating" value="2" /><label for="star2">2</label>
-                                          <input type="radio" id="star1" name="rating" value="1" /><label for="star1">1</label>
+                                          <input type="radio" id="star5" name="rating" value="5" onchange="document.getElementById('noReview').checked=false;" /><label for="star5">5</label>
+                                          <input type="radio" id="star4" name="rating" value="4" onchange="document.getElementById('noReview').checked=false;" /><label for="star4">4</label>
+                                          <input type="radio" id="star3" name="rating" value="3" onchange="document.getElementById('noReview').checked=false;" /><label for="star3">3</label>
+                                          <input type="radio" id="star2" name="rating" value="2" onchange="document.getElementById('noReview').checked=false;" /><label for="star2">2</label>
+                                          <input type="radio" id="star1" name="rating" value="1" onchange="document.getElementById('noReview').checked=false;" /><label for="star1">1</label>
                                      </div>
-                                     <div class="mt-1"><label class="small text-muted"><input type="radio" name="rate" value="NO_REVIEW" id="noReview"> ไม่ได้รับรีวิว</label></div>
+                                     <div class="mt-1">
+                                         <label class="small text-muted">
+                                             <input type="radio" name="rate" value="NO_REVIEW" id="noReview" onchange="document.querySelectorAll('input[name=\'rating\']').forEach(r => r.checked = false);"> ไม่ได้รับรีวิว
+                                         </label>
+                                     </div>
+                                     
                                  </div>
                                  <div class="col-md-7"><label class="form-label small fw-bold">คอมเม้นลูกค้า</label><textarea class="form-control bg-white" id="fj_customerComment" rows="1"></textarea></div>
                                  <div class="col-md-12"><label class="form-label small fw-bold text-danger">รหัสปัญหา (ถ้ามี)</label><input type="text" class="form-control bg-white" id="fj_problemId"></div>
@@ -897,6 +904,10 @@
         document.getElementById('fj_advice').value = "";
         
         document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+        
+        // 🌟 เพิ่มการเคลียร์ปุ่ม "ไม่ได้รับรีวิว" ด้วย
+        const noReviewEl = document.getElementById('noReview');
+        if(noReviewEl) noReviewEl.checked = false;
 
         if(data) {
              for(let key in data) { 
@@ -947,8 +958,12 @@
                  }
              }
              if(data.reviewScore) { 
-                 if(data.reviewScore === "NO_REVIEW") document.getElementById('noReview').checked = true; 
-                 else { const s = document.querySelector(`input[name="rating"][value="${data.reviewScore}"]`); if(s) s.checked = true; } 
+                 if(data.reviewScore === "NO_REVIEW" && noReviewEl) {
+                     noReviewEl.checked = true; 
+                 } else { 
+                     const s = document.querySelector(`input[name="rating"][value="${data.reviewScore}"]`); 
+                     if(s) s.checked = true; 
+                 } 
              }
         }
         
@@ -1108,7 +1123,6 @@
                              officer: currentUser, 
                              type: 'precall', 
                              callResult: 'contacted',
-                             // 🌟 ส่งค่า preAdvice เดิมกลับเข้าไปเพื่อไม่ให้หาย 🌟
                              preAdvice: item.preAdvice || item.checklist.advice || "ข้ามการโทรเยี่ยมเนื่องจากรับงานใหม่หลังคืนงาน"
                          };
                          checklistQuestions.filter(q => q.section === 'pre').forEach(q => {
@@ -1129,9 +1143,21 @@
         const callResultEl = document.getElementById('fj_callResult');
         form.callResult = callResultEl ? callResultEl.value : "";
         
+        // 🌟 🌟 🌟 แก้ไข: ตรวจสอบทั้งตัวเลือกดาว และ ตัวเลือก "ไม่ได้รับรีวิว" 🌟 🌟 🌟
         if(mode === 'postcall') {
-             const r = document.querySelector('input[name="rating"]:checked'); if(r) form.reviewScore = r.value;
-             if(form.callResult === 'contacted' && !form.reviewScore) { Swal.fire('เตือน', 'ระบุคะแนนรีวิว', 'warning'); return; }
+             const r = document.querySelector('input[name="rating"]:checked'); 
+             const noReview = document.getElementById('noReview');
+             
+             if (noReview && noReview.checked) {
+                 form.reviewScore = "NO_REVIEW";
+             } else if (r) {
+                 form.reviewScore = r.value;
+             }
+             
+             if(form.callResult === 'contacted' && !form.reviewScore) { 
+                 Swal.fire('เตือน', 'ระบุคะแนนรีวิว\n(หรือติ๊กเลือก "ไม่ได้รับรีวิว")', 'warning'); 
+                 return; 
+             }
         }
         
         document.querySelectorAll('.dynamic-field').forEach(el => { 
@@ -1149,7 +1175,6 @@
              }
         });
         
-        // 🌟 🌟 🌟 เปลี่ยนวิธีการส่งค่าคำแนะนำ (Advice) ตามโหมดที่กดบันทึก 🌟 🌟 🌟
         form.customerComment = document.getElementById('fj_customerComment') ? document.getElementById('fj_customerComment').value : "";
         form.problemId = document.getElementById('fj_problemId') ? document.getElementById('fj_problemId').value : "";
         
