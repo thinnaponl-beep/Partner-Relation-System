@@ -58,20 +58,20 @@
     <?!= include('_Navbar'); ?>
     
     <div class="container-fluid">
-        <!-- 🌟 Header & Bulk Actions 🌟 -->
+        <!-- Header & Bulk Actions -->
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h4 class="mb-0 fw-bold text-secondary">จัดการการตรวจประวัติ (Verification)</h4>
                 <small class="text-muted">ดูแลข้อมูลประวัติใหม่ (Master) และต่ออายุรายปี (Annual)</small>
             </div>
             <div class="d-flex gap-2">
-                <!-- ปุ่มนำเข้าไฟล์ใหญ่ (แสดงเฉพาะแท็บ Annual) -->
+                <!-- ปุ่มนำเข้าไฟล์ใหญ่ -->
                 <button class="btn btn-info text-white rounded-pill px-3 shadow-sm fw-bold d-none" id="btnImportAnnual" onclick="document.getElementById('importFile').click()" title="นำเข้าข้อมูลการหักเงินจากระบบหลัก">
                     <i class="fas fa-file-import me-1"></i> แนบรายการการหักเงินตรวจประวัติรายปี
                 </button>
                 <input type="file" id="importFile" accept=".xlsx, .xls, .csv" onchange="handleFileSelect(this)">
 
-                <!-- ปุ่มอัปเดตผลตรวจ (App Man) จัดการได้ทั้ง 2 ระบบ -->
+                <!-- ปุ่มอัปเดตผลตรวจ (App Man) -->
                 <button class="btn btn-success text-white rounded-pill px-4 shadow-sm fw-bold" onclick="document.getElementById('bulkUploadStatusFile').click()" title="อัปโหลดไฟล์เดียว อัปเดตทั้ง Master และ Annual">
                     <i class="fas fa-bolt me-1"></i> อัปเดตผลตรวจจาก App Man
                 </button>
@@ -86,7 +86,7 @@
             </div>
         </div>
 
-        <!-- 🌟 Smart Tabs 🌟 -->
+        <!-- Smart Tabs -->
         <ul class="nav nav-pills mb-4" id="verifyTabs" role="tablist">
             <li class="nav-item">
                 <button class="nav-link active rounded-pill px-4 me-2 shadow-sm" id="tab-master" data-bs-toggle="tab" type="button" onclick="switchTab('MASTER')">
@@ -100,16 +100,27 @@
             </li>
         </ul>
 
-        <!-- 🌟 Dynamic Status Cards 🌟 -->
+        <!-- Dynamic Status Cards -->
         <div class="row g-3 mb-4" id="statsContainer">
             <!-- JS will inject cards here based on active tab -->
         </div>
 
-        <!-- 🌟 Dynamic Filters 🌟 -->
+        <!-- Dynamic Filters -->
         <div class="card border-0 shadow-sm mb-4">
             <div class="card-body">
                 <div class="row g-3 align-items-end">
-                  <div class="col-md-3">
+                  
+                  <!-- Year Filter -->
+                  <div class="col-md-2 col-sm-6">
+                    <label class="form-label small text-muted fw-bold">ช่วงปี</label>
+                    <select class="form-select" id="yearFilter" onchange="handleYearChange()">
+                        <option value="">ทั้งหมด</option>
+                        <!-- JS จะสร้างตัวเลือกปีตรงนี้ -->
+                    </select>
+                  </div>
+                  
+                  <!-- Month Filter -->
+                  <div class="col-md-3 col-sm-6">
                     <label class="form-label small text-muted fw-bold">ช่วงเดือน</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="far fa-calendar-alt text-primary"></i></span>
@@ -146,6 +157,7 @@
                         <option value="pending">ส่งลิงค์/รอผล</option>
                      </select>
                   </div>
+                  
                   <div class="col-md-2 filter-annual-only d-none">
                      <label class="form-label small text-muted fw-bold">สถานะการชำระ</label>
                      <select class="form-select" id="paymentFilterAnnual" onchange="filterTable()">
@@ -155,29 +167,7 @@
                      </select>
                   </div>
                   
-                  <!-- 🌟 Import Results Filter (Annual Only) 🌟 -->
-                  <div class="col-md-12 filter-annual-only d-none mt-3">
-                      <div class="d-flex align-items-center bg-light p-2 rounded border">
-                         <span class="small fw-bold text-muted ms-2 text-nowrap me-3"><i class="fas fa-history me-1"></i> ผลการแนบรายการ:</span>
-                         <div class="btn-group btn-group-sm" role="group">
-                            <input type="radio" class="btn-check" name="importFilter" id="btnImportAll" value="all" autocomplete="off" checked onchange="handleImportFilterChange()">
-                            <label class="btn btn-outline-secondary border-0 rounded-pill me-1 px-3" for="btnImportAll">ทั้งหมด</label>
-                            
-                            <input type="radio" class="btn-check" name="importFilter" id="btnImportNew" value="new" autocomplete="off" onchange="handleImportFilterChange()">
-                            <label class="btn btn-outline-primary border-0 rounded-pill me-1 px-3" for="btnImportNew" id="lblImportNew">ใหม่</label>
-                            
-                            <input type="radio" class="btn-check" name="importFilter" id="btnImportUpdated" value="updated" autocomplete="off" onchange="handleImportFilterChange()">
-                            <label class="btn btn-outline-warning text-dark border-0 rounded-pill px-3" for="btnImportUpdated" id="lblImportUpdated">อัปเดต</label>
-                         </div>
-                         
-                         <!-- ปุ่มตรวจสอบแล้ว (จะแสดงเมื่อมีข้อมูลอัปโหลดใหม่) -->
-                         <button class="btn btn-sm btn-success rounded-pill ms-auto fw-bold shadow-sm d-none px-3" id="btnClearImportFilter" onclick="clearImportFilter()">
-                             <i class="fas fa-check-circle me-1"></i> ตรวจสอบแล้ว (ซ่อนรายการ)
-                         </button>
-                      </div>
-                  </div>
-
-                  <div class="col-md-1 filter-annual-only d-none">
+                  <div class="col-md-2 filter-annual-only d-none">
                      <label class="form-label small text-muted fw-bold">กลุ่ม</label>
                      <select class="form-select fw-bold text-primary" id="groupFilterAnnual" onchange="filterTable()">
                         <option value="">ทุกกลุ่ม</option>
@@ -189,6 +179,36 @@
                      </select>
                   </div>
 
+                  <div class="col-md-2 filter-annual-only d-none">
+                     <label class="form-label small text-muted fw-bold">ช่องทาง</label>
+                     <select class="form-select text-primary" id="channelFilterAnnual" onchange="filterTable()">
+                        <option value="">ทั้งหมด</option>
+                        <option value="App Man">App Man</option>
+                        <option value="ตรวจเอง">ตรวจเอง</option>
+                     </select>
+                  </div>
+                  
+                  <!-- Import Results Filter (Annual Only) -->
+                  <div class="col-md-12 filter-annual-only d-none mt-3">
+                      <div class="d-flex align-items-center bg-light p-2 rounded border flex-wrap">
+                         <span class="small fw-bold text-muted ms-2 text-nowrap me-3"><i class="fas fa-history me-1"></i> ผลการแนบรายการ:</span>
+                         <div class="btn-group btn-group-sm mb-1 mb-sm-0" role="group">
+                            <input type="radio" class="btn-check" name="importFilter" id="btnImportAll" value="all" autocomplete="off" checked onchange="handleImportFilterChange()">
+                            <label class="btn btn-outline-secondary border-0 rounded-pill me-1 px-3" for="btnImportAll">ทั้งหมด</label>
+                            
+                            <input type="radio" class="btn-check" name="importFilter" id="btnImportNew" value="new" autocomplete="off" onchange="handleImportFilterChange()">
+                            <label class="btn btn-outline-primary border-0 rounded-pill me-1 px-3" for="btnImportNew" id="lblImportNew">ใหม่</label>
+                            
+                            <input type="radio" class="btn-check" name="importFilter" id="btnImportUpdated" value="updated" autocomplete="off" onchange="handleImportFilterChange()">
+                            <label class="btn btn-outline-warning text-dark border-0 rounded-pill px-3" for="btnImportUpdated" id="lblImportUpdated">อัปเดต</label>
+                         </div>
+                         
+                         <!-- ปุ่มตรวจสอบแล้ว (จะแสดงเมื่อมีข้อมูลอัปโหลดใหม่) -->
+                         <button class="btn btn-sm btn-success rounded-pill ms-auto fw-bold shadow-sm d-none px-3 mt-1 mt-sm-0" id="btnClearImportFilter" onclick="clearImportFilter()">
+                             <i class="fas fa-check-circle me-1"></i> ตรวจสอบแล้ว (ซ่อนรายการ)
+                         </button>
+                      </div>
+                  </div>
 
                   <div class="col-md-3 flex-grow-1">
                     <label class="form-label small text-muted fw-bold">ค้นหา</label>
@@ -206,9 +226,8 @@
             </div>
         </div>
 
-        <!-- 🌟 Dynamic Data Table & Pagination 🌟 -->
+        <!-- Dynamic Data Table & Pagination -->
         <div class="table-container">
-          
           <!-- Pagination Control Header -->
           <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded border shadow-sm d-none" id="paginationContainer">
               <div class="d-flex align-items-center">
@@ -383,7 +402,7 @@
     </div>
   </div>
 
-  <!-- 🌟 Unified Upload Result Modal 🌟 -->
+  <!-- Unified Upload Result Modal -->
   <div class="modal fade" id="uploadResultModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
@@ -432,7 +451,7 @@
     </div>
   </div>
 
-  <!-- 🌟 Log Details Modal (Popup ตารางรายการ) 🌟 -->
+  <!-- Log Details Modal (Popup ตารางรายการ) -->
   <div class="modal fade" id="logDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
@@ -466,31 +485,35 @@
   <?!= include('_Scripts'); ?>
   
   <script>
-    let globalDataMaster = [], globalDataAnnual = [];
+    let globalDataMaster = [];
+    let globalDataAnnual = [];
     let centersList = [];
-    let currentUser = "", isUserAdmin = false;
+    let currentUser = "";
+    let isUserAdmin = false;
     let monthPickerInstance;
+    let isClearingMonth = false; 
     
-    // 🌟 ตัวแปรสำหรับเก็บฐานข้อมูลรายชื่อทั้งหมด (ไม่สน Filter บนหน้าจอ)
+    // ตัวแปรเก็บฐานข้อมูลรายชื่อทั้งหมด
     let globalProviderMap = {};
     
     // Core state
     let currentTab = 'MASTER'; 
+    
+    // ตัวแปร Local Storage ควบคุมรายการนำเข้า
     let recentlyUpdatedMaster = [];
     let recentlyUpdatedAnnual = [];
-    
     let lastImportAdded = [];
     let lastImportUpdated = [];
+    
     let currentExportStatus = "";
 
-    // 🌟 Pagination State
+    // Pagination State
     let currentPage = 1;
     let rowsPerPage = 20;
     let currentFilteredData = [];
 
     // Modals
-    let formModalMaster, formModalAnnual, uploadResultModal, historyModal, logDetailsModal;
-    let exportModal, previewModal;
+    let formModalMaster, formModalAnnual, uploadResultModal, historyModal, logDetailsModal, exportModal, previewModal;
 
     window.onload = function() {
       formModalMaster = new bootstrap.Modal(document.getElementById('formModalMaster'));
@@ -501,105 +524,111 @@
       exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
       previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
 
+      // ดึงข้อมูลจาก LocalStorage
+      try {
+          if (localStorage.getItem('verify_lastImportAdded')) lastImportAdded = JSON.parse(localStorage.getItem('verify_lastImportAdded'));
+          if (localStorage.getItem('verify_lastImportUpdated')) lastImportUpdated = JSON.parse(localStorage.getItem('verify_lastImportUpdated'));
+          if (localStorage.getItem('verify_recentMaster')) recentlyUpdatedMaster = JSON.parse(localStorage.getItem('verify_recentMaster'));
+          if (localStorage.getItem('verify_recentAnnual')) recentlyUpdatedAnnual = JSON.parse(localStorage.getItem('verify_recentAnnual'));
+      } catch (e) {}
+
+      // สร้างตัวเลือกช่วงปี
+      const yearFilterEl = document.getElementById('yearFilter');
+      const currY = new Date().getFullYear();
+      for (let i = currY - 2; i <= currY + 1; i++) {
+          yearFilterEl.add(new Option(i + 543, i));
+      }
+
       const today = new Date();
       monthPickerInstance = flatpickr("#monthFilter", { 
           plugins: [ new monthSelectPlugin({ shorthand: true, dateFormat: "Y-m", altFormat: "F Y", theme: "light" }) ], 
-          locale: "th", defaultDate: today, onChange: function() { loadData(); } 
+          locale: "th",
+          defaultDate: today, // ให้เป็น default เดือนปัจจุบัน
+          onChange: function() { 
+              if (!isClearingMonth) {
+                  document.getElementById('yearFilter').value = ""; 
+                  loadData(); 
+              }
+          } 
       });
       flatpickr(".datepicker-input", { dateFormat: "Y-m-d", altInput: true, altFormat: "j F Y", locale: "th" });
 
-      // 🌟 โหลดฐานข้อมูลรายชื่อแบบเต็ม Background (เพื่อใช้แสดงชื่อในหน้าต่างประวัติ)
-      google.script.run.withSuccessHandler(res => {
+      google.script.run.withSuccessHandler(function(res) {
           if (res) globalProviderMap = res;
       }).getGlobalProviderMap();
 
       loadData();
     };
+
+    function handleYearChange() {
+        if (document.getElementById('yearFilter').value !== "") {
+            isClearingMonth = true;
+            if (monthPickerInstance) monthPickerInstance.clear();
+            isClearingMonth = false;
+        }
+        loadData();
+    }
+
+    function getActiveDateFilter() {
+        const m = document.getElementById('monthFilter').value;
+        const y = document.getElementById('yearFilter').value;
+        return m ? m : y;
+    }
     
-    // 🌟 Helper Function: หาชื่อและรหัสจากเลขบัตร ปชช. (ดึงจาก Database เป็นหลัก) 🌟
     function getProviderInfo(idCard) {
         let cleanId = String(idCard).replace(/\D/g, '');
         let name = "-";
         let code = "-";
-        
-        // 1. ค้นหาจากฐานข้อมูลเต็มที่ดึงมาจาก Database โดยตรง (แม่นยำที่สุด)
         if (globalProviderMap && globalProviderMap[cleanId]) {
             name = globalProviderMap[cleanId].name || "-";
             code = globalProviderMap[cleanId].code || "-";
-            return { name, code };
+            return { name: name, code: code };
         }
-        
-        // 2. ถ้ายังไม่เจอ ให้ค้นหาจากข้อมูลที่โหลดอยู่บนหน้าจอ (Fallback)
-        let found = globalDataAnnual.find(x => String(x.idCard).replace(/\D/g, '') === cleanId);
-        if(found) {
-            name = found.name;
-            code = found.refCode;
-        } else {
-            found = globalDataMaster.find(x => String(x.idCard).replace(/\D/g, '') === cleanId);
-            if(found) {
-                name = found.name;
-                code = found.code;
-            }
+        let found = globalDataAnnual.find(function(x) { return String(x.idCard).replace(/\D/g, '') === cleanId; });
+        if (found) { name = found.name; code = found.refCode; } 
+        else {
+            found = globalDataMaster.find(function(x) { return String(x.idCard).replace(/\D/g, '') === cleanId; });
+            if (found) { name = found.name; code = found.code; }
         }
-        return { name, code };
+        return { name: name, code: code };
     }
 
-    // 🌟 ฟังก์ชันแสดง Popup ข้อความเต็ม 🌟
     function showFullText(tab, id, field) {
         let data = tab === 'MASTER' ? globalDataMaster : globalDataAnnual;
-        let item = data.find(x => String(x.id) === String(id));
-        if(!item) return;
-        
+        let item = data.find(function(x) { return String(x.id) === String(id); });
+        if (!item) return;
         let title = field === 'result' ? 'รายละเอียดผลตรวจ' : 'รายละเอียดหมายเหตุ';
         let text = item[field] || '-';
-        
         Swal.fire({
-            title: `<span class="fs-5">${title}</span>`,
-            html: `<div class="text-start bg-light p-3 rounded border text-break" style="max-height: 300px; overflow-y: auto; font-size: 0.95rem;">${text.replace(/\n/g, '<br>')}</div>`,
-            icon: 'info',
-            confirmButtonText: 'ปิดหน้าต่าง',
-            confirmButtonColor: '#6c757d'
+            title: '<span class="fs-5">' + title + '</span>',
+            html: '<div class="text-start bg-light p-3 rounded border text-break" style="max-height: 300px; overflow-y: auto; font-size: 0.95rem;">' + text.replace(/\n/g, '<br>') + '</div>',
+            icon: 'info', confirmButtonText: 'ปิดหน้าต่าง', confirmButtonColor: '#6c757d'
         });
     }
 
-    // 🌟 ฟังก์ชันเปิดหน้าต่างแก้ไขหมายเหตุ (Annual) 🌟
     function editFullNotePopup(id) {
-        const inputEl = document.getElementById(`note-${id}`);
+        const inputEl = document.getElementById('note-' + id);
         const currentNote = inputEl ? inputEl.value : '';
-        
         Swal.fire({
-            title: 'รายละเอียดหมายเหตุ',
-            input: 'textarea',
-            inputValue: currentNote,
-            inputPlaceholder: 'พิมพ์หมายเหตุที่นี่...',
-            inputAttributes: { 'rows': 6 },
-            showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-save me-1"></i> บันทึก',
-            cancelButtonText: 'ยกเลิก',
-            confirmButtonColor: '#0d6efd',
-            customClass: { input: 'bg-light border' }
-        }).then((result) => {
+            title: 'รายละเอียดหมายเหตุ', input: 'textarea', inputValue: currentNote, inputPlaceholder: 'พิมพ์หมายเหตุที่นี่...', inputAttributes: { 'rows': 6 },
+            showCancelButton: true, confirmButtonText: '<i class="fas fa-save me-1"></i> บันทึก', cancelButtonText: 'ยกเลิก', confirmButtonColor: '#0d6efd', customClass: { input: 'bg-light border' }
+        }).then(function(result) {
             if (result.isConfirmed && result.value !== currentNote) {
-                if (inputEl) {
-                    inputEl.value = result.value;
-                    saveInlineNote(id, result.value);
-                }
+                if (inputEl) { inputEl.value = result.value; saveInlineNote(id, result.value); }
             }
         });
     }
     
     function switchTab(tab) {
         currentTab = tab;
-        document.querySelectorAll('.filter-master-only, .filter-annual-only').forEach(el => el.classList.add('d-none'));
-        
+        document.querySelectorAll('.filter-master-only, .filter-annual-only').forEach(function(el) { el.classList.add('d-none'); });
         if (tab === 'MASTER') {
-            document.querySelectorAll('.filter-master-only').forEach(el => el.classList.remove('d-none'));
+            document.querySelectorAll('.filter-master-only').forEach(function(el) { el.classList.remove('d-none'); });
             document.getElementById('btnImportAnnual').classList.add('d-none');
         } else {
-            document.querySelectorAll('.filter-annual-only').forEach(el => el.classList.remove('d-none'));
+            document.querySelectorAll('.filter-annual-only').forEach(function(el) { el.classList.remove('d-none'); });
             document.getElementById('btnImportAnnual').classList.remove('d-none');
         }
-        
         updateStats();
         filterTable();
     }
@@ -608,10 +637,9 @@
     function loadData() {
         showLoading();
         loadCount = 0;
-        const filterVal = document.getElementById('monthFilter').value;
+        const filterVal = getActiveDateFilter();
         
-        // Fetch Master
-        google.script.run.withSuccessHandler(res => {
+        google.script.run.withSuccessHandler(function(res) {
             globalDataMaster = res.data || [];
             centersList = res.centers || [];
             currentUser = res.currentUser;
@@ -619,8 +647,7 @@
             checkLoadComplete();
         }).getInitialData(filterVal);
         
-        // Fetch Annual
-        google.script.run.withSuccessHandler(res => {
+        google.script.run.withSuccessHandler(function(res) {
             globalDataAnnual = res.data || [];
             checkLoadComplete();
         }).getAnnualData(filterVal);
@@ -628,18 +655,34 @@
 
     function checkLoadComplete() {
         loadCount++;
-        if(loadCount === 2) {
+        if (loadCount === 2) {
             hideLoading();
             
             const centerSel = document.getElementById('centerFilter');
             const currentC = centerSel.value;
             centerSel.innerHTML = '<option value="">ทั้งหมด</option>';
-            centersList.forEach(c => centerSel.add(new Option(c, c)));
+            centersList.forEach(function(c) { centerSel.add(new Option(c, c)); });
             centerSel.value = currentC;
             
             const selMaster = document.getElementById('m_center');
             selMaster.innerHTML = '<option value="">เลือก...</option>';
-            centersList.forEach(c => selMaster.add(new Option(c, c)));
+            centersList.forEach(function(c) { selMaster.add(new Option(c, c)); });
+
+            // ตั้งค่าป้ายกำกับ
+            const lblNew = document.getElementById('lblImportNew');
+            if (lblNew) {
+                if (lastImportAdded.length > 0) lblNew.innerHTML = 'ใหม่ <span class="badge bg-danger ms-1 px-2">' + lastImportAdded.length + '</span>';
+                else lblNew.innerHTML = 'ใหม่';
+            }
+            const lblUpdated = document.getElementById('lblImportUpdated');
+            if (lblUpdated) {
+                if (lastImportUpdated.length > 0) lblUpdated.innerHTML = 'อัปเดต <span class="badge bg-warning text-dark ms-1 px-2">' + lastImportUpdated.length + '</span>';
+                else lblUpdated.innerHTML = 'อัปเดต';
+            }
+
+            if (lastImportAdded.length > 0 || lastImportUpdated.length > 0) {
+                document.getElementById('btnClearImportFilter').classList.remove('d-none');
+            }
 
             updateStats();
             filterTable();
@@ -647,7 +690,10 @@
     }
 
     function clearDateFilter() {
-        if(monthPickerInstance) monthPickerInstance.clear();
+        isClearingMonth = true;
+        if (monthPickerInstance) monthPickerInstance.clear();
+        isClearingMonth = false;
+        document.getElementById('yearFilter').value = "";
         loadData();
     }
 
@@ -658,61 +704,57 @@
 
         if (currentTab === 'MASTER') {
             const tot = globalDataMaster.length;
-            const ver = globalDataMaster.filter(x => x.ftStatus === 'Verified').length;
-            const pen = globalDataMaster.filter(x => x.ftStatus === 'Pending Result' || x.ftStatus === 'In Progress').length;
-            const not = globalDataMaster.filter(x => x.ftStatus === 'Not Verified').length;
-            // 🌟 แก้ไข Master ให้เรียง 4 คอลัมน์ ไม่หดเล็กลงเหมือน Annual
+            const ver = globalDataMaster.filter(function(x) { return x.ftStatus === 'Verified'; }).length;
+            const pen = globalDataMaster.filter(function(x) { return x.ftStatus === 'Pending Result' || x.ftStatus === 'In Progress'; }).length;
+            const not = globalDataMaster.filter(function(x) { return x.ftStatus === 'Not Verified'; }).length;
             container.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-4 g-3 mb-4';
-            container.innerHTML = `
-                <div class="col"><div class="card status-card border-start-primary p-3 active" onclick="filterByCard('MASTER', '')"><small class="text-muted fw-bold">ทั้งหมด</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-primary">${tot}</h3><i class="fas fa-users fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard('MASTER', 'Verified')"><small class="text-muted fw-bold">ผ่านแล้ว</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">${ver}</h3><i class="fas fa-check-circle fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-warning p-3" onclick="filterByCard('MASTER', 'Pending Result')"><small class="text-muted fw-bold">รอผล</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-warning">${pen}</h3><i class="fas fa-clock fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-danger p-3" onclick="filterByCard('MASTER', 'Not Verified')"><small class="text-muted fw-bold">ไม่ผ่าน/พบประวัติ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-danger">${not}</h3><i class="fas fa-times-circle fs-4 opacity-25"></i></div></div></div>
-            `;
+            container.innerHTML = 
+                '<div class="col"><div class="card status-card border-start-primary p-3 active" onclick="filterByCard(\'MASTER\', \'\')"><small class="text-muted fw-bold">ทั้งหมด</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-primary">' + tot + '</h3><i class="fas fa-users fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard(\'MASTER\', \'Verified\')"><small class="text-muted fw-bold">ผ่านแล้ว</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">' + ver + '</h3><i class="fas fa-check-circle fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-warning p-3" onclick="filterByCard(\'MASTER\', \'Pending Result\')"><small class="text-muted fw-bold">รอผล</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-warning">' + pen + '</h3><i class="fas fa-clock fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-danger p-3" onclick="filterByCard(\'MASTER\', \'Not Verified\')"><small class="text-muted fw-bold">ไม่ผ่าน/ค้างงาน</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-danger">' + not + '</h3><i class="fas fa-times-circle fs-4 opacity-25"></i></div></div></div>';
         } else {
             const tot = globalDataAnnual.length;
-            const ver = globalDataAnnual.filter(x => x.statusProcess === 'ผลตรวจออกแล้ว').length;
-            const pen = globalDataAnnual.filter(x => {
-                const sp = String(x.statusProcess).trim();
-                return sp === 'ส่งลิ้งค์แล้วรอกรอกข้อมูล' || sp === 'ส่งลิงค์แล้วรอกรอกข้อมูล' || sp === 'รอผลตรวจ';
-            }).length;
-            const paid = globalDataAnnual.filter(x => x.deductionStatus === 'ชำระครบ' || x.deductionStatus === 'หักสำเร็จ').length;
-            const unpaid = globalDataAnnual.filter(x => x.deductionStatus === 'ค้างชำระ' || x.deductionStatus === 'รอหัก' || x.deductionStatus === 'หักไม่สำเร็จ').length;
-            // 🌟 Annual มี 5 คอลัมน์
+            const ver = globalDataAnnual.filter(function(x) { return x.statusProcess === 'ผลตรวจออกแล้ว'; }).length;
+            const pen = globalDataAnnual.filter(function(x) { const sp = String(x.statusProcess).trim(); return sp === 'ส่งลิ้งค์แล้วรอกรอกข้อมูล' || sp === 'ส่งลิงค์แล้วรอกรอกข้อมูล' || sp === 'รอผลตรวจ'; }).length;
+            const paid = globalDataAnnual.filter(function(x) { return x.deductionStatus === 'ชำระครบ' || x.deductionStatus === 'หักสำเร็จ'; }).length;
+            const unpaid = globalDataAnnual.filter(function(x) { return x.deductionStatus === 'ค้างชำระ' || x.deductionStatus === 'รอหัก' || x.deductionStatus === 'หักไม่สำเร็จ'; }).length;
             container.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-xl-5 g-3 mb-4';
-            container.innerHTML = `
-                <div class="col"><div class="card status-card border-start-primary p-3 active" onclick="filterByCard('ANNUAL', '', '')"><small class="text-muted fw-bold">ทั้งหมดรายปี</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-primary">${tot}</h3><i class="fas fa-users fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard('ANNUAL', 'ผลตรวจออกแล้ว', '')"><small class="text-muted fw-bold">ผลออกแล้ว</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">${ver}</h3><i class="fas fa-check-circle fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-info p-3" onclick="filterByCard('ANNUAL', 'pending', '')"><small class="text-muted fw-bold">ส่งลิงค์/รอผล</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-info">${pen}</h3><i class="fas fa-paper-plane fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard('ANNUAL', '', 'paid')"><small class="text-muted fw-bold">ชำระครบ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">${paid}</h3><i class="fas fa-check-double fs-4 opacity-25"></i></div></div></div>
-                <div class="col"><div class="card status-card border-start-danger p-3" onclick="filterByCard('ANNUAL', '', 'unpaid')"><small class="text-muted fw-bold">ค้างชำระ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-danger">${unpaid}</h3><i class="fas fa-wallet fs-4 opacity-25"></i></div></div></div>
-            `;
+            container.innerHTML = 
+                '<div class="col"><div class="card status-card border-start-primary p-3 active" onclick="filterByCard(\'ANNUAL\', \'\', \'\')"><small class="text-muted fw-bold">ทั้งหมดรายปี</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-primary">' + tot + '</h3><i class="fas fa-users fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard(\'ANNUAL\', \'ผลตรวจออกแล้ว\', \'\')"><small class="text-muted fw-bold">ผลออกแล้ว</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">' + ver + '</h3><i class="fas fa-check-circle fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-info p-3" onclick="filterByCard(\'ANNUAL\', \'pending\', \'\')"><small class="text-muted fw-bold">ส่งลิงค์/รอผล</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-info">' + pen + '</h3><i class="fas fa-paper-plane fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard(\'ANNUAL\', \'\', \'paid\')"><small class="text-muted fw-bold">ชำระครบ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">' + paid + '</h3><i class="fas fa-check-double fs-4 opacity-25"></i></div></div></div>' +
+                '<div class="col"><div class="card status-card border-start-danger p-3" onclick="filterByCard(\'ANNUAL\', \'\', \'unpaid\')"><small class="text-muted fw-bold">ค้างชำระ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-danger">' + unpaid + '</h3><i class="fas fa-wallet fs-4 opacity-25"></i></div></div></div>';
         }
     }
 
     function filterByCard(module, status, payment) {
-        document.querySelectorAll('.status-card').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.status-card').forEach(function(el) { el.classList.remove('active'); });
         event.currentTarget.classList.add('active');
         
         if (module === 'MASTER') {
             document.getElementById('statusFilterMaster').value = status;
-            
-            if(status === 'Pending Result' || status === 'Not Verified') {
-                if(document.getElementById('monthFilter').value !== "") {
-                    monthPickerInstance.clear();
-                    Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'ดึงงานค้างทุกเดือนมาแสดง', showConfirmButton: false, timer: 2000 });
+            if (status === 'Pending Result' || status === 'Not Verified') {
+                if (getActiveDateFilter() !== "") {
+                    isClearingMonth = true;
+                    if (monthPickerInstance) monthPickerInstance.clear();
+                    isClearingMonth = false;
+                    document.getElementById('yearFilter').value = "";
+                    Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'ดึงงานค้างทุกช่วงเวลามาแสดง', showConfirmButton: false, timer: 2000 });
                     loadData(); return;
                 }
             }
         } else {
             document.getElementById('statusProcessFilterAnnual').value = status;
             document.getElementById('paymentFilterAnnual').value = payment;
-            
-            // 🌟 อัปเดตให้เช็คค่า pending
-            if(status === 'pending' || payment === 'unpaid') {
-                if(document.getElementById('monthFilter').value !== "") {
-                    monthPickerInstance.clear();
-                    Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'ดึงงานค้างทุกเดือนมาแสดง', showConfirmButton: false, timer: 2000 });
+            if (status === 'pending' || payment === 'unpaid') {
+                if (getActiveDateFilter() !== "") {
+                    isClearingMonth = true;
+                    if (monthPickerInstance) monthPickerInstance.clear();
+                    isClearingMonth = false;
+                    document.getElementById('yearFilter').value = "";
+                    Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'ดึงงานค้างทุกช่วงเวลามาแสดง', showConfirmButton: false, timer: 2000 });
                     loadData(); return;
                 }
             }
@@ -722,11 +764,10 @@
 
     function formatIdCard(idStr) {
         let v = String(idStr).replace(/\D/g, '');
-        if(!v || v.length !== 13) return idStr || '-';
-        return `${v.substring(0,1)}-${v.substring(1,5)}-${v.substring(5,10)}-${v.substring(10,12)}-${v.substring(12,13)}`;
+        if (!v || v.length !== 13) return idStr || '-';
+        return v.substring(0,1) + '-' + v.substring(1,5) + '-' + v.substring(5,10) + '-' + v.substring(10,12) + '-' + v.substring(12,13);
     }
 
-    // 🌟 ระบบ Pagination (แบ่งโหลดหน้าเว็บ) 🌟
     function changeRowsPerPage() {
         const val = document.getElementById('rowsPerPage').value;
         rowsPerPage = val === 'all' ? 'all' : parseInt(val);
@@ -739,131 +780,128 @@
         renderTablePage();
     }
 
-    // 🌟 จัดการการแสดงผล Tab นำเข้าข้อมูล (ใหม่/อัปเดต) 🌟
     function handleImportFilterChange() {
         let impFilter = "all";
         const radioNodeList = document.getElementsByName('importFilter');
-        for(let i=0; i<radioNodeList.length; i++) {
-             if(radioNodeList[i].checked) { impFilter = radioNodeList[i].value; break; }
-        }
+        for (let i = 0; i < radioNodeList.length; i++) { if (radioNodeList[i].checked) { impFilter = radioNodeList[i].value; break; } }
         
         if (impFilter === "new" || impFilter === "updated") {
-            // ข้ามฟิลเตอร์เดือนชั่วคราว (Clear Month Filter) เพื่อให้แสดงข้อมูลที่อัปโหลดมาทั้งหมด
-            if(monthPickerInstance && document.getElementById('monthFilter').value !== "") {
-                // เก็บค่าเดือนเดิมไว้ใน window object ก่อนเคลียร์ทิ้ง
+            let shouldReload = false;
+            if (document.getElementById('monthFilter').value !== "") {
                 window.previousMonthFilter = document.getElementById('monthFilter').value;
-                
-                Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'ข้ามฟิลเตอร์เดือนชั่วคราว เพื่อแสดงรายการอัปโหลดทั้งหมด', showConfirmButton: false, timer: 2500 });
-                monthPickerInstance.clear(); // ฟังก์ชันนี้จะสั่ง loadData() ให้อัตโนมัติ
-                return; 
+                isClearingMonth = true;
+                if (monthPickerInstance) monthPickerInstance.clear();
+                isClearingMonth = false;
+                shouldReload = true;
+            }
+            if (document.getElementById('yearFilter').value !== "") {
+                window.previousYearFilter = document.getElementById('yearFilter').value;
+                document.getElementById('yearFilter').value = "";
+                shouldReload = true;
+            }
+            if (shouldReload) {
+                Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'ข้ามฟิลเตอร์เวลาชั่วคราว เพื่อแสดงรายการอัปโหลดทั้งหมด', showConfirmButton: false, timer: 2500 });
+                loadData();
+                return;
             }
         } else {
-            // ถ้ากดกลับมาที่ "ทั้งหมด" ให้ดึงค่าเดือนเดิมมาใช้ (ถ้ามี)
+            let shouldReload = false;
             if (window.previousMonthFilter && monthPickerInstance) {
+                isClearingMonth = true;
                 monthPickerInstance.setDate(window.previousMonthFilter);
-                window.previousMonthFilter = null; // ล้างค่าทิ้งหลังจากใช้
-                return; // ฟังก์ชัน setDate จะสั่ง loadData() ให้อัตโนมัติ
+                isClearingMonth = false;
+                window.previousMonthFilter = null;
+                shouldReload = true;
+            }
+            if (window.previousYearFilter) {
+                document.getElementById('yearFilter').value = window.previousYearFilter;
+                window.previousYearFilter = null;
+                shouldReload = true;
+            }
+            if (shouldReload) {
+                loadData();
+                return;
             }
         }
-        
         filterTable();
     }
 
-    // 🌟 ฟังก์ชันเคลียร์หน้าจอเมื่อตรวจสอบข้อมูลอัปโหลดเสร็จ 🌟
     function clearImportFilter() {
-        // เคลียร์ค่า Array ในหน่วยความจำ (In-Memory)
         lastImportAdded = [];
         lastImportUpdated = [];
+        recentlyUpdatedMaster = [];
+        recentlyUpdatedAnnual = [];
         
-        // รีเซ็ตป้ายกำกับ
+        localStorage.removeItem('verify_lastImportAdded');
+        localStorage.removeItem('verify_lastImportUpdated');
+        localStorage.removeItem('verify_recentMaster');
+        localStorage.removeItem('verify_recentAnnual');
+        
         const lblNew = document.getElementById('lblImportNew');
-        if (lblNew) lblNew.innerHTML = `ใหม่`;
+        if (lblNew) lblNew.innerHTML = 'ใหม่';
         const lblUpdated = document.getElementById('lblImportUpdated');
-        if (lblUpdated) lblUpdated.innerHTML = `อัปเดต`;
+        if (lblUpdated) lblUpdated.innerHTML = 'อัปเดต';
         
-        // ซ่อนปุ่ม "ตรวจสอบแล้ว"
         document.getElementById('btnClearImportFilter').classList.add('d-none');
-        
-        // คืนค่า Radio กลับไปที่ "ทั้งหมด"
         document.getElementById('btnImportAll').checked = true;
         
         Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'ซ่อนรายการที่เพิ่งอัปโหลดเรียบร้อยแล้ว', showConfirmButton: false, timer: 1500 });
-        
-        // เรียกฟังก์ชันนี้เพื่อให้ระบบกลับไปดึงฟิลเตอร์เดือนเดิม
         handleImportFilterChange(); 
     }
 
     function filterTable() {
         const txt = document.getElementById('searchInput').value.toLowerCase();
         const center = document.getElementById('centerFilter').value;
-        
         const thead = document.getElementById('tableHead');
         
         if (currentTab === 'MASTER') {
-            thead.innerHTML = `<tr><th class="text-center">#</th><th>รหัส</th><th>วันที่อบรม</th><th>ชื่อ-นามสกุล</th><th>เลขบัตร ปชช.</th><th>ศูนย์</th><th>วันที่รับผล</th><th class="bg-primary bg-opacity-10 text-center">ผลตรวจ</th><th>สถานะ FT</th><th style="max-width: 150px;">หมายเหตุ</th><th class="text-center">Export</th><th class="text-center">จัดการ</th></tr>`;
+            thead.innerHTML = '<tr><th class="text-center">#</th><th>รหัส</th><th>วันที่อบรม</th><th>ชื่อ-นามสกุล</th><th>เลขบัตร ปชช.</th><th>ศูนย์</th><th>วันที่รับผล</th><th class="bg-primary bg-opacity-10 text-center">ผลตรวจ</th><th>สถานะ FT</th><th style="max-width: 150px;">หมายเหตุ</th><th class="text-center">Export</th><th class="text-center">จัดการ</th></tr>';
             
             const ftStatus = document.getElementById('statusFilterMaster').value;
-            currentFilteredData = globalDataMaster.filter(x => {
+            currentFilteredData = globalDataMaster.filter(function(x) {
                 const matchTxt = (String(x.name) + String(x.idCard) + String(x.code) + String(x.phone)).toLowerCase().includes(txt);
                 const matchCen = center === "" || x.center === center;
-                
                 let matchSta = false;
-                if (ftStatus === "") {
-                    matchSta = true;
-                } else if (ftStatus === "Pending Result") {
-                    matchSta = (x.ftStatus === "Pending Result" || x.ftStatus === "In Progress");
-                } else {
-                    matchSta = (x.ftStatus === ftStatus);
-                }
-                
+                if (ftStatus === "") matchSta = true;
+                else if (ftStatus === "Pending Result") matchSta = (x.ftStatus === "Pending Result" || x.ftStatus === "In Progress");
+                else matchSta = (x.ftStatus === ftStatus);
                 return matchTxt && matchCen && matchSta;
             });
         } else {
-            // ANNUAL
-            thead.innerHTML = `<tr><th class="text-center">#</th><th>รหัส</th><th>ชื่อ-นามสกุล</th><th class="text-center">กลุ่ม</th><th>เลขบัตร</th><th>ข้อมูลการชำระ</th><th>ช่องทาง</th><th>สถานะส่ง</th><th>วันรับผล</th><th class="text-center bg-warning bg-opacity-10 border-warning">ผลตรวจ</th><th style="min-width: 250px;">หมายเหตุ</th><th class="text-center">Export</th><th class="text-center">จัดการ</th></tr>`;
+            thead.innerHTML = '<tr><th class="text-center">#</th><th>รหัส</th><th>ชื่อ-นามสกุล</th><th class="text-center">กลุ่ม</th><th>เลขบัตร</th><th>ข้อมูลการชำระ</th><th>ช่องทาง</th><th>สถานะส่ง</th><th>วันรับผล</th><th class="text-center bg-warning bg-opacity-10 border-warning">ผลตรวจ</th><th style="min-width: 250px;">หมายเหตุ</th><th class="text-center">Export</th><th class="text-center">จัดการ</th></tr>';
             
             const spStatus = document.getElementById('statusProcessFilterAnnual').value;
             const payStatus = document.getElementById('paymentFilterAnnual').value;
             const grpStatus = document.getElementById('groupFilterAnnual') ? document.getElementById('groupFilterAnnual').value : "";
+            const channelStatus = document.getElementById('channelFilterAnnual') ? document.getElementById('channelFilterAnnual').value : "";
             
             let impFilter = "all";
             const radioNodeList = document.getElementsByName('importFilter');
-            for(let i=0; i<radioNodeList.length; i++) {
-                 if(radioNodeList[i].checked) { impFilter = radioNodeList[i].value; break; }
-            }
+            for (let i = 0; i < radioNodeList.length; i++) { if (radioNodeList[i].checked) { impFilter = radioNodeList[i].value; break; } }
 
-            currentFilteredData = globalDataAnnual.filter(x => {
+            currentFilteredData = globalDataAnnual.filter(function(x) {
                 let cleanId = (x.idCard || "").replace(/'/g, "").trim();
                 
-                // 🌟 ถ้าระบุว่าดูของใหม่/อัปเดต ให้แสดงข้อมูลแบบ ไม่สนฟิลเตอร์สถานะอื่นๆ เลย 🌟
-                if (impFilter === "new") {
-                    return lastImportAdded.includes(cleanId);
-                } 
-                else if (impFilter === "updated") {
-                    return lastImportUpdated.includes(cleanId);
-                }
+                if (impFilter === "new") return lastImportAdded.includes(cleanId);
+                else if (impFilter === "updated") return lastImportUpdated.includes(cleanId);
 
-                // กรณีเลือก "ทั้งหมด" ให้เช็คเงื่อนไขตามปกติ
                 const matchTxt = (String(x.name) + String(x.idCard) + String(x.refCode) + String(x.phone)).toLowerCase().includes(txt);
                 const matchCen = center === "" || x.center === center; 
                 const matchGrp = grpStatus === "" || String(x.group || '').trim() === grpStatus;
+                const matchChannel = channelStatus === "" || String(x.channel || '').trim() === channelStatus;
                 
-                // 🌟 แก้ไขลอจิกการเช็ค matchSp ให้จับกลุ่ม pending อย่างถูกต้อง
                 let matchSp = false;
-                if (spStatus === "") {
-                    matchSp = true;
-                } else if (spStatus === "pending") {
+                if (spStatus === "") matchSp = true;
+                else if (spStatus === "pending") {
                     const sp = String(x.statusProcess).trim();
                     matchSp = (sp === 'ส่งลิ้งค์แล้วรอกรอกข้อมูล' || sp === 'ส่งลิงค์แล้วรอกรอกข้อมูล' || sp === 'รอผลตรวจ');
-                } else {
-                    matchSp = (x.statusProcess === spStatus);
-                }
+                } else matchSp = (x.statusProcess === spStatus);
                 
                 let matchPay = true;
-                if(payStatus === 'paid') matchPay = (x.deductionStatus === 'ชำระครบ' || x.deductionStatus === 'หักสำเร็จ');
+                if (payStatus === 'paid') matchPay = (x.deductionStatus === 'ชำระครบ' || x.deductionStatus === 'หักสำเร็จ');
                 else if (payStatus === 'unpaid') matchPay = (x.deductionStatus === 'ค้างชำระ' || x.deductionStatus === 'รอหัก' || x.deductionStatus === 'หักไม่สำเร็จ');
 
-                return matchTxt && matchCen && matchSp && matchPay && matchGrp;
+                return matchTxt && matchCen && matchSp && matchPay && matchGrp && matchChannel;
             });
         }
         
@@ -894,139 +932,123 @@
         const endIndex = Math.min(startIndex + actualRows, currentFilteredData.length);
         const pageData = currentFilteredData.slice(startIndex, endIndex);
         
-        // Update Info Text
-        document.getElementById('showingInfo').textContent = `แสดง ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${currentFilteredData.length} รายการ`;
-        
+        document.getElementById('showingInfo').textContent = 'แสดง ' + (startIndex + 1) + ' ถึง ' + endIndex + ' จากทั้งหมด ' + currentFilteredData.length + ' รายการ';
         renderPaginationControls(totalPages);
         
-        if (currentTab === 'MASTER') {
-            renderMasterRows(pageData, startIndex);
-        } else {
-            renderAnnualRows(pageData, startIndex);
-        }
+        if (currentTab === 'MASTER') renderMasterRows(pageData, startIndex);
+        else renderAnnualRows(pageData, startIndex);
     }
     
     function renderPaginationControls(totalPages) {
         const container = document.getElementById('paginationControls');
-        if (totalPages <= 1) {
-            container.innerHTML = '';
-            return;
-        }
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
         
         let html = '';
-        html += `<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="fas fa-chevron-left"></i></button>`;
+        let disabledPrev = currentPage === 1 ? 'disabled' : '';
+        html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(' + (currentPage - 1) + ')" ' + disabledPrev + '><i class="fas fa-chevron-left"></i></button>';
         
         let startP = Math.max(1, currentPage - 2);
         let endP = Math.min(totalPages, currentPage + 2);
         
-        if (startP > 1) html += `<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(1)">1</button><span class="px-2 text-muted align-self-center">...</span>`;
-        
+        if (startP > 1) html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(1)">1</button><span class="px-2 text-muted align-self-center">...</span>';
         for (let i = startP; i <= endP; i++) {
-            const activeClass = i === currentPage ? 'btn-primary text-white fw-bold' : 'btn-outline-secondary';
-            html += `<button class="btn btn-sm ${activeClass}" onclick="goToPage(${i})">${i}</button>`;
+            let btnStyle = i === currentPage ? 'btn-primary text-white fw-bold' : 'btn-outline-secondary';
+            html += '<button class="btn btn-sm ' + btnStyle + '" onclick="goToPage(' + i + ')">' + i + '</button>';
         }
+        if (endP < totalPages) html += '<span class="px-2 text-muted align-self-center">...</span><button class="btn btn-sm btn-outline-secondary" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
         
-        if (endP < totalPages) html += `<span class="px-2 text-muted align-self-center">...</span><button class="btn btn-sm btn-outline-secondary" onclick="goToPage(${totalPages})">${totalPages}</button>`;
-        
-        html += `<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="fas fa-chevron-right"></i></button>`;
+        let disabledNext = currentPage === totalPages ? 'disabled' : '';
+        html += '<button class="btn btn-sm btn-outline-secondary" onclick="goToPage(' + (currentPage + 1) + ')" ' + disabledNext + '><i class="fas fa-chevron-right"></i></button>';
         
         container.innerHTML = html;
     }
 
     function renderMasterRows(pageData, startIndex) {
         const tbody = document.getElementById('tableBody');
-        pageData.forEach((item, index) => {
+        pageData.forEach(function(item, index) {
             let tr = document.createElement('tr');
             if (recentlyUpdatedMaster.includes(String(item.id))) tr.classList.add('row-updated');
             
             let bs = 'bg-secondary';
-            if(item.ftStatus === 'Verified') bs = 'bg-success';
-            else if(item.ftStatus === 'Not Verified') bs = 'bg-danger';
-            else if(item.ftStatus === 'Pending Result') bs = 'bg-warning text-dark';
+            if (item.ftStatus === 'Verified') bs = 'bg-success';
+            else if (item.ftStatus === 'Not Verified') bs = 'bg-danger';
+            else if (item.ftStatus === 'Pending Result') bs = 'bg-warning text-dark';
             
-            // Logic ตัดคำยาว
             let displayResMaster = item.result || '-';
             let resBadgeMaster = '';
             if (displayResMaster !== '-') {
                 let isDanger = displayResMaster.includes('พบประวัติ') && !displayResMaster.includes('ไม่พบ');
-                let badgeClass = isDanger ? 'bg-danger' : 'bg-secondary';
+                let bdgStyle = isDanger ? 'bg-danger' : 'bg-secondary';
                 if (displayResMaster.length > 25) {
-                    resBadgeMaster = `<span class="badge ${badgeClass} text-wrap text-start" style="max-width: 140px; line-height: 1.4; cursor:pointer;" onclick="showFullText('MASTER', '${item.id}', 'result')" title="คลิกเพื่ออ่านทั้งหมด">${displayResMaster.substring(0,25)}... <i class="fas fa-search-plus ms-1"></i></span>`;
+                    resBadgeMaster = '<span class="badge ' + bdgStyle + ' text-wrap text-start" style="max-width: 140px; line-height: 1.4; cursor:pointer;" onclick="showFullText(\'MASTER\', \'' + item.id + '\', \'result\')" title="คลิกเพื่ออ่านทั้งหมด">' + displayResMaster.substring(0,25) + '... <i class="fas fa-search-plus ms-1"></i></span>';
                 } else {
-                    resBadgeMaster = `<span class="badge ${badgeClass} text-wrap text-start" style="max-width: 140px; line-height: 1.4;">${displayResMaster}</span>`;
+                    resBadgeMaster = '<span class="badge ' + bdgStyle + ' text-wrap text-start" style="max-width: 140px; line-height: 1.4;">' + displayResMaster + '</span>';
                 }
-            } else {
-                resBadgeMaster = `<span class="text-muted">-</span>`;
-            }
+            } else { resBadgeMaster = '<span class="text-muted">-</span>'; }
 
             let safeNoteMaster = (item.note || '-').replace(/"/g, '&quot;');
             let noteMaster = item.note || '-';
             if (noteMaster.length > 30) {
-                noteMaster = `<span class="d-inline-block text-truncate text-primary" style="max-width: 180px; cursor:pointer;" onclick="showFullText('MASTER', '${item.id}', 'note')" title="คลิกเพื่ออ่านทั้งหมด"><i class="fas fa-comment-dots me-1"></i>${safeNoteMaster}</span>`;
+                noteMaster = '<span class="d-inline-block text-truncate text-primary" style="max-width: 180px; cursor:pointer;" onclick="showFullText(\'MASTER\', \'' + item.id + '\', \'note\')" title="คลิกเพื่ออ่านทั้งหมด"><i class="fas fa-comment-dots me-1"></i>' + safeNoteMaster + '</span>';
             }
             
-            let exportIcon = item.exportStatus ? `<i class="fas fa-file-export text-success fs-5" title="Exported"></i>` : `<span class="text-muted">-</span>`;
-            let codeDisplayMaster = item.code ? `<a href="https://admin-test.beneat.co/professional/${item.code}/profile" target="_blank" class="badge bg-primary-subtle text-primary text-decoration-none border">${item.code}</a>` : `<span class="badge bg-light text-muted border">-</span>`;
-            let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-soft-danger ms-1" onclick="deleteMasterItem('${item.id}')" title="ลบข้อมูล"><i class="fas fa-trash-alt"></i></button>` : '';
+            let exportIcon = item.exportStatus ? '<i class="fas fa-file-export text-success fs-5" title="Exported"></i>' : '<span class="text-muted">-</span>';
+            let codeDisplayMaster = item.code ? '<a href="https://admin-test.beneat.co/professional/' + item.code + '/profile" target="_blank" class="badge bg-primary-subtle text-primary text-decoration-none border">' + item.code + '</a>' : '<span class="badge bg-light text-muted border">-</span>';
+            let deleteBtn = isUserAdmin ? '<button class="btn btn-sm btn-soft-danger ms-1" onclick="deleteMasterItem(\'' + item.id + '\')" title="ลบข้อมูล"><i class="fas fa-trash-alt"></i></button>' : '';
 
-            tr.innerHTML = `
-                <td class="text-center align-middle">${startIndex + index + 1}</td>
-                <td class="align-middle">${codeDisplayMaster}</td>
-                <td class="align-middle">${item.trainingDate||'-'}</td>
-                <td class="align-middle">
-                    <div class="fw-bold text-dark">${item.name}</div>
-                    <div class="small text-muted mt-1"><i class="fas fa-phone-alt me-1"></i>${item.phone || '-'}</div>
-                </td>
-                <td class="font-monospace align-middle">${formatIdCard(item.idCard)}</td>
-                <td class="align-middle">${item.center||'-'}</td>
-                <td class="align-middle">${item.resultDate||'-'}</td>
-                <td class="bg-primary bg-opacity-10 fw-bold align-middle text-center">${resBadgeMaster}</td>
-                <td class="align-middle"><span class="badge ${bs}">${item.ftStatus||'-'}</span></td>
-                <td class="align-middle small">${noteMaster}</td>
-                <td class="text-center align-middle">${exportIcon}</td>
-                <td class="text-center align-middle"><div class="d-flex justify-content-center align-items-center"><button class="btn btn-sm btn-soft-primary" onclick="openEditModal('${item.id}')"><i class="fas fa-edit"></i></button>${deleteBtn}</div></td>
-            `;
+            tr.innerHTML = 
+                '<td class="text-center align-middle">' + (startIndex + index + 1) + '</td>' +
+                '<td class="align-middle">' + codeDisplayMaster + '</td>' +
+                '<td class="align-middle">' + (item.trainingDate || '-') + '</td>' +
+                '<td class="align-middle"><div class="fw-bold text-dark">' + item.name + '</div><div class="small text-muted mt-1"><i class="fas fa-phone-alt me-1"></i>' + (item.phone || '-') + '</div></td>' +
+                '<td class="font-monospace align-middle">' + formatIdCard(item.idCard) + '</td>' +
+                '<td class="align-middle">' + (item.center || '-') + '</td>' +
+                '<td class="align-middle">' + (item.resultDate || '-') + '</td>' +
+                '<td class="bg-primary bg-opacity-10 fw-bold align-middle text-center">' + resBadgeMaster + '</td>' +
+                '<td class="align-middle"><span class="badge ' + bs + '">' + (item.ftStatus || '-') + '</span></td>' +
+                '<td class="align-middle small">' + noteMaster + '</td>' +
+                '<td class="text-center align-middle">' + exportIcon + '</td>' +
+                '<td class="text-center align-middle"><div class="d-flex justify-content-center align-items-center"><button class="btn btn-sm btn-soft-primary" onclick="openEditModal(\'' + item.id + '\')"><i class="fas fa-edit"></i></button>' + deleteBtn + '</div></td>';
             tbody.appendChild(tr);
         });
     }
 
     function renderAnnualRows(pageData, startIndex) {
         const tbody = document.getElementById('tableBody');
-        pageData.forEach((row, index) => {
+        pageData.forEach(function(row, index) {
             let tr = document.createElement('tr');
             if (recentlyUpdatedAnnual.includes(String(row.id))) tr.classList.add('row-updated');
             
             let amount = row.amount ? Number(row.amount).toLocaleString() : '-';
             let outstanding = row.outstanding ? Number(row.outstanding).toLocaleString() : '0';
-            let deductClass = 'bg-secondary';
-            if(row.deductionStatus==='ชำระครบ'||row.deductionStatus==='หักสำเร็จ') deductClass = 'bg-success';
-            else if(row.deductionStatus==='ค้างชำระ'||row.deductionStatus==='หักไม่สำเร็จ') deductClass = 'bg-danger';
-            else if(row.deductionStatus==='รอหัก') deductClass = 'bg-warning text-dark';
+            let deductStyle = 'bg-secondary';
+            if (row.deductionStatus==='ชำระครบ'||row.deductionStatus==='หักสำเร็จ') deductStyle = 'bg-success';
+            else if (row.deductionStatus==='ค้างชำระ'||row.deductionStatus==='หักไม่สำเร็จ') deductStyle = 'bg-danger';
+            else if (row.deductionStatus==='รอหัก') deductStyle = 'bg-warning text-dark';
             
-            let paymentHtml = `
-                <div class="small p-2 bg-light rounded border border-secondary-subtle">
-                    <div class="d-flex justify-content-between mb-1 border-bottom pb-1">
-                        <span class="text-muted">ยอดเงิน:</span> <span class="fw-bold">${amount}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">ค้างชำระ:</span> <span class="text-danger fw-bold">${outstanding}</span>
-                    </div>
-                    <div class="text-center"><span class="badge ${deductClass} w-100">${row.deductionStatus||'-'}</span></div>
-                </div>
-            `;
+            let paymentHtml = 
+                '<div class="small p-2 bg-light rounded border border-secondary-subtle">' +
+                '<div class="d-flex justify-content-between mb-1 border-bottom pb-1"><span class="text-muted">ยอดเงิน:</span> <span class="fw-bold">' + amount + '</span></div>' +
+                '<div class="d-flex justify-content-between mb-2"><span class="text-muted">ค้างชำระ:</span> <span class="text-danger fw-bold">' + outstanding + '</span></div>' +
+                '<div class="text-center"><span class="badge ' + deductStyle + ' w-100">' + (row.deductionStatus || '-') + '</span></div></div>';
 
-            let groupBadgeClass = 'bg-secondary';
+            let grpBadge = 'bg-secondary';
             let grp = String(row.group || '').trim();
-            if (grp === 'A') groupBadgeClass = 'bg-success';
-            else if (grp === 'B') groupBadgeClass = 'bg-primary';
-            else if (grp === 'C') groupBadgeClass = 'bg-info text-dark';
-            else if (grp === 'H') groupBadgeClass = 'bg-warning text-dark';
-            else if (grp === 'ถูกปลดแล้ว') groupBadgeClass = 'bg-danger';
+            if (grp === 'A') grpBadge = 'bg-success';
+            else if (grp === 'B') grpBadge = 'bg-primary';
+            else if (grp === 'C') grpBadge = 'bg-info text-dark';
+            else if (grp === 'H') grpBadge = 'bg-warning text-dark';
+            else if (grp === 'ถูกปลดแล้ว') grpBadge = 'bg-danger';
 
             let cleanIdCard = (row.idCard || "").replace(/'/g, "").trim();
-            let importBadge = lastImportAdded.includes(cleanIdCard) ? `<span class="badge bg-danger ms-1" style="font-size:0.65rem;">NEW</span>` : (lastImportUpdated.includes(cleanIdCard) ? `<span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">UPDATED</span>` : "");
+            let importBadge = "";
+            if (lastImportAdded.includes(cleanIdCard)) {
+                importBadge = '<span class="badge bg-danger ms-1" style="font-size:0.65rem;">NEW</span>';
+            } else if (lastImportUpdated.includes(cleanIdCard)) {
+                importBadge = '<span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;">UPDATED</span>';
+            }
             
-            let refCodeDisplay = row.refCode ? `<a href="https://admin-test.beneat.co/professional/${row.refCode}/profile" target="_blank" class="badge bg-warning-subtle text-warning-emphasis border text-decoration-none">${row.refCode}</a>` : '-';
+            let refCodeDisplay = row.refCode ? '<a href="https://admin-test.beneat.co/professional/' + row.refCode + '/profile" target="_blank" class="badge bg-warning-subtle text-warning-emphasis border text-decoration-none">' + row.refCode + '</a>' : '-';
             
             let resBadge = '<span class="text-muted">-</span>';
             if (row.result) {
@@ -1037,52 +1059,38 @@
                 else if (rv.includes('pending') || rv.includes('รอ')) rc = 'bg-warning text-dark';
                 
                 let displayRes = row.result;
-                if(displayRes.length > 25) {
+                if (displayRes.length > 25) {
                     displayRes = displayRes.substring(0, 25) + '... <i class="fas fa-search-plus ms-1"></i>';
-                    resBadge = `<span class="badge ${rc} text-wrap text-start" style="max-width: 140px; line-height: 1.4; cursor:pointer;" onclick="showFullText('ANNUAL', '${row.id}', 'result')" title="คลิกเพื่ออ่านทั้งหมด">${displayRes}</span>`;
+                    resBadge = '<span class="badge ' + rc + ' text-wrap text-start" style="max-width: 140px; line-height: 1.4; cursor:pointer;" onclick="showFullText(\'ANNUAL\', \'' + row.id + '\', \'result\')" title="คลิกเพื่ออ่านทั้งหมด">' + displayRes + '</span>';
                 } else {
-                    resBadge = `<span class="badge ${rc} text-wrap text-start" style="max-width: 140px; line-height: 1.4;">${displayRes}</span>`;
+                    resBadge = '<span class="badge ' + rc + ' text-wrap text-start" style="max-width: 140px; line-height: 1.4;">' + displayRes + '</span>';
                 }
             }
             
-            let exportIcon = row.exportStatus ? `<i class="fas fa-file-export text-success fs-5"></i>` : `<span class="text-muted">-</span>`;
-            let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-soft-danger ms-1" onclick="deleteAnnualItem('${row.id}')" title="ลบข้อมูล"><i class="fas fa-trash-alt"></i></button>` : '';
+            let exportIcon = row.exportStatus ? '<i class="fas fa-file-export text-success fs-5"></i>' : '<span class="text-muted">-</span>';
+            let deleteBtn = isUserAdmin ? '<button class="btn btn-sm btn-soft-danger ms-1" onclick="deleteAnnualItem(\'' + row.id + '\')" title="ลบข้อมูล"><i class="fas fa-trash-alt"></i></button>' : '';
             let safeNoteAnnual = (row.note || '').replace(/"/g, '&quot;');
 
-            tr.innerHTML = `
-                <td class="text-center align-top pt-3">${startIndex + index + 1}</td>
-                <td class="fw-bold align-top pt-3">${refCodeDisplay}</td>
-                <td class="align-top pt-3">
-                    <div class="fw-bold text-dark">${row.name||'-'} ${importBadge}</div>
-                    <div class="small text-muted mt-1"><i class="fas fa-phone-alt me-1"></i>${row.phone||'-'}</div>
-                </td>
-                <td class="text-center align-top pt-3"><span class="badge ${groupBadgeClass}">${grp||'-'}</span></td>
-                <td class="font-monospace align-top pt-3">${formatIdCard(row.idCard)}</td>
-                <td class="align-top pt-2">${paymentHtml}</td>
-                <td class="align-top pt-3"><span class="badge bg-light text-dark border">${row.channel||'-'}</span></td>
-                <td class="align-top pt-3">${row.statusProcess||'-'}</td>
-                <td class="align-top pt-3">${row.resultDate||'-'}</td>
-                <td class="text-center fw-bold bg-warning bg-opacity-10 align-top pt-3">${resBadge}</td>
-                <td class="align-top pt-2">
-                    <div class="input-group input-group-sm" style="min-width: 220px;">
-                        <input type="text" class="form-control shadow-none bg-light note-input" value="${safeNoteAnnual}" id="note-${row.id}" onchange="saveInlineNote('${row.id}', this.value)" placeholder="พิมพ์หมายเหตุ...">
-                        <button class="btn btn-light border text-muted hover-bg-primary" type="button" onclick="editFullNotePopup('${row.id}')" title="อ่าน/แก้ไขแบบเต็ม">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                        </button>
-                    </div>
-                </td>
-                <td class="text-center align-top pt-3">${exportIcon}</td>
-                <td class="text-center align-top pt-3"><div class="d-flex justify-content-center align-items-center"><button class="btn btn-sm btn-soft-warning text-dark" onclick="openEditModal('${row.id}')"><i class="fas fa-edit"></i></button>${deleteBtn}</div></td>
-            `;
+            tr.innerHTML = 
+                '<td class="text-center align-top pt-3">' + (startIndex + index + 1) + '</td>' +
+                '<td class="fw-bold align-top pt-3">' + refCodeDisplay + '</td>' +
+                '<td class="align-top pt-3"><div class="fw-bold text-dark">' + (row.name || '-') + ' ' + importBadge + '</div><div class="small text-muted mt-1"><i class="fas fa-phone-alt me-1"></i>' + (row.phone || '-') + '</div></td>' +
+                '<td class="text-center align-top pt-3"><span class="badge ' + grpBadge + '">' + (grp || '-') + '</span></td>' +
+                '<td class="font-monospace align-top pt-3">' + formatIdCard(row.idCard) + '</td>' +
+                '<td class="align-top pt-2">' + paymentHtml + '</td>' +
+                '<td class="align-top pt-3"><span class="badge bg-light text-dark border">' + (row.channel || '-') + '</span></td>' +
+                '<td class="align-top pt-3">' + (row.statusProcess || '-') + '</td>' +
+                '<td class="align-top pt-3">' + (row.resultDate || '-') + '</td>' +
+                '<td class="text-center fw-bold bg-warning bg-opacity-10 align-top pt-3">' + resBadge + '</td>' +
+                '<td class="align-top pt-2"><div class="input-group input-group-sm" style="min-width: 220px;"><input type="text" class="form-control shadow-none bg-light note-input" value="' + safeNoteAnnual + '" id="note-' + row.id + '" onchange="saveInlineNote(\'' + row.id + '\', this.value)" placeholder="พิมพ์หมายเหตุ..."><button class="btn btn-light border text-muted hover-bg-primary" type="button" onclick="editFullNotePopup(\'' + row.id + '\')" title="อ่าน/แก้ไขแบบเต็ม"><i class="fas fa-expand-arrows-alt"></i></button></div></td>' +
+                '<td class="text-center align-top pt-3">' + exportIcon + '</td>' +
+                '<td class="text-center align-top pt-3"><div class="d-flex justify-content-center align-items-center"><button class="btn btn-sm btn-soft-warning text-dark" onclick="openEditModal(\'' + row.id + '\')"><i class="fas fa-edit"></i></button>' + deleteBtn + '</div></td>';
             tbody.appendChild(tr);
         });
     }
 
-    // =====================================
-    // 🌟 Modals & Edits 🌟
-    // =====================================
     function openAddModal() {
-        if(currentTab === 'MASTER') {
+        if (currentTab === 'MASTER') {
             document.getElementById('dataFormMaster').reset();
             document.getElementById('m_recordId').value = "";
             document.getElementById('m_officer').value = currentUser;
@@ -1098,7 +1106,7 @@
 
     function openEditModal(id) {
         if (currentTab === 'MASTER') {
-            const item = globalDataMaster.find(x => String(x.id) === String(id)); if(!item) return;
+            const item = globalDataMaster.find(function(x) { return String(x.id) === String(id); }); if (!item) return;
             document.getElementById('m_recordId').value = item.id;
             document.getElementById('m_code').value = item.code;
             document.getElementById('m_name').value = item.name;
@@ -1112,7 +1120,7 @@
             
             const mResultEl = document.getElementById('m_result');
             let itemResult = item.result || "";
-            let optionExists = Array.from(mResultEl.options).some(opt => opt.value === itemResult);
+            let optionExists = Array.from(mResultEl.options).some(function(opt) { return opt.value === itemResult; });
             if (!optionExists && itemResult) {
                 mResultEl.add(new Option(itemResult, itemResult));
             }
@@ -1122,7 +1130,7 @@
             document.getElementById('m_note').value = item.note;
             formModalMaster.show();
         } else {
-            const item = globalDataAnnual.find(x => String(x.id) === String(id)); if(!item) return;
+            const item = globalDataAnnual.find(function(x) { return String(x.id) === String(id); }); if (!item) return;
             document.getElementById('a_recordId').value = item.id;
             document.getElementById('a_refCode').value = item.refCode;
             document.getElementById('a_name').value = item.name;
@@ -1146,11 +1154,11 @@
 
     function setFlatpickrValue(id, val) {
         const el = document.getElementById(id);
-        if(el && el._flatpickr) {
-            if(!val) el._flatpickr.clear();
+        if (el && el._flatpickr) {
+            if (!val) el._flatpickr.clear();
             else {
                 let v = val;
-                if(v.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
+                if (v.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
                     let p = v.split('/');
                     v = `${parseInt(p[2])>2400?p[2]-543:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
                 } else if(v.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -1161,15 +1169,14 @@
         }
     }
 
-    // 🌟 Auto Update Logic 🌟
     function autoUpdateMasterStatus() {
         const resultEl = document.getElementById('m_result');
         const r = resultEl.value.trim();
         const rLower = r.toLowerCase();
         
-        if(!r) return;
+        if (!r) return;
         
-        if(r === 'ไม่พบประวัติ' || rLower.includes('ได้รับผลแล้ว') || rLower.includes('อนุมัติ')) {
+        if (r === 'ไม่พบประวัติ' || rLower.includes('ได้รับผลแล้ว') || rLower.includes('อนุมัติ')) {
             resultEl.value = 'ไม่พบประวัติ'; 
             document.getElementById('m_ftStatus').value = 'Verified'; 
             setFlatpickrValue('m_resultDate', new Date().toISOString().split('T')[0]);
@@ -1185,7 +1192,7 @@
     function autoUpdateAnnualStatus() {
         const r = document.getElementById('a_result').value.trim();
         const rLower = r.toLowerCase();
-        if(rLower.includes('ได้รับผลแล้ว') || rLower.includes('อนุมัติ')) {
+        if (rLower.includes('ได้รับผลแล้ว') || rLower.includes('อนุมัติ')) {
             document.getElementById('a_statusProcess').value = 'ผลตรวจออกแล้ว'; 
             setFlatpickrValue('a_resultDate', new Date().toISOString().split('T')[0]);
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'อัปเดตสถานะและวันที่รับผลแล้ว', showConfirmButton:false, timer:2000});
@@ -1196,56 +1203,34 @@
         const form = {
             id: document.getElementById('m_recordId').value, code: document.getElementById('m_code').value, name: document.getElementById('m_name').value, idCard: document.getElementById('m_idCard').value.replace(/-/g,''), phone: document.getElementById('m_phone').value, trainingDate: document.getElementById('m_trainingDate').value, submitDate: document.getElementById('m_submitDate').value, center: document.getElementById('m_center').value, officer: document.getElementById('m_officer').value, resultDate: document.getElementById('m_resultDate').value, result: document.getElementById('m_result').value, ftStatus: document.getElementById('m_ftStatus').value, note: document.getElementById('m_note').value
         };
-        showLoading(); google.script.run.withSuccessHandler(res => { hideLoading(); if(res.success){ formModalMaster.hide(); loadData(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false}); } else showError(res.message); }).saveData(form);
+        showLoading(); google.script.run.withSuccessHandler(function(res) { hideLoading(); if(res.success){ formModalMaster.hide(); loadData(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false}); } else showError(res.message); }).saveData(form);
     }
 
     function saveAnnualData() {
         const form = {
             id: document.getElementById('a_recordId').value, refCode: document.getElementById('a_refCode').value, name: document.getElementById('a_name').value, group: document.getElementById('a_group').value, idCard: document.getElementById('a_idCard').value.replace(/-/g,''), birthDate: document.getElementById('a_birthDate').value, phone: document.getElementById('a_phone').value, consentStatus: document.getElementById('a_consentStatus').value, amount: document.getElementById('a_amount').value, outstanding: document.getElementById('a_outstanding').value, deductionStatus: document.getElementById('a_deductionStatus').value, channel: document.getElementById('a_channel').value, statusProcess: document.getElementById('a_statusProcess').value, resultDate: document.getElementById('a_resultDate').value, result: document.getElementById('a_result').value, note: document.getElementById('a_note').value, officerEmail: currentUser
         };
-        showLoading(); google.script.run.withSuccessHandler(res => { hideLoading(); if(res.success){ formModalAnnual.hide(); loadData(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false}); } else showError(res.message); }).saveAnnualData(form);
+        showLoading(); google.script.run.withSuccessHandler(function(res) { hideLoading(); if(res.success){ formModalAnnual.hide(); loadData(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false}); } else showError(res.message); }).saveAnnualData(form);
     }
 
     function deleteMasterItem(id) {
         Swal.fire({
-            title: 'ยืนยันลบข้อมูล?',
-            text: "ข้อมูลนี้จะถูกลบออกจากระบบและไม่สามารถกู้คืนได้",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'ใช่, ลบข้อมูลเลย',
-            cancelButtonText: 'ยกเลิก'
-        }).then((result) => {
+            title: 'ยืนยันลบข้อมูล?', text: "ข้อมูลนี้จะถูกลบออกจากระบบและไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'ใช่, ลบข้อมูลเลย', cancelButtonText: 'ยกเลิก'
+        }).then(function(result) {
             if (result.isConfirmed) {
                 showLoading();
-                google.script.run.withSuccessHandler(() => {
-                    hideLoading();
-                    Swal.fire({toast:true, position:'top-end', icon:'success', title:'ลบข้อมูลเรียบร้อยแล้ว', showConfirmButton:false, timer:2000});
-                    loadData();
-                }).deleteData(id); 
+                google.script.run.withSuccessHandler(function() { hideLoading(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'ลบข้อมูลเรียบร้อยแล้ว', showConfirmButton:false, timer:2000}); loadData(); }).deleteData(id); 
             }
         });
     }
 
     function deleteAnnualItem(id) {
         Swal.fire({
-            title: 'ยืนยันลบข้อมูล?',
-            text: "ข้อมูลนี้จะถูกลบออกจากระบบและไม่สามารถกู้คืนได้",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'ใช่, ลบข้อมูลเลย',
-            cancelButtonText: 'ยกเลิก'
-        }).then((result) => {
+            title: 'ยืนยันลบข้อมูล?', text: "ข้อมูลนี้จะถูกลบออกจากระบบและไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6c757d', confirmButtonText: 'ใช่, ลบข้อมูลเลย', cancelButtonText: 'ยกเลิก'
+        }).then(function(result) {
             if (result.isConfirmed) {
                 showLoading();
-                google.script.run.withSuccessHandler(() => {
-                    hideLoading();
-                    Swal.fire({toast:true, position:'top-end', icon:'success', title:'ลบข้อมูลเรียบร้อยแล้ว', showConfirmButton:false, timer:2000});
-                    loadData();
-                }).deleteAnnualData(id); 
+                google.script.run.withSuccessHandler(function() { hideLoading(); Swal.fire({toast:true, position:'top-end', icon:'success', title:'ลบข้อมูลเรียบร้อยแล้ว', showConfirmButton:false, timer:2000}); loadData(); }).deleteAnnualData(id); 
             }
         });
     }
@@ -1259,27 +1244,22 @@
         }
         
         const inputEl = document.getElementById(`note-${id}`);
-        if(inputEl) {
-            inputEl.classList.add('bg-warning', 'bg-opacity-10'); 
-        }
+        if (inputEl) inputEl.classList.add('bg-warning', 'bg-opacity-10'); 
 
-        google.script.run.withSuccessHandler(() => { 
-            if(inputEl) {
+        google.script.run.withSuccessHandler(function() { 
+            if (inputEl) {
                 inputEl.classList.remove('bg-warning', 'bg-opacity-10');
                 inputEl.classList.add('is-valid'); 
-                setTimeout(() => inputEl.classList.remove('is-valid'), 2000);
+                setTimeout(function() { inputEl.classList.remove('is-valid'); }, 2000);
                 inputEl.value = finalNote; 
             }
-            const row = globalDataAnnual.find(r => String(r.id) === String(id)); 
-            if(row) row.note = finalNote; 
+            const row = globalDataAnnual.find(function(r) { return String(r.id) === String(id); }); 
+            if (row) row.note = finalNote; 
             
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกหมายเหตุแล้ว', showConfirmButton:false, timer:1500});
         }).updateAnnualNote(id, finalNote);
     }
 
-    // =====================================
-    // 🌟 UNIFIED BULK UPLOAD (APP MAN) 🌟
-    // =====================================
     function handleUnifiedBulkUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -1296,15 +1276,15 @@
                 
                 if (jsonData.length <= 1) { Swal.fire('ไฟล์ว่างเปล่า', '', 'warning'); event.target.value = ''; return; }
 
-                const headers = jsonData[0].map(h => String(h||'').toLowerCase().trim());
+                const headers = jsonData[0].map(function(h) { return String(h||'').toLowerCase().trim(); });
                 let idCol = 1, statusCol = 2; 
-                headers.forEach((h, idx) => {
+                headers.forEach(function(h, idx) {
                     if (h.includes('id card') || h.includes('เลขบัตร')) idCol = idx;
                     if (h.includes('status') || h.includes('สถานะ') || h.includes('ผลตรวจ')) statusCol = idx;
                 });
 
                 let records = [];
-                for(let i=1; i<jsonData.length; i++) {
+                for (let i = 1; i < jsonData.length; i++) {
                     records.push({
                         idCard: jsonData[i][idCol] ? String(jsonData[i][idCol]).trim() : "",
                         status: jsonData[i][statusCol] ? String(jsonData[i][statusCol]).trim() : "" 
@@ -1313,17 +1293,35 @@
                 Swal.close();
                 
                 Swal.fire({
-                    title: `อัปเดตผลตรวจ ${records.length} รายการ?`,
-                    html: `ระบบจะค้นหาใน <b>รายปี (Annual)</b> เป็นหลัก<br><small class="text-muted">หากไม่พบในรายปี จึงจะไปอัปเดตประวัติใหม่ (Master)</small>`,
+                    title: 'อัปเดตผลตรวจ ' + records.length + ' รายการ?',
+                    html: 'ระบบจะค้นหาใน <b>รายปี (Annual)</b> เป็นหลัก<br><small class="text-muted">หากไม่พบในรายปี จึงจะไปอัปเดตประวัติใหม่ (Master)</small>',
                     icon: 'info', showCancelButton: true, confirmButtonText: 'ยืนยัน', confirmButtonColor: '#198754'
-                }).then((res) => {
+                }).then(function(res) {
                     if(res.isConfirmed) {
                         showLoading();
-                        google.script.run.withSuccessHandler(r => {
+                        google.script.run.withSuccessHandler(function(r) {
                             hideLoading();
-                            if(r.success) {
+                            if (r.success) {
                                 recentlyUpdatedMaster = r.updatedMasterIds || [];
                                 recentlyUpdatedAnnual = r.updatedAnnualIds || [];
+                                
+                                let annualUpdatedCards = (r.successItems || []).filter(function(item) { return item.annualMatch; }).map(function(item) { return String(item.idCard).replace(/\D/g, ''); });
+                                if (annualUpdatedCards.length > 0) {
+                                    lastImportUpdated = annualUpdatedCards;
+                                    lastImportAdded = []; 
+                                    localStorage.setItem('verify_lastImportAdded', JSON.stringify(lastImportAdded));
+                                    localStorage.setItem('verify_lastImportUpdated', JSON.stringify(lastImportUpdated));
+                                    
+                                    const lblNew = document.getElementById('lblImportNew');
+                                    if (lblNew) lblNew.innerHTML = 'ใหม่';
+                                    const lblUpdated = document.getElementById('lblImportUpdated');
+                                    if (lblUpdated) lblUpdated.innerHTML = 'อัปเดต <span class="badge bg-warning text-dark ms-1 px-2">' + lastImportUpdated.length + '</span>';
+                                    document.getElementById('btnClearImportFilter').classList.remove('d-none');
+                                    document.getElementById('btnImportUpdated').checked = true;
+                                }
+
+                                localStorage.setItem('verify_recentMaster', JSON.stringify(recentlyUpdatedMaster));
+                                localStorage.setItem('verify_recentAnnual', JSON.stringify(recentlyUpdatedAnnual));
                                 
                                 document.getElementById('resMasterCount').textContent = r.masterCount;
                                 document.getElementById('resAnnualCount').textContent = r.annualCount;
@@ -1331,7 +1329,7 @@
                                 
                                 const tbody = document.getElementById('uploadResultTableBody'); tbody.innerHTML = '';
                                 
-                                r.successItems.forEach(item => {
+                                r.successItems.forEach(function(item) {
                                     let badge = 'bg-secondary';
                                     let s = item.status.toLowerCase();
                                     if(s.includes('ไม่ผ่าน')) badge = 'bg-danger';
@@ -1341,17 +1339,17 @@
                                     if(item.masterMatch) targets.push('<span class="badge bg-primary">Master</span>');
                                     if(item.annualMatch) targets.push('<span class="badge bg-warning text-dark">Annual</span>');
                                     
-                                    tbody.innerHTML += `<tr><td class="font-monospace ps-4">${item.idCard}</td><td><span class="badge ${badge}">${item.status}</span></td><td>${targets.join(' ')}</td></tr>`;
+                                    tbody.innerHTML += '<tr><td class="font-monospace ps-4">' + item.idCard + '</td><td><span class="badge ' + badge + '">' + item.status + '</span></td><td>' + targets.join(' ') + '</td></tr>';
                                 });
                                 
-                                r.failedItems.forEach(item => {
-                                    tbody.innerHTML += `<tr class="table-danger"><td class="font-monospace ps-4">${item.idCard}</td><td><span class="badge bg-danger">${item.status}</span></td><td class="text-danger fw-bold"><i class="fas fa-times me-1"></i>${item.reason}</td></tr>`;
+                                r.failedItems.forEach(function(item) {
+                                    tbody.innerHTML += '<tr class="table-danger"><td class="font-monospace ps-4">' + item.idCard + '</td><td><span class="badge bg-danger">' + item.status + '</span></td><td class="text-danger fw-bold"><i class="fas fa-times me-1"></i>' + item.reason + '</td></tr>';
                                 });
                                 
                                 uploadResultModal.show();
                                 loadData();
                             } else showError(r.message);
-                        }).withFailureHandler(err => { hideLoading(); showError(err.message); }).processUnifiedBulkUpdate(records, file.name, currentUser);
+                        }).withFailureHandler(function(err) { hideLoading(); showError(err.message); }).processUnifiedBulkUpdate(records, file.name, currentUser);
                     }
                 });
             } catch (error) { Swal.fire('Error', error.message, 'error'); }
@@ -1360,23 +1358,26 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // =====================================
-    // 🌟 IMPORT ANNUAL DATA (BIG FILE) 🌟
-    // =====================================
     function handleFileSelect(input) {
       if (!input.files || input.files.length === 0) return;
       const file = input.files[0];
       const thaiMonths = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
       const currentMonth = new Date().getMonth(); const currentYear = new Date().getFullYear();
-      let monthOpts = ""; thaiMonths.forEach((m, i) => { monthOpts += `<option value="${i+1}" ${i===currentMonth?'selected':''}>${m}</option>`; });
-      let yearOpts = ""; for(let y=currentYear-1; y<=currentYear+1; y++) { yearOpts += `<option value="${y}" ${y===currentYear?'selected':''}>${y+543}</option>`; }
+      let monthOpts = ""; thaiMonths.forEach(function(m, i) { 
+          let selected = i === currentMonth ? 'selected' : '';
+          monthOpts += '<option value="' + (i+1) + '" ' + selected + '>' + m + '</option>'; 
+      });
+      let yearOpts = ""; for (let y = currentYear - 1; y <= currentYear + 1; y++) { 
+          let selected = y === currentYear ? 'selected' : '';
+          yearOpts += '<option value="' + y + '" ' + selected + '>' + (y+543) + '</option>'; 
+      }
       Swal.fire({
-          title: 'ระบุเดือน/ปี สำหรับข้อมูลชุดนี้', html: `<div class="d-flex gap-2 justify-content-center"><select id="swal-month" class="form-select">${monthOpts}</select><select id="swal-year" class="form-select">${yearOpts}</select></div>`,
+          title: 'ระบุเดือน/ปี สำหรับข้อมูลชุดนี้', html: '<div class="d-flex gap-2 justify-content-center"><select id="swal-month" class="form-select">' + monthOpts + '</select><select id="swal-year" class="form-select">' + yearOpts + '</select></div>',
           showCancelButton: true, confirmButtonText: 'นำเข้า', cancelButtonText: 'ยกเลิก',
-          preConfirm: () => { const m = document.getElementById('swal-month').value.padStart(2, '0'); const y = document.getElementById('swal-year').value; return `${y}-${m}-01`; }
-      }).then((result) => { 
+          preConfirm: () => { const m = document.getElementById('swal-month').value.padStart(2, '0'); const y = document.getElementById('swal-year').value; return y + '-' + m + '-01'; }
+      }).then(function(result) { 
           if (result.isConfirmed) { 
-              if(monthPickerInstance) monthPickerInstance.setDate(result.value); 
+              if (monthPickerInstance) monthPickerInstance.setDate(result.value); 
               processFile(file, result.value); 
           } else { 
               input.value = ""; 
@@ -1389,7 +1390,7 @@
         if (typeof serial === 'string' && serial.includes('-')) return serial; 
         if (isNaN(serial)) return serial; 
         let date = new Date((serial - (25567 + 2)) * 86400 * 1000); 
-        return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')}`; 
+        return date.getFullYear() + '-' + (date.getMonth()+1).toString().padStart(2,'0') + '-' + date.getDate().toString().padStart(2,'0'); 
     }
     
     function processFile(file, selectedDate) {
@@ -1398,42 +1399,41 @@
         const data = new Uint8Array(e.target.result); const workbook = XLSX.read(data, { type: 'array' }); const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
         if (jsonData.length < 1) { showError('ไฟล์ไม่มีข้อมูล'); return; }
         const records = [];
-        for(let i=1; i<jsonData.length; i++) {
-            const row = jsonData[i]; if(!row[0] && !row[3]) continue;
+        for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i]; if (!row[0] && !row[3]) continue;
             let outstandingVal = row[8]; let derivedDeductionStatus = "ค้างชำระ";
             if (outstandingVal===undefined || outstandingVal===null || outstandingVal==="" || String(outstandingVal).trim()==="-" || Number(outstandingVal)===0) derivedDeductionStatus = "ชำระครบ";
             records.push({ refCode: row[0]||"", name: row[1]||"", group: row[2]||"A", idCard: String(row[3]||""), birthDate: excelDateToJSDate(row[4]), phone: row[5]||"", consentStatus: row[6]||"", amount: row[7]||"", outstanding: row[8]||"", deductionStatus: derivedDeductionStatus, channel: row[10]||"App Man", statusProcess: row[11]||"ส่งลิ้งค์แล้วรอกรอกข้อมูล", resultDate: excelDateToJSDate(row[12]), result: row[13]||"", note: row[14] || "", officerEmail: currentUser, submitDate: selectedDate });
         }
         
-        google.script.run.withSuccessHandler(res => { 
-            if(res.success) { 
+        google.script.run.withSuccessHandler(function(res) { 
+            if (res.success) { 
                 lastImportAdded = res.addedIds || []; 
                 lastImportUpdated = res.updatedIds || []; 
+                
+                // Save to local storage
+                localStorage.setItem('verify_lastImportAdded', JSON.stringify(lastImportAdded));
+                localStorage.setItem('verify_lastImportUpdated', JSON.stringify(lastImportUpdated));
                 
                 let addedCount = res.added !== undefined ? res.added : lastImportAdded.length;
                 let updatedCount = res.updated !== undefined ? res.updated : lastImportUpdated.length;
 
                 const lblNew = document.getElementById('lblImportNew');
-                // 🌟 เปลี่ยนสีป้ายแจ้งเตือนให้ชัดเจน (ใหม่สีแดง, อัปเดตสีเหลือง)
-                if (lblNew) lblNew.innerHTML = `ใหม่ <span class="badge bg-danger ms-1 px-2">${addedCount}</span>`;
+                if (lblNew) lblNew.innerHTML = 'ใหม่ <span class="badge bg-danger ms-1 px-2">' + addedCount + '</span>';
                 const lblUpdated = document.getElementById('lblImportUpdated');
-                if (lblUpdated) lblUpdated.innerHTML = `อัปเดต <span class="badge bg-warning text-dark ms-1 px-2">${updatedCount}</span>`;
+                if (lblUpdated) lblUpdated.innerHTML = 'อัปเดต <span class="badge bg-warning text-dark ms-1 px-2">' + updatedCount + '</span>';
 
-                // 🌟 โชว์ปุ่ม "ตรวจสอบแล้ว" ถ้ามีข้อมูล
                 if (addedCount > 0 || updatedCount > 0) {
                     document.getElementById('btnClearImportFilter').classList.remove('d-none');
-                    // เลือก Tab อัตโนมัติ
                     if (addedCount > 0) document.getElementById('btnImportNew').checked = true;
                     else document.getElementById('btnImportUpdated').checked = true;
                 }
 
-                let htmlContent = `
-                    <div class="text-start mt-3">
-                        <div class="alert alert-info py-2 mb-2"><i class="fas fa-file-excel me-2"></i>อ่านข้อมูลจากไฟล์ได้: <b>${records.length}</b> รายการ</div>
-                        <div class="alert alert-danger py-2 mb-2"><i class="fas fa-plus-circle me-2"></i>เพิ่มรายชื่อใหม่: <b>${addedCount}</b> รายการ</div>
-                        <div class="alert alert-warning text-dark py-2 mb-0"><i class="fas fa-edit me-2"></i>อัปเดตข้อมูลเดิม: <b>${updatedCount}</b> รายการ</div>
-                    </div>
-                `;
+                let htmlContent = '<div class="text-start mt-3">' +
+                    '<div class="alert alert-info py-2 mb-2"><i class="fas fa-file-excel me-2"></i>อ่านข้อมูลจากไฟล์ได้: <b>' + records.length + '</b> รายการ</div>' +
+                    '<div class="alert alert-danger py-2 mb-2"><i class="fas fa-plus-circle me-2"></i>เพิ่มรายชื่อใหม่: <b>' + addedCount + '</b> รายการ</div>' +
+                    '<div class="alert alert-warning text-dark py-2 mb-0"><i class="fas fa-edit me-2"></i>อัปเดตข้อมูลเดิม: <b>' + updatedCount + '</b> รายการ</div>' +
+                    '</div>';
 
                 Swal.fire({
                     title: 'สรุปผลการแนบรายการการหักเงิน',
@@ -1441,12 +1441,9 @@
                     icon: 'success',
                     confirmButtonText: 'รับทราบ',
                     confirmButtonColor: '#0d6efd'
-                }).then(() => {
-                    // เรียก handle เพื่อพิจารณาว่าต้องข้ามฟิลเตอร์เดือนหรือไม่
+                }).then(function() {
                     handleImportFilterChange();
-                    
-                    // ถ้าเดือนถูก clear ไปแล้ว มันจะโหลดตัวเอง แต่ถ้าไม่ได้โดน clear ให้โหลดตามปกติ
-                    if (document.getElementById('monthFilter').value === "") {
+                    if (getActiveDateFilter() === "") {
                         loadData();
                     }
                 });
@@ -1459,43 +1456,40 @@
       }; reader.readAsArrayBuffer(file);
     }
 
-    // =====================================
-    // 🌟 EXPORT PREVIEW LOGIC 🌟
-    // =====================================
     function openExportModal() {
-        const monthVal = document.getElementById('monthFilter').value;
-        let displayText = monthVal ? `เดือน: ${monthVal}` : "ข้อมูลทั้งหมด";
+        const filterVal = getActiveDateFilter();
+        let displayText = "ข้อมูลทั้งหมด";
+        if (document.getElementById('monthFilter').value) {
+            displayText = `เดือน: ${document.getElementById('monthFilter').value}`;
+        } else if (document.getElementById('yearFilter').value) {
+            displayText = `ปี: ${parseInt(document.getElementById('yearFilter').value) + 543}`;
+        }
         document.getElementById('exportMonthDisplay').textContent = displayText;
 
         const optionsContainer = document.getElementById('exportOptionsContainer');
         optionsContainer.innerHTML = '';
 
         if (currentTab === 'MASTER') {
-            optionsContainer.innerHTML = `
-                <button class="btn btn-outline-success p-2 text-start" onclick="previewExport('Verified')"><i class="fas fa-check-circle me-2"></i> Verified (ผ่าน)</button>
-                <button class="btn btn-outline-warning text-dark p-2 text-start" onclick="previewExport('Pending Result')"><i class="fas fa-exclamation-triangle me-2"></i> Pending Result (อนุโลม)</button>
-                <button class="btn btn-outline-danger p-2 text-start" onclick="previewExport('Not Verified')"><i class="fas fa-times-circle me-2"></i> Not Verified (ไม่ผ่าน)</button>
-                <button class="btn btn-outline-info text-dark p-2 text-start" onclick="previewExport('In Progress')"><i class="fas fa-spinner me-2"></i> In Progress (รอผล)</button>
-            `;
+            optionsContainer.innerHTML = 
+                '<button class="btn btn-outline-success p-2 text-start" onclick="previewExport(\'Verified\')"><i class="fas fa-check-circle me-2"></i> Verified (ผ่าน)</button>' +
+                '<button class="btn btn-outline-warning text-dark p-2 text-start" onclick="previewExport(\'Pending Result\')"><i class="fas fa-exclamation-triangle me-2"></i> Pending Result (อนุโลม)</button>' +
+                '<button class="btn btn-outline-danger p-2 text-start" onclick="previewExport(\'Not Verified\')"><i class="fas fa-times-circle me-2"></i> Not Verified (ไม่ผ่าน)</button>' +
+                '<button class="btn btn-outline-info text-dark p-2 text-start" onclick="previewExport(\'In Progress\')"><i class="fas fa-spinner me-2"></i> In Progress (รอผล)</button>';
         } else {
-            optionsContainer.innerHTML = `
-                <button class="btn btn-success p-3 text-start shadow-sm border-0" onclick="previewExport('ALL')">
-                    <div class="d-flex justify-content-between align-items-center"><span><i class="fas fa-check-circle me-2"></i> Export ผลตรวจที่ออกแล้ว</span><i class="fas fa-download"></i></div>
-                </button>
-            `;
+            optionsContainer.innerHTML = '<button class="btn btn-success p-3 text-start shadow-sm border-0" onclick="previewExport(\'ALL\')"><div class="d-flex justify-content-between align-items-center"><span><i class="fas fa-check-circle me-2"></i> Export ผลตรวจที่ออกแล้ว</span><i class="fas fa-download"></i></div></button>';
         }
         exportModal.show();
     }
 
     function previewExport(exportStatus) {
        currentExportStatus = exportStatus;
-       const filterVal = document.getElementById('monthFilter').value;
+       const filterVal = getActiveDateFilter();
        showLoading();
        
-       if(currentTab === 'MASTER') {
-           google.script.run.withSuccessHandler(showPreviewModal).withFailureHandler(err => { hideLoading(); showError(err.message); }).exportMasterCSV(exportStatus, filterVal, true);
+       if (currentTab === 'MASTER') {
+           google.script.run.withSuccessHandler(showPreviewModal).withFailureHandler(function(err) { hideLoading(); showError(err.message); }).exportMasterCSV(exportStatus, filterVal, true);
        } else {
-           google.script.run.withSuccessHandler(showPreviewModal).withFailureHandler(err => { hideLoading(); showError(err.message); }).exportAnnualCSV(exportStatus, filterVal, true);
+           google.script.run.withSuccessHandler(showPreviewModal).withFailureHandler(function(err) { hideLoading(); showError(err.message); }).exportAnnualCSV(exportStatus, filterVal, true);
        }
     }
 
@@ -1503,10 +1497,8 @@
         hideLoading();
         if (!data || data.length === 0) { Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลที่ตรงตามเงื่อนไข หรือถูกส่งออกไปแล้ว', 'info'); return; }
         
-        // 🌟 กรองเฉพาะรหัสที่เป็นตัวเลขล้วน (Numeric only) 🌟
-        const filteredData = data.filter(row => {
+        const filteredData = data.filter(function(row) {
             const idValue = currentTab === 'MASTER' ? String(row.code || '') : String(row.refCode || '');
-            // ใช้ Regex เช็คว่าเป็นตัวเลขล้วนหรือไม่
             return /^\d+$/.test(idValue.trim());
         });
 
@@ -1518,10 +1510,10 @@
         const tbody = document.getElementById('previewTableBody'); 
         tbody.innerHTML = "";
         
-        filteredData.forEach(row => { 
+        filteredData.forEach(function(row) { 
             let codeCol = currentTab === 'MASTER' ? row.code : row.refCode;
             let statusCol = currentTab === 'MASTER' ? row.ftStatus : row.statusProcess;
-            tbody.innerHTML += `<tr><td>${codeCol||'-'}</td><td>${row.name||'-'}</td><td>${row.idCard||'-'}</td><td><span class="badge bg-secondary">${statusCol||'-'}</span></td></tr>`; 
+            tbody.innerHTML += '<tr><td>' + (codeCol||'-') + '</td><td>' + (row.name||'-') + '</td><td>' + (row.idCard||'-') + '</td><td><span class="badge bg-secondary">' + (statusCol||'-') + '</span></td></tr>'; 
         });
         
         exportModal.hide(); 
@@ -1530,130 +1522,111 @@
 
     function confirmExport() {
        if (!currentExportStatus) return;
-       const filterVal = document.getElementById('monthFilter').value;
+       const filterVal = getActiveDateFilter();
        previewModal.hide(); 
        showLoading();
        
        if (currentTab === 'MASTER') {
-           google.script.run.withSuccessHandler(result => {
+           google.script.run.withSuccessHandler(function(result) {
                hideLoading();
                if (result.count > 0) { const b=new Blob(["\ufeff"+result.content],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=result.filename; l.click(); Swal.fire('สำเร็จ', `Export ${result.count} รายการ`, 'success'); loadData(); } 
                else Swal.fire('Error', 'เกิดข้อผิดพลาด', 'error');
-           }).withFailureHandler(err => { hideLoading(); showError(err.message); }).exportMasterCSV(currentExportStatus, filterVal, false);
+           }).withFailureHandler(function(err) { hideLoading(); showError(err.message); }).exportMasterCSV(currentExportStatus, filterVal, false);
        } else {
-           google.script.run.withSuccessHandler(result => {
+           google.script.run.withSuccessHandler(function(result) {
                hideLoading();
                if (result.count > 0) { const b=new Blob(["\ufeff"+result.content],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=result.filename; l.click(); Swal.fire('สำเร็จ', `Export ${result.count} รายการ`, 'success'); loadData(); } 
                else Swal.fire('Error', 'เกิดข้อผิดพลาด', 'error');
-           }).withFailureHandler(err => { hideLoading(); showError(err.message); }).exportAnnualCSV(currentExportStatus, filterVal, false);
+           }).withFailureHandler(function(err) { hideLoading(); showError(err.message); }).exportAnnualCSV(currentExportStatus, filterVal, false);
        }
     }
 
-    // =====================================
-    // 🌟 VIEW HISTORY LOGIC 🌟
-    // =====================================
     function viewHistory() {
         showLoading();
-        // 🌟 เรียกใช้ฟังก์ชันใหม่ที่สร้างขึ้นเพื่อดึงจาก Data Beat (มีระบบ Fallback ให้)
-        google.script.run.withSuccessHandler(logs => {
+        google.script.run.withSuccessHandler(function(logs) {
             hideLoading();
             const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
-            if(!logs || logs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่มีประวัติจาก</td></tr>'; return; }
-            logs.forEach((log, idx) => {
-                if(!window.uploadLogsData) window.uploadLogsData = []; window.uploadLogsData[idx] = log;
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="ps-4 fw-bold text-dark"><i class="far fa-clock me-2 text-muted"></i>${log.timestamp}</td>
-                        <td class="small text-muted"><i class="fas fa-file-excel me-1 text-success"></i>${log.fileName}</td>
-                        <td><span class="badge bg-light text-secondary border">${log.user}</span></td>
-                        <td class="text-center"><span class="badge bg-success rounded-pill px-2 py-1">${log.successCount}</span></td>
-                        <td class="text-center"><span class="badge bg-danger rounded-pill px-2 py-1">${log.failedCount}</span></td>
-                        <td class="text-center pe-4">
-                            <!-- ปุ่มสำหรับเปิดดูตารางรายละเอียดใน Popup -->
-                            <button class="btn btn-sm btn-outline-info rounded-pill px-3 me-1" onclick="viewLogDetails(${idx})" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="downloadLogCSV(${idx})" title="โหลด CSV"><i class="fas fa-download"></i></button>
-                        </td>
-                    </tr>
-                `;
+            if (!logs || logs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่มีประวัติจาก</td></tr>'; return; }
+            logs.forEach(function(log, idx) {
+                if (!window.uploadLogsData) window.uploadLogsData = []; window.uploadLogsData[idx] = log;
+                tbody.innerHTML += 
+                    '<tr>' +
+                    '<td class="ps-4 fw-bold text-dark"><i class="far fa-clock me-2 text-muted"></i>' + log.timestamp + '</td>' +
+                    '<td class="small text-muted"><i class="fas fa-file-excel me-1 text-success"></i>' + log.fileName + '</td>' +
+                    '<td><span class="badge bg-light text-secondary border">' + log.user + '</span></td>' +
+                    '<td class="text-center"><span class="badge bg-success rounded-pill px-2 py-1">' + log.successCount + '</span></td>' +
+                    '<td class="text-center"><span class="badge bg-danger rounded-pill px-2 py-1">' + log.failedCount + '</span></td>' +
+                    '<td class="text-center pe-4"><button class="btn btn-sm btn-outline-info rounded-pill px-3 me-1" onclick="viewLogDetails(' + idx + ')" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button><button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="downloadLogCSV(' + idx + ')" title="โหลด CSV"><i class="fas fa-download"></i></button></td>' +
+                    '</tr>';
             });
             historyModal.show();
-        }).getUploadLogs('UNIFIED_VERIFY'); // <-- แก้ไขตรงนี้ครับ
+        }).getUploadLogs('UNIFIED_VERIFY'); 
     }
 
-    // 🌟 ฟังก์ชันแสดงรายละเอียดใน Popup 🌟
     function viewLogDetails(idx) {
-        const log = window.uploadLogsData[idx]; if(!log) return;
+        const log = window.uploadLogsData[idx]; if (!log) return;
         const tbody = document.getElementById('logDetailsTableBody');
         tbody.innerHTML = '';
         
-        // วาดรายการที่สำเร็จ
-        (log.successItems||[]).forEach(item => {
+        (log.successItems||[]).forEach(function(item) {
             const info = getProviderInfo(item.idCard);
             let s = item.status.toLowerCase();
             let badge = 'bg-secondary';
-            if(s.includes('ไม่ผ่าน')) badge = 'bg-danger';
-            else if(s.includes('ผ่าน')||s.includes('ได้รับผล')||s.includes('อนุมัติ')) badge = 'bg-success';
+            if (s.includes('ไม่ผ่าน')) badge = 'bg-danger';
+            else if (s.includes('ผ่าน')||s.includes('ได้รับผล')||s.includes('อนุมัติ')) badge = 'bg-success';
             
             let targets = [];
             if(item.masterMatch) targets.push('<span class="badge bg-primary">Master</span>');
             if(item.annualMatch) targets.push('<span class="badge bg-warning text-dark">Annual</span>');
 
-            let codeDisplay = info.code !== '-' ? `<span class="badge bg-light text-dark border">${info.code}</span>` : '<span class="text-muted">-</span>';
+            let codeDisplay = info.code !== '-' ? '<span class="badge bg-light text-dark border">' + info.code + '</span>' : '<span class="text-muted">-</span>';
 
-            tbody.innerHTML += `
-                <tr>
-                    <td class="ps-4">${codeDisplay}</td>
-                    <td class="fw-bold">${info.name}</td>
-                    <td class="font-monospace">${item.idCard}</td>
-                    <td><span class="badge ${badge}">${item.status}</span></td>
-                    <td>${targets.join(' ')}</td>
-                </tr>
-            `;
+            tbody.innerHTML += 
+                '<tr>' +
+                '<td class="ps-4">' + codeDisplay + '</td>' +
+                '<td class="fw-bold">' + info.name + '</td>' +
+                '<td class="font-monospace">' + item.idCard + '</td>' +
+                '<td><span class="badge ' + badge + '">' + item.status + '</span></td>' +
+                '<td>' + targets.join(' ') + '</td>' +
+                '</tr>';
         });
         
-        // วาดรายการที่ไม่สำเร็จ
-        (log.failedItems||[]).forEach(item => {
+        (log.failedItems||[]).forEach(function(item) {
             const info = getProviderInfo(item.idCard);
-            let codeDisplay = info.code !== '-' ? `<span class="badge bg-light text-dark border">${info.code}</span>` : '<span class="text-muted">-</span>';
-            tbody.innerHTML += `
-                <tr class="table-danger">
-                    <td class="ps-4">${codeDisplay}</td>
-                    <td class="fw-bold">${info.name}</td>
-                    <td class="font-monospace">${item.idCard}</td>
-                    <td><span class="badge bg-danger">${item.status}</span></td>
-                    <td class="text-danger fw-bold"><i class="fas fa-times me-1"></i>${item.reason}</td>
-                </tr>
-            `;
+            let codeDisplay = info.code !== '-' ? '<span class="badge bg-light text-dark border">' + info.code + '</span>' : '<span class="text-muted">-</span>';
+            tbody.innerHTML += 
+                '<tr class="table-danger">' +
+                '<td class="ps-4">' + codeDisplay + '</td>' +
+                '<td class="fw-bold">' + info.name + '</td>' +
+                '<td class="font-monospace">' + item.idCard + '</td>' +
+                '<td><span class="badge bg-danger">' + item.status + '</span></td>' +
+                '<td class="text-danger fw-bold"><i class="fas fa-times me-1"></i>' + item.reason + '</td>' +
+                '</tr>';
         });
         
         logDetailsModal.show();
     }
 
-    // 🌟 ฟังก์ชันดาวน์โหลด CSV แบบปรับปรุง 🌟
     function downloadLogCSV(idx) {
-        const log = window.uploadLogsData[idx]; if(!log) return;
-        // ปรับหัวตารางให้มีรหัสและชื่อ-นามสกุล โดยเอาคอลัมน์ Update Result ออก
+        const log = window.uploadLogsData[idx]; if (!log) return;
         let csv = "Code,Name,ID Card,Status,Reason\n";
         
-        (log.successItems||[]).forEach(i => {
+        (log.successItems||[]).forEach(function(i) {
             const info = getProviderInfo(i.idCard);
             let targets = [];
             if(i.masterMatch) targets.push("Master");
             if(i.annualMatch) targets.push("Annual");
             let reason = "Updated: " + targets.join(' & ');
-            
-            // 🌟 แก้ไข: ถอดเครื่องหมาย = และ " ออกจาก Code, Name และ ID Card
             csv += `"${info.code||''}","${info.name||''}","${i.idCard||''}","${i.status||''}","${reason}"\n`;
         });
         
-        (log.failedItems||[]).forEach(i => {
+        (log.failedItems||[]).forEach(function(i) {
             const info = getProviderInfo(i.idCard);
-            // 🌟 แก้ไข: ถอดเครื่องหมาย = และ " ออกเช่นเดียวกัน
             csv += `"${info.code||''}","${info.name||''}","${i.idCard||''}","${i.status||''}","${i.reason||''}"\n`;
         });
         
         const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Unified_Verify_Log_${log.timestamp.replace(/[:\/ ]/g, '_')}.csv`; link.click();
+        const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = 'Unified_Verify_Log_' + log.timestamp.replace(/[:\/ ]/g, '_') + '.csv'; link.click();
     }
     
     function showLoading() { Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } }); }
