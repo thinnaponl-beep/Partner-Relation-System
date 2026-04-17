@@ -1,16 +1,66 @@
-<!-- Bootstrap Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Flatpickr -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/monthSelect/index.js"></script>
 
 <script>
   // ==========================================
+  // 🚀 SUPABASE CONFIGURATION (ตั้งค่าเชื่อมต่อฐานข้อมูล)
+  // ==========================================
+  // 🌟 อัปเดตเป็นฐานข้อมูลใหม่ (โปรเจกต์ gjppakbjhoqdpprdzhfj) 🌟
+       const supabaseUrl = 'https://bnzlooehcmgsqgcwjqcj.supabase.co'; 
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuemxvb2VoY21nc3FnY3dqcWNqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM5Mzc2MSwiZXhwIjoyMDkxOTY5NzYxfQ.ZswcbFK8tlJBV8ONQKuM8qNpEO4AJ0jVyd0JSfL-fBI'; 
+  
+  // 🛡️ ป้องกัน Error: ตรวจสอบว่าโหลดไลบรารี Supabase สำเร็จหรือไม่
+  if (typeof supabase !== 'undefined') {
+      window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
+      
+      // 🩺 ระบบวิเคราะห์ปัญหาอัตโนมัติ (Debug) เพื่อตรวจสอบการเชื่อมต่อ
+      window.supabase.from('prs_onboard').select('onboard_id').limit(1).then(res => {
+          console.log("🔍 ตรวจสอบการเชื่อมต่อ Supabase (Test DB):", res);
+          if (res.error) {
+              console.error("❌ Supabase Error:", res.error.message);
+              setTimeout(() => alert("เข้าถึงฐานข้อมูลไม่ได้!\nสาเหตุ: " + res.error.message), 2000);
+          } else {
+              console.log("✅ เชื่อมต่อฐานข้อมูล Test DB สำเร็จ!");
+          }
+      });
+  } else {
+      console.error("❌ ไม่พบไลบรารี Supabase (CDN Blocked)");
+      alert("ไม่สามารถโหลดไลบรารีฐานข้อมูลได้ กรุณาตรวจสอบอินเทอร์เน็ตหรือปิด Adblocker");
+  }
+
+  // ==========================================
+  // ⭐ GLOBAL HELPER: ระบบบันทึก Log ลง Supabase
+  // ==========================================
+  async function writeLogToSupabase(action, module, details, userEmail = "System") {
+      if (!window.supabase) return;
+      const logId = "LOG-" + new Date().getTime(); 
+      const now = new Date();
+      const tsStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`; 
+
+      try {
+          const payload = {
+              log_id: logId,
+              user_email: userEmail,
+              action: action,
+              module: module,
+              details: details,
+              created_at: tsStr
+          };
+          await window.supabase.from('db_logs').insert([payload]); 
+      } catch(e) { 
+          console.error("Log error (ignored):", e); 
+      }
+  }
+
+  // ==========================================
   // 🌟 BULLETPROOF INITIALIZATION 🌟
   // ==========================================
   function initGlobalApp() {
-      // 1. จัดการแถบเมนู Active ด้านข้าง (ครอบ Try-Catch ป้องกันพัง)
+      // 1. จัดการแถบเมนู Active ด้านข้าง
       try {
           if (typeof google !== 'undefined' && google.script && google.script.url) {
               google.script.url.getLocation(function(location) {
@@ -28,7 +78,7 @@
           console.warn("Sidebar active sync skipped:", e);
       }
 
-      // 2. ดึงข้อมูล Config และแสดงชื่อ User/Admin
+      // 2. ดึงข้อมูลผู้ใช้งานจากระบบ Google Workspace เพื่อยืนยันตัวตนคนเข้าใช้งาน
       if (typeof google !== 'undefined' && google.script && google.script.run) {
           google.script.run
               .withSuccessHandler(res => {
@@ -68,23 +118,19 @@
               
               if(spinner) spinner.classList.remove('d-none');
               
-              // หน่วงเวลาพิมพ์ 600ms ก่อนยิงคำค้นหา
-              globalSearchTimeout = setTimeout(() => {
-                  if (typeof google !== 'undefined' && google.script && google.script.run) {
-                      google.script.run
-                          .withSuccessHandler(res => {
-                              if(spinner) spinner.classList.add('d-none');
-                              renderGlobalSearchResults(res);
-                          })
-                          .withFailureHandler(err => {
-                              if(spinner) spinner.classList.add('d-none');
-                              console.error("Search Error:", err);
-                              resultsContainer.innerHTML = `<div class="p-3 text-center text-danger small">Error: เกิดข้อผิดพลาดในการค้นหา</div>`;
-                              resultsContainer.style.display = 'block';
-                          })
-                          .globalSmartSearch(keyword);
+              // หน่วงเวลาพิมพ์ 500ms ก่อนยิงคำค้นหาไปที่ Supabase
+              globalSearchTimeout = setTimeout(async () => {
+                  try {
+                      const res = await globalSmartSearchSupabase(keyword);
+                      if(spinner) spinner.classList.add('d-none');
+                      renderGlobalSearchResults(res);
+                  } catch(err) {
+                      if(spinner) spinner.classList.add('d-none');
+                      console.error("Search Error:", err);
+                      resultsContainer.innerHTML = `<div class="p-3 text-center text-danger small">Error: เกิดข้อผิดพลาดในการค้นหา</div>`;
+                      resultsContainer.style.display = 'block';
                   }
-              }, 600); 
+              }, 500); 
           });
           
           // ปิดหน้าต่างผลลัพธ์เมื่อคลิกที่ว่างบนหน้าจอ
@@ -96,7 +142,53 @@
       }
   }
 
-  // รันระบบตั้งต้นแบบกันเหนียว (ครอบคลุมทั้งกรณีหน้าเว็บโหลดเสร็จแล้วและยังไม่เสร็จ)
+  // 🚀 ฟังก์ชันค้นหาข้อมูลจาก Supabase 4 ตารางพร้อมกัน
+  async function globalSmartSearchSupabase(keyword) {
+      if (!window.supabase) throw new Error("Supabase is not initialized");
+      const kw = `%${keyword}%`;
+      
+      // ยิง Query 4 ตารางพร้อมกันแบบ Parallel เพื่อความเร็วสูงสุด
+      const [obRes, vmRes, vaRes, hRes] = await Promise.all([
+          supabase.from('prs_onboard').select('maid_code, full_name, id_card').or(`full_name.ilike.${kw},id_card.ilike.${kw},maid_code.ilike.${kw}`).limit(5),
+          supabase.from('prs_verify_master').select('maid_code, full_name, id_card').or(`full_name.ilike.${kw},id_card.ilike.${kw},maid_code.ilike.${kw}`).limit(5),
+          supabase.from('prs_verify_annual').select('ref_code, full_name, id_card').or(`full_name.ilike.${kw},id_card.ilike.${kw},ref_code.ilike.${kw}`).limit(5),
+          supabase.from('prs_hold').select('maid_code, full_name, id_card').or(`full_name.ilike.${kw},id_card.ilike.${kw},maid_code.ilike.${kw}`).limit(5)
+      ]);
+
+      let resultsMap = new Map();
+
+      // ฟังก์ชันรวมผลลัพธ์จากแต่ละตารางเข้าด้วยกัน
+      const processResult = (res, moduleName, codeField) => {
+          if (!res || res.error || !res.data) return;
+          res.data.forEach(item => {
+              const cleanId = String(item.id_card || '').replace(/\D/g, '');
+              const uniqueKey = cleanId || item.full_name;
+              const code = item[codeField];
+
+              if(resultsMap.has(uniqueKey)) {
+                  let existing = resultsMap.get(uniqueKey);
+                  if(!existing.foundIn.includes(moduleName)) existing.foundIn.push(moduleName);
+                  if(!existing.code && code) existing.code = code;
+              } else {
+                  resultsMap.set(uniqueKey, {
+                      name: item.full_name || '-',
+                      idCard: item.id_card || '-',
+                      code: code || '',
+                      foundIn: [moduleName]
+                  });
+              }
+          });
+      };
+
+      processResult(obRes, 'Onboard', 'maid_code');
+      processResult(vmRes, 'Master', 'maid_code');
+      processResult(vaRes, 'Annual', 'ref_code');
+      processResult(hRes, 'Hold', 'maid_code');
+
+      return { success: true, data: Array.from(resultsMap.values()).slice(0, 15) };
+  }
+
+  // รันระบบตั้งต้น
   if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', initGlobalApp);
   } else {
@@ -135,6 +227,7 @@
               if(mod.includes('Master')) badgeClass = 'bg-primary';
               else if(mod.includes('Onboard')) badgeClass = 'bg-info text-dark';
               else if(mod.includes('Annual')) badgeClass = 'bg-warning text-dark';
+              else if(mod.includes('Hold')) badgeClass = 'bg-danger text-white';
               
               badgesHtml += `<span class="badge ${badgeClass} me-1 mb-1 shadow-sm" style="font-size: 0.7rem; font-weight: 500;">${mod}</span>`;
           });
@@ -158,22 +251,59 @@
   // ==========================================
   // 🌟 GLOBAL HELPERS 🌟
   // ==========================================
+  
+  // 🌟 ฟังก์ชันดึงข้อมูลทั้งหมดแบบทะลุขีดจำกัด 1,000 แถว (Pagination Loop)
+  window.fetchAllSupabaseData = async function(tableName, orderByField, ascending = false) {
+      if (!window.supabase) return [];
+      let allData = [];
+      let from = 0;
+      const limit = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+          let query = window.supabase.from(tableName).select('*').range(from, from + limit - 1);
+          if (orderByField) {
+              query = query.order(orderByField, { ascending: ascending, nullsFirst: false });
+          }
+
+          const { data, error } = await query;
+          if (error) throw error;
+
+          if (data && data.length > 0) {
+              allData = allData.concat(data);
+              from += limit;
+              if (data.length < limit) hasMore = false;
+          } else {
+              hasMore = false;
+          }
+      }
+      return allData;
+  };
+
   function showLoading() {
-      Swal.fire({
-          title: 'กำลังประมวลผล...',
-          html: '<div class="spinner-border text-primary mt-2"></div>',
-          showConfirmButton: false,
-          allowOutsideClick: false,
-          background: 'rgba(255, 255, 255, 0.95)',
-          backdrop: 'rgba(0,0,0,0.3)'
-      });
+      if (typeof Swal !== 'undefined') {
+          Swal.fire({
+              title: 'กำลังประมวลผล...',
+              html: '<div class="spinner-border text-primary mt-2"></div>',
+              showConfirmButton: false,
+              allowOutsideClick: false,
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdrop: 'rgba(0,0,0,0.3)'
+          });
+      }
   }
   
   function hideLoading() {
-      Swal.close();
+      if (typeof Swal !== 'undefined') {
+          Swal.close();
+      }
   }
   
   function showError(msg) {
-      Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg, confirmButtonColor: '#31C1D7' });
+      if (typeof Swal !== 'undefined') {
+          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg, confirmButtonColor: '#31C1D7' });
+      } else {
+          alert('เกิดข้อผิดพลาด: ' + msg);
+      }
   }
 </script>
