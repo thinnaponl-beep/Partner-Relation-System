@@ -25,16 +25,19 @@
                 </span>
             </div>
             
-            <!-- Dropdown Results -->
+            <!-- Dropdown Results (แสดงผลค้นหาจาก Supabase แบบ Real-time) -->
             <div id="globalSearchResults" class="dropdown-menu w-100 shadow-lg border-0 mt-3 p-2 rounded-4" style="max-height: 450px; overflow-y: auto; display: none; position: absolute; top: 100%; left: 0; z-index: 1050; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);">
-                <!-- ผลลัพธ์จะถูกแทรกด้วย JavaScript -->
+                <!-- ผลลัพธ์จะถูกแทรกด้วย JavaScript จากไฟล์ _Scripts.html -->
             </div>
         </div>
 
+        <!-- 🌟 User Email Display 🌟 -->
         <div class="d-none d-md-block text-end border-start ps-3">
             <div class="fw-bold text-dark" style="font-size: 0.9rem;" id="userEmailDisplay">Loading...</div>
             <div class="text-muted" style="font-size: 0.75rem;">Officer</div>
         </div>
+        
+        <!-- User Avatar -->
         <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-primary shadow-sm" 
              style="width: 45px; height: 45px; font-size: 1.2rem;">
             <i class="fas fa-user-shield"></i>
