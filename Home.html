@@ -52,6 +52,7 @@
     /* Specific Colors for each module */
     .menu-onboard:hover .icon-box { background: #e0f7fa; color: #00bcd4; }
     .menu-firstbk:hover .icon-box { background: #f3e5f5; color: #9c27b0; }
+    .menu-hold:hover .icon-box { background: #fff3e0; color: #ff9800; }
     .menu-verify:hover  .icon-box { background: #e8f5e9; color: #198754; }
     .menu-account:hover .icon-box { background: #fff3cd; color: #ffc107; }
     .menu-report:hover  .icon-box { background: #e1f5fe; color: #0dcaf0; }
@@ -99,15 +100,16 @@
                   </a>
               </div>
 
+              <!-- 3. Hold / Return -->
                <div class="col-md-6 col-lg-4 col-xl-3">
-                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=hold" class="card menu-card menu-onboard">
-                      <div class="icon-box" ><i class="fas fa-undo-alt"></i></div>
+                  <a href="<?= ScriptApp.getService().getUrl() ?>?page=hold" class="card menu-card menu-hold">
+                      <div class="icon-box"><i class="fas fa-undo-alt"></i></div>
                       <div class="menu-title">ติดตามกลุ่ม H (Hold)</div>
                       <div class="menu-desc">จัดการคุณแม่บ้านโดนปลด<br>ที่ต้องการกลับมารับงานใหม่</div>
                   </a>
               </div>
 
-              <!-- 3. Unified Verify Workspace -->
+              <!-- 4. Unified Verify Workspace -->
               <div class="col-md-6 col-lg-4 col-xl-3">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=verify_workspace" class="card menu-card menu-verify">
                       <div class="icon-box"><i class="fas fa-user-shield"></i></div>
@@ -116,7 +118,7 @@
                   </a>
               </div>
 
-              <!-- 4. Account Verify -->
+              <!-- 5. Account Verify -->
               <div class="col-md-6 col-lg-4 col-xl-3">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=account_verify" class="card menu-card menu-account">
                       <div class="icon-box"><i class="fas fa-search-dollar"></i></div>
@@ -125,7 +127,7 @@
                   </a>
               </div>
 
-              <!-- 5. Fast Report -->
+              <!-- 6. Fast Report -->
               <div class="col-md-6 col-lg-4 col-xl-3">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=fast_report" class="card menu-card menu-report">
                       <div class="icon-box"><i class="fas fa-chart-line"></i></div>
@@ -134,7 +136,7 @@
                   </a>
               </div>
 
-              <!-- 6. Config (Admin Only) -->
+              <!-- 7. Config (Admin Only) -->
               <div class="col-md-6 col-lg-4 col-xl-3 d-none" id="menu-config-card">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="card menu-card menu-config">
                       <div class="icon-box"><i class="fas fa-cogs"></i></div>
@@ -151,17 +153,34 @@
   <?!= include('_Scripts'); ?>
   
   <script>
-    // Extra script specifically for Home page to show/hide config card
+    // ตรวจสอบสิทธิ์ผู้ใช้งานเมื่อหน้าเว็บโหลดเสร็จ
     document.addEventListener('DOMContentLoaded', function() {
-        // Update Title via JS to be sure
+        // อัปเดต Title บาร์ด้านบน
         document.getElementById('pageTitle').textContent = "หน้าหลัก (Dashboard)";
         document.getElementById('pageSubtitle').textContent = "เมนูหลักของระบบ";
         
-        google.script.run.withSuccessHandler(res => {
-            if(res.isAdmin) {
-                document.getElementById('menu-config-card').classList.remove('d-none');
-            }
-        }).getClientConfig();
+        // ขออีเมลผู้ใช้จาก Google Apps Script จากนั้นไปเช็คสิทธิ์แอดมินจาก Supabase
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+            google.script.run.withSuccessHandler(async (res) => {
+                const userEmail = res.userEmail || "System";
+                
+                try {
+                    // 🚀 เช็คสิทธิ์จากตาราง config_dropdowns ใน Supabase โดยตรง
+                    const { data, error } = await supabase
+                        .from('config_dropdowns')
+                        .select('value')
+                        .eq('category', 'Admins')
+                        .ilike('value', userEmail); // ใช้ ilike เพื่อให้เช็คแบบไม่สนตัวพิมพ์เล็ก/ใหญ่
+                        
+                    if (data && data.length > 0) {
+                        // ถ้าเจออีเมลในตาราง Admins ให้เปิดการ์ดตั้งค่าระบบ
+                        document.getElementById('menu-config-card').classList.remove('d-none');
+                    }
+                } catch(e) {
+                    console.error("Error checking admin status in Supabase:", e);
+                }
+            }).getClientConfig();
+        }
     });
   </script>
 
