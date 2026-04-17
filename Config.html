@@ -80,7 +80,7 @@
             <!-- Master Type -->
             <div class="col-md-6 col-lg-3">
                 <div class="card card-config p-3">
-                    <div class="config-header"><div class="rounded-circle bg-warning bg-opacity-10 p-2 text-warning"><i class="fas fa-briefcase"></i></div>  ประเภทผู้ให้บริการ (Master)</div>
+                    <div class="config-header"><div class="rounded-circle bg-warning bg-opacity-10 p-2 text-warning"><i class="fas fa-briefcase"></i></div> ประเภทผู้ให้บริการ (Master)</div>
                     <div class="input-group mb-3"><input type="text" id="newMasterType" class="form-control" placeholder="ประเภท"><button class="btn btn-soft-warning text-dark" onclick="addConfig('masterType')"><i class="fas fa-plus"></i></button></div>
                     <ul class="list-group small list-group-flush" id="masterTypeList"></ul>
                 </div>
@@ -122,7 +122,7 @@
                     <ul class="list-group small list-group-flush" id="onboardTypeList"></ul>
                 </div>
             </div>
-            <!-- 🌟 Onboard Tags (NEW) 🌟 -->
+            <!-- Onboard Tags -->
             <div class="col-md-6 col-lg-3">
                 <div class="card card-config p-3">
                     <div class="config-header"><div class="rounded-circle bg-warning bg-opacity-10 p-2 text-warning"><i class="fas fa-tasks"></i></div> Tags (สิ่งที่ต้องติดตาม)</div>
@@ -326,9 +326,22 @@
   <?!= include('_Scripts'); ?>
   <script>
     let configData = {};
-    let checklistQuestions = []; // Loaded from server
+    let checklistQuestions = []; 
     let editOptionsModal, addQuestionModal;
     let tempNewOptions = []; 
+
+    // 🌟 MAPPING OBJECT ระหว่าง ID บนหน้าเว็บ กับ Category ใน Supabase 🌟
+    const catMap = {
+        'admin': 'Admins',
+        'center': 'Centers',
+        'result': 'Results',
+        'ftStatus': 'FT Statuses',
+        'onboardGroup': 'Onboard Groups',
+        'onboardType': 'Onboard Types',
+        'masterType': 'Master Types',
+        'onboardCenter': 'Onboard Centers',
+        'onboardTag': 'Onboard Tags'
+    };
 
     window.onload = function() { 
         editOptionsModal = new bootstrap.Modal(document.getElementById('editOptionsModal'));
@@ -336,45 +349,88 @@
         
         if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "ตั้งค่าระบบ (Configuration)";
         
-        loadConfigs(); 
-        
-        // Load Checklist
-        showLoading();
-        google.script.run.withSuccessHandler(data => {
-            hideLoading();
-            checklistQuestions = data || [];
-            renderChecklistConfig();
-        }).getChecklistConfig();
-        
         const navLinks = document.querySelectorAll('.nav-link-custom');
         navLinks.forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector('.nav-link-custom[data-page="config"]');
         if(activeLink) activeLink.classList.add('active');
+
+        // เริ่มต้นโหลดข้อมูลทั้งหมดผ่าน Supabase
+        initConfigsPage();
     };
 
-    function loadConfigs() { showLoading(); google.script.run.withSuccessHandler(renderConfigs).getClientConfig(); }
+    // =====================================
+    // 🚀 SUPABASE DATA FETCHING
+    // =====================================
+    async function initConfigsPage() {
+        showLoading();
+        try {
+            // โหลด Dropdowns พื้นฐาน
+            await loadConfigsFromSupabase();
+            
+            // โหลด Checklist (แบบสอบถาม)
+            await loadChecklistFromSupabase();
+        } catch(e) {
+            showError(e.message);
+        } finally {
+            hideLoading();
+        }
+    }
 
-    function renderConfigs(data) {
-      hideLoading();
-      configData = data; 
-      renderList('adminList', data.admins, 'admin');
-      renderList('centerList', data.centers, 'center');
-      renderList('resultList', data.results, 'result');
-      renderList('ftStatusList', data.ftStatuses, 'ftStatus');
-      renderList('onboardGroupList', data.onboardGroups, 'onboardGroup');
-      renderList('onboardTypeList', data.onboardTypes, 'onboardType');
-      renderList('masterTypeList', data.masterTypes, 'masterType');
-      renderList('onboardCenterList', data.onboardCenters, 'onboardCenter');
-      // 🌟 เพิ่มส่วนแสดงผล Tag
-      renderList('onboardTagList', data.onboardTags, 'onboardTag');
-      initSortable();
+    async function loadConfigsFromSupabase() {
+        const { data, error } = await supabase.from('prs_config').select('*').order('sort_order', { ascending: true });
+        if (error) throw error;
+
+        const grouped = { admins:[], centers:[], results:[], ftStatuses:[], onboardGroups:[], onboardTypes:[], masterTypes:[], onboardCenters:[], onboardTags:[] };
+
+        (data || []).forEach(row => {
+            const c = row.category;
+            const v = row.value;
+            if(c === 'Admins') grouped.admins.push(v);
+            else if(c === 'Centers') grouped.centers.push(v);
+            else if(c === 'Results') grouped.results.push(v);
+            else if(c === 'FT Statuses') grouped.ftStatuses.push(v);
+            else if(c === 'Onboard Groups') grouped.onboardGroups.push(v);
+            else if(c === 'Onboard Types') grouped.onboardTypes.push(v);
+            else if(c === 'Master Types') grouped.masterTypes.push(v);
+            else if(c === 'Onboard Centers') grouped.onboardCenters.push(v);
+            else if(c === 'Onboard Tags') grouped.onboardTags.push(v);
+        });
+
+        renderList('adminList', grouped.admins, 'admin');
+        renderList('centerList', grouped.centers, 'center');
+        renderList('resultList', grouped.results, 'result');
+        renderList('ftStatusList', grouped.ftStatuses, 'ftStatus');
+        renderList('onboardGroupList', grouped.onboardGroups, 'onboardGroup');
+        renderList('onboardTypeList', grouped.onboardTypes, 'onboardType');
+        renderList('masterTypeList', grouped.masterTypes, 'masterType');
+        renderList('onboardCenterList', grouped.onboardCenters, 'onboardCenter');
+        renderList('onboardTagList', grouped.onboardTags, 'onboardTag');
+        
+        initSortable();
+    }
+
+    async function loadChecklistFromSupabase() {
+        const { data, error } = await supabase.from('prs_config_checklist').select('*').order('sort_order', { ascending: true });
+        if (error) throw error;
+
+        checklistQuestions = (data || []).map(q => ({
+            id: q.question_id,
+            label: q.label,
+            section: q.section,
+            type: q.answer_type,
+            options: q.options || [],
+            active: q.is_active,
+            condition: q.condition
+        }));
+        renderChecklistConfig();
     }
 
     function renderList(elId, items, type) {
         const ul = document.getElementById(elId);
-        if (!ul) { console.warn("Element not found:", elId); return; }
+        if (!ul) return;
         ul.innerHTML = "";
         if(!items || items.length === 0) { ul.innerHTML = '<li class="list-group-item text-muted text-center p-2 border-0 bg-transparent small">ไม่มีข้อมูล</li>'; return; }
+        
         items.forEach(item => {
             const safe = item.replace(/'/g, "\\'");
             ul.innerHTML += `<li class="list-group-item" data-value="${item}"><div class="d-flex align-items-center w-100"><i class="fas fa-grip-vertical drag-handle"></i><span class="ms-2 flex-grow-1 text-break">${item}</span></div><button class="btn btn-sm text-danger" onclick="removeConfig('${type}', '${safe}')"><i class="fas fa-trash-alt"></i></button></li>`;
@@ -390,28 +446,74 @@
         });
     }
     
-    function saveOrder(type, ul) {
-        const items = []; ul.querySelectorAll('li').forEach(li => { const v = li.getAttribute('data-value'); if(v) items.push(v); });
-        google.script.run.saveConfigOrder(type, items);
+    // 🚀 SUPABASE MUTATIONS (Dropdowns)
+    async function addConfig(type) {
+        const idMap = { 'admin':'newAdmin', 'center':'newCenter', 'result':'newResult', 'ftStatus':'newFtStatus', 'onboardGroup':'newOnboardGroup', 'onboardType':'newOnboardType', 'masterType':'newMasterType', 'onboardCenter':'newOnboardCenter', 'onboardTag': 'newOnboardTag' };
+        const input = document.getElementById(idMap[type]);
+        if(!input) return;
+        const val = input.value.trim();
+        if (!val) return;
+        
+        showLoading();
+        try {
+            const categoryName = catMap[type];
+            // หาเลข Sort Order ล่าสุด
+            const { data } = await supabase.from('prs_config').select('sort_order').eq('category', categoryName).order('sort_order', {ascending: false}).limit(1);
+            let nextSort = 1;
+            if (data && data.length > 0) nextSort = (data[0].sort_order || 0) + 1;
+
+            const { error } = await supabase.from('prs_config').insert([{ category: categoryName, value: val, sort_order: nextSort }]);
+            if (error) throw error;
+
+            input.value = "";
+            await loadConfigsFromSupabase();
+            Swal.fire({icon:'success',title:'เพิ่มแล้ว',timer:1000,showConfirmButton:false});
+        } catch(e) {
+            showError(e.message);
+        } finally {
+            hideLoading();
+        }
     }
 
-    function addConfig(type) {
-      const idMap = { 'admin':'newAdmin', 'center':'newCenter', 'result':'newResult', 'ftStatus':'newFtStatus', 'onboardGroup':'newOnboardGroup', 'onboardType':'newOnboardType', 'masterType':'newMasterType', 'onboardCenter':'newOnboardCenter', 'onboardTag': 'newOnboardTag' };
-      const input = document.getElementById(idMap[type]);
-      if(!input) return;
-      const val = input.value.trim();
-      if (!val) return;
-      showLoading();
-      google.script.run.withSuccessHandler(res => { hideLoading(); if(res.success) { input.value = ""; loadConfigs(); Swal.fire({icon:'success',title:'เพิ่มแล้ว',timer:1000,showConfirmButton:false}); } else showError(res.message); }).addConfigItem(type, val);
-    }
-
-    function removeConfig(type, val) {
-      Swal.fire({ title: 'ยืนยันลบ?', text: val, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((r) => {
-        if (r.isConfirmed) { showLoading(); google.script.run.withSuccessHandler(() => { hideLoading(); loadConfigs(); }).removeConfigItem(type, val); }
-      });
+    async function removeConfig(type, val) {
+        Swal.fire({ title: 'ยืนยันลบ?', text: val, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then(async (r) => {
+            if (r.isConfirmed) { 
+                showLoading();
+                try {
+                    const categoryName = catMap[type];
+                    const { error } = await supabase.from('prs_config').delete().eq('category', categoryName).eq('value', val);
+                    if (error) throw error;
+                    await loadConfigsFromSupabase();
+                } catch(e) {
+                    showError(e.message);
+                } finally {
+                    hideLoading();
+                }
+            }
+        });
     }
     
-    // --- Checklist Logic ---
+    async function saveOrder(type, ul) {
+        const categoryName = catMap[type];
+        const items = []; 
+        ul.querySelectorAll('li').forEach(li => { const v = li.getAttribute('data-value'); if(v) items.push(v); });
+        
+        try {
+            // เพื่อความชัวร์และง่าย ลบของเก่าออกทั้งหมดใน Category นั้นแล้ว Insert ใหม่ตามลำดับ
+            await supabase.from('prs_config').delete().eq('category', categoryName);
+            
+            const insertData = items.map((val, idx) => ({ category: categoryName, value: val, sort_order: idx + 1 }));
+            if (insertData.length > 0) {
+                await supabase.from('prs_config').insert(insertData);
+            }
+        } catch(e) {
+            console.error("Save order error:", e);
+        }
+    }
+
+    // =====================================
+    // 🚀 SUPABASE MUTATIONS (Checklist)
+    // =====================================
     function renderChecklistConfig() {
         const preContainer = document.getElementById('preChecklistConfig');
         const postContainer = document.getElementById('postChecklistConfig');
@@ -466,11 +568,15 @@
         });
     }
 
-    function toggleChecklist(qid, checkbox) {
+    async function toggleChecklist(qid, checkbox) {
         const q = checklistQuestions.find(x => x.id === qid);
         if(q) {
             q.active = checkbox.checked;
-            saveToServer();
+            try {
+                await supabase.from('prs_config_checklist').update({ is_active: q.active }).eq('question_id', qid);
+            } catch(e) {
+                console.error(e);
+            }
         }
     }
     
@@ -602,7 +708,7 @@
                  delete q.condition; 
             }
             
-            saveToServer();
+            saveChecklistToServer();
             editOptionsModal.hide();
             Swal.fire({ icon: 'success', title: 'บันทึกแล้ว', showConfirmButton: false, timer: 1500 });
         }
@@ -724,7 +830,7 @@
         }
         
         checklistQuestions.push(newQ);
-        saveToServer();
+        saveChecklistToServer();
         addQuestionModal.hide();
         
         Swal.fire({ icon: 'success', title: 'เพิ่มคำถามแล้ว', text: 'บันทึกเรียบร้อย', timer: 1500, showConfirmButton: false });
@@ -738,25 +844,47 @@
             showCancelButton: true,
             confirmButtonColor: '#d33',
             confirmButtonText: 'ลบ'
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
                 checklistQuestions = checklistQuestions.filter(q => q.id !== qid);
                 checklistQuestions.forEach(q => {
                     if(q.condition && q.condition.parentId === qid) delete q.condition;
                 });
                 
-                saveToServer();
-                Swal.fire({ icon: 'success', title: 'ลบแล้ว', showConfirmButton: false, timer: 1000 });
+                try {
+                    await supabase.from('prs_config_checklist').delete().eq('question_id', qid);
+                    renderChecklistConfig();
+                    Swal.fire({ icon: 'success', title: 'ลบแล้ว', showConfirmButton: false, timer: 1000 });
+                } catch(e) {
+                    showError(e.message);
+                }
             }
         });
     }
 
-    function saveToServer() {
+    async function saveChecklistToServer() {
         showLoading();
-        google.script.run.withSuccessHandler(res => {
-            hideLoading();
+        try {
+            const upsertData = checklistQuestions.map((q, idx) => ({
+                question_id: q.id,
+                label: q.label,
+                section: q.section,
+                answer_type: q.type,
+                options: q.options,
+                is_active: q.active,
+                condition: q.condition || null,
+                sort_order: idx + 1
+            }));
+
+            const { error } = await supabase.from('prs_config_checklist').upsert(upsertData);
+            if (error) throw error;
+            
             renderChecklistConfig();
-        }).saveChecklistConfig(checklistQuestions);
+        } catch(e) {
+            showError(e.message);
+        } finally {
+            hideLoading();
+        }
     }
     
     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
