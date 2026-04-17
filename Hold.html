@@ -255,7 +255,6 @@
                                     <option value="อื่นๆ">อื่นๆ</option>
                                 </select>
                               </div>
-                              <!-- 🌟 เพิ่มช่อง วันที่ติดต่อเข้ามา 🌟 -->
                               <div class="col-md-3">
                                   <label class="form-label small fw-bold text-muted">วันที่ติดต่อ <span class="text-danger">*</span></label>
                                   <input type="text" class="form-control datepicker bg-white shadow-none" id="contactDate" required>
@@ -297,7 +296,6 @@
                                 <label class="form-label small fw-bold text-danger">ศูนย์เทรน <span class="text-danger">*</span></label>
                                 <select class="form-select shadow-none border-danger" id="trainingCenter"><option value="">เลือกศูนย์...</option></select>
                               </div>
-                              <!-- 🌟 เพิ่มช่อง วันที่เข้า Retrain 🌟 -->
                               <div class="col-md-6" id="retrainDateDiv" style="display:none;">
                                   <label class="form-label small fw-bold text-danger">วันที่เข้า Retrain <span class="text-danger">*</span></label>
                                   <input type="text" class="form-control datepicker bg-white shadow-none border-danger" id="retrainDate">
@@ -492,64 +490,180 @@
            allowInput: true 
        });
        
-       loadData(); // โหลดข้อมูลทันที
+       initHoldPage(); 
     };
 
-    function loadData() {
-       showLoading();
-       
-       // 1. ดึงข้อมูลตาราง Hold
-       google.script.run.withSuccessHandler(holdRes => {
-          globalData = holdRes.data || []; 
-          currentUser = holdRes.currentUser; 
-          isUserAdmin = holdRes.isAdmin;
-          centerOptions = holdRes.onboardCenters || []; 
-          masterTypeOptions = holdRes.masterTypes || [];
-          
-          const ctrSel = document.getElementById('trainingCenter');
-          ctrSel.innerHTML = '<option value="">เลือกศูนย์...</option>';
-          centerOptions.forEach(x => ctrSel.add(new Option(x, x)));
+    // 🚀 SUPABASE DATA FETCHING
+    async function initHoldPage() {
+        showLoading();
+        try {
+            // 1. Get User Session
+            const configRes = await new Promise((resolve) => {
+                google.script.run.withSuccessHandler(resolve).getClientConfig();
+            });
+            currentUser = configRes.userEmail || "System";
+            isUserAdmin = configRes.isAdmin;
 
-          const mtSel = document.getElementById('masterType');
-          mtSel.innerHTML = '<option value="">เลือกประเภท...</option>';
-          masterTypeOptions.forEach(x => mtSel.add(new Option(x, x)));
+            if(isUserAdmin && document.getElementById('nav-config')) {
+                document.getElementById('nav-config').classList.remove('d-none');
+            }
 
-          let tagsHtml = '';
-          let configTags = holdRes.onboardTags || ['รูปโปรไฟล์', 'รูปอุปกรณ์']; 
-          configTags.forEach((tag, idx) => {
-              let tagId = 'dynamic_tag_' + idx;
-              tagsHtml += `
-                  <div>
-                      <input type="checkbox" id="${tagId}" class="tag-checkbox dynamic-tag" value="${tag}">
-                      <label for="${tagId}" class="tag-label"><i class="fas fa-tag me-1 text-muted"></i> ${tag}</label>
-                  </div>
-              `;
-          });
-          document.getElementById('dynamicTagsContainer').innerHTML = tagsHtml;
+            // 2. Fetch Dropdowns
+            const { data: dropData } = await supabase.from('config_dropdowns').select('*');
+            const drops = dropData || [];
+            
+            centerOptions = drops.filter(d => d.category === 'Onboard Centers' || d.category === 'Centers').map(d => d.value);
+            masterTypeOptions = drops.filter(d => d.category === 'Master Types').map(d => d.value);
+            const onboardTags = drops.filter(d => d.category === 'Onboard Tags').map(d => d.value);
 
-          // 2. สั่งให้หน้าบ้านไปดึงข้อมูล Master (ตารางตรวจประวัติ) มาทำ Map เอง 
-          google.script.run.withSuccessHandler(masterRes => {
-              hideLoading();
-              let masterData = masterRes.data || [];
-              providerMap = {};
-              
-              masterData.forEach(m => {
-                  let cleanId = String(m.idCard).replace(/\D/g, '');
-                  if(cleanId && !providerMap[cleanId]) {
-                      providerMap[cleanId] = {
-                          ftStatus: m.ftStatus,
-                          verifyDate: m.resultDate || m.submitDate,
-                          code: m.code,
-                          name: m.name
-                      };
-                  }
-              });
+            const ctrSel = document.getElementById('trainingCenter');
+            ctrSel.innerHTML = '<option value="">เลือกศูนย์...</option>';
+            [...new Set(centerOptions)].forEach(x => ctrSel.add(new Option(x, x)));
 
-              updateStats();
-              filterTable();
-          }).withFailureHandler(e => { hideLoading(); showError(e.message); }).getInitialData('');
+            const mtSel = document.getElementById('masterType');
+            mtSel.innerHTML = '<option value="">เลือกประเภท...</option>';
+            masterTypeOptions.forEach(x => mtSel.add(new Option(x, x)));
 
-       }).withFailureHandler(e => { hideLoading(); showError(e.message); }).getHoldData();
+            let tagsHtml = '';
+            let configTags = onboardTags.length > 0 ? onboardTags : ['รูปโปรไฟล์', 'รูปอุปกรณ์']; 
+            configTags.forEach((tag, idx) => {
+                let tagId = 'dynamic_tag_' + idx;
+                tagsHtml += `
+                    <div>
+                        <input type="checkbox" id="${tagId}" class="tag-checkbox dynamic-tag" value="${tag}">
+                        <label for="${tagId}" class="tag-label"><i class="fas fa-tag me-1 text-muted"></i> ${tag}</label>
+                    </div>
+                `;
+            });
+            document.getElementById('dynamicTagsContainer').innerHTML = tagsHtml;
+
+            // 3. Fetch Master & Annual Data for VerifyMap
+            const { data: masterData } = await supabase.from('prs_verify_master').select('id_card, maid_code, ft_status, submit_date, result_date');
+            const { data: annualData } = await supabase.from('prs_verify_annual').select('id_card, ref_code, status_process, result, result_date');
+
+            let verifyMap = {};
+            (masterData || []).forEach(m => {
+                let cleanId = String(m.id_card).replace(/\D/g, '').trim();
+                let sTime = m.submit_date ? new Date(m.submit_date).getTime() : 0;
+                
+                if (!verifyMap[cleanId]) {
+                    verifyMap[cleanId] = { code: m.maid_code, ftStatus: m.ft_status, lastSubmitTime: sTime, verifyTimestamp: 0 };
+                } else {
+                    if (sTime >= verifyMap[cleanId].lastSubmitTime) {
+                        verifyMap[cleanId].ftStatus = m.ft_status;
+                        verifyMap[cleanId].lastSubmitTime = sTime;
+                    }
+                }
+                const lowerStatus = String(m.ft_status).toLowerCase();
+                if (['verified', 'ผ่าน', 'ไม่พบประวัติ'].includes(lowerStatus)) {
+                    let t = m.result_date ? new Date(m.result_date).getTime() : new Date().getTime();
+                    if (t > verifyMap[cleanId].verifyTimestamp) {
+                        verifyMap[cleanId].verifyTimestamp = t;
+                        verifyMap[cleanId].verifyDate = m.result_date;
+                    }
+                }
+            });
+
+            (annualData || []).forEach(a => {
+                let cleanId = String(a.id_card).replace(/\D/g, '').trim();
+                if (!verifyMap[cleanId]) {
+                    verifyMap[cleanId] = { code: a.ref_code, ftStatus: "", verifyTimestamp: 0 };
+                }
+                let mappedStatus = verifyMap[cleanId].ftStatus;
+                let lowerResult = String(a.result).toLowerCase();
+                
+                if (lowerResult.includes('ได้รับผลแล้ว') || lowerResult.includes('อนุมัติโดยพนักงาน') || lowerResult.includes('ผ่าน')) {
+                    mappedStatus = 'Verified';
+                } else if (lowerResult.includes('ไม่ผ่าน') || lowerResult.includes('kyc')) {
+                    mappedStatus = 'Not Verified';
+                } else if (lowerResult.includes('รอผล') || lowerResult.includes('pending')) {
+                    mappedStatus = 'Pending Result';
+                }
+                
+                if (mappedStatus) verifyMap[cleanId].ftStatus = mappedStatus;
+
+                if (mappedStatus === 'Verified') {
+                    let t = a.result_date ? new Date(a.result_date).getTime() : new Date().getTime();
+                    if (t > verifyMap[cleanId].verifyTimestamp) {
+                        verifyMap[cleanId].verifyTimestamp = t;
+                        verifyMap[cleanId].verifyDate = a.result_date;
+                    }
+                }
+            });
+
+            providerMap = verifyMap;
+
+            // 4. Fetch Hold Data
+            const { data: holdData, error: holdErr } = await supabase.from('prs_hold').select('*').order('created_at', { ascending: false });
+            if (holdErr) throw holdErr;
+
+            globalData = (holdData || []).map(row => {
+                let holdFtStatus = String(row.fast_track_status || "").trim();
+                let verifyMethod = String(row.verify_method || "").trim();
+                let idCardClean = String(row.id_card).replace(/\D/g, ''); 
+                let maidCodeClean = String(row.maid_code).trim().toLowerCase(); 
+                
+                let mapData = verifyMap[idCardClean];
+                if (!mapData && maidCodeClean) {
+                    let matchedKey = Object.keys(verifyMap).find(k => verifyMap[k].code && String(verifyMap[k].code).toLowerCase() === maidCodeClean);
+                    if (matchedKey) mapData = verifyMap[matchedKey];
+                }
+
+                let ftStatus = holdFtStatus; 
+
+                if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
+                    if (!holdFtStatus) {
+                        ftStatus = ''; 
+                    } else {
+                        if (mapData && mapData.ftStatus) {
+                            ftStatus = mapData.ftStatus; 
+                        }
+                    }
+                } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+                    ftStatus = 'Verified'; 
+                } else if (verifyMethod === 'มีใบตรวจประวัติมาเอง') {
+                    ftStatus = holdFtStatus;
+                }
+
+                if (!mapData || mapData.verifyTimestamp === 0) {
+                    if (verifyMethod === 'ใช้ผลตรวจเดิม') {
+                        verifyMethod = 'ต้องส่งตรวจใหม่ผ่านระบบ';
+                        ftStatus = ''; 
+                    }
+                }
+
+                return {
+                    id: row.hold_id, 
+                    maidCode: row.maid_code, 
+                    name: row.full_name, 
+                    idCard: row.id_card, 
+                    phone: row.phone,
+                    contactChannel: row.contact_channel, 
+                    holdDate: row.hold_date, 
+                    needsRetrain: row.needs_retrain, 
+                    trainingCenter: row.training_center,
+                    lastVerifyDate: row.last_verify_date, 
+                    verifyMethod: verifyMethod,
+                    fastTrackStatus: ftStatus, 
+                    masterType: row.master_type, 
+                    tags: row.tags || [], 
+                    status: row.status || 'รอดำเนินการ', 
+                    reactivationDate: row.reactivation_date,
+                    kpiJobs: row.kpi_jobs || [], 
+                    officer: row.officer, 
+                    history: row.history || [],
+                    contactDate: row.contact_date || "",
+                    retrainDate: row.retrain_date || ""
+                };
+            });
+
+            updateStats();
+            filterTable();
+            hideLoading();
+        } catch(err) {
+            hideLoading();
+            showError(err.message);
+        }
     }
 
     function updateStats() {
@@ -597,6 +711,14 @@
         
         if (isNaN(parsedDate.getTime())) return d;
         return parsedDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
+    }
+    
+    function formatDateForDB(d) {
+        if (!d) return null;
+        if (d.includes('-')) return d; 
+        const parts = d.split('/');
+        if (parts.length === 3) return `${parseInt(parts[2]) > 2400 ? parts[2]-543 : parts[2]}-${parts[1]}-${parts[0]}`;
+        return d.substring(0, 10);
     }
 
     function getDeadlineDisplay(reactivationDateStr) {
@@ -655,7 +777,7 @@
           } else if (row.verifyMethod === 'มีใบตรวจประวัติมาเอง') {
               ftBadge = `<span class="badge bg-light text-muted border">ตรวจเอง</span>`;
           } else {
-              ftBadge = `<button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 shadow-sm fw-bold" style="font-size:0.7rem;" onclick="sendToFastTrackDirect('${row.id}')"><i class="fas fa-paper-plane me-1"></i>ส่งตรวจ</button>`;
+              ftBadge = `<button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 shadow-sm fw-bold" style="font-size:0.7rem;" onclick="sendFastTrackDirect('${row.id}')"><i class="fas fa-paper-plane me-1"></i>ส่งตรวจ</button>`;
           }
 
           let statBadge = 'bg-secondary';
@@ -712,7 +834,6 @@
           let maidLink = row.maidCode ? `<a href="https://admin-test.beneat.co/professional/${row.maidCode}/profile" target="_blank" class="fw-bold text-primary text-decoration-none shadow-sm rounded-1 px-1" style="background:#f8f9fa;">${row.maidCode}</a>` : '-';
           let deleteBtn = isUserAdmin ? `<button class="btn btn-icon btn-soft-danger btn-sm rounded-pill shadow-sm" onclick="deleteItem('${row.id}')" title="ลบ"><i class="fas fa-trash-alt"></i></button>` : '';
 
-          // 🌟 Logic การแสดงวันเปิดระบบ และ วันครบกำหนดในคอลัมน์เดียวกัน
           let openDateStr = formatDateDisplay(row.reactivationDate);
           let deadlineStr = "";
           
@@ -854,11 +975,12 @@
         }
 
         clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
+        searchTimeout = setTimeout(async () => {
             staticIcon.classList.add('d-none');
             spinningIcon.classList.remove('d-none');
             
-            google.script.run.withSuccessHandler(res => {
+            try {
+                const res = await globalSmartSearchSupabase(cleanVal);
                 staticIcon.classList.remove('d-none');
                 spinningIcon.classList.add('d-none');
                 
@@ -871,7 +993,10 @@
                         appendServerResults(serverResults, cleanVal);
                     }
                 }
-            }).globalSmartSearch(cleanVal);
+            } catch(e) {
+                staticIcon.classList.remove('d-none');
+                spinningIcon.classList.add('d-none');
+            }
         }, 500);
     }
 
@@ -971,7 +1096,6 @@
        document.getElementById('hasFastTrackStatus').value = "";
        document.getElementById('modalTitle').textContent = "บันทึกคุณแม่บ้านขอกลับมาทำใหม่ (กลุ่ม H)";
        
-       // 🌟 ตั้งค่า วันที่ติดต่อ เป็นวันนี้ 🌟
        document.getElementById('contactDate')._flatpickr.setDate(new Date());
 
        document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
@@ -1002,18 +1126,16 @@
            document.getElementById('phone').value = item.phone;
            document.getElementById('contactChannel').value = item.contactChannel;
            
-           // 🌟 Load Contact Date 🌟
-           if(item.contactDate) document.getElementById('contactDate')._flatpickr.setDate(convertToYMD(item.contactDate)); 
+           if(item.contactDate) document.getElementById('contactDate')._flatpickr.setDate(item.contactDate); 
            else document.getElementById('contactDate')._flatpickr.clear();
 
-           if(item.holdDate) document.getElementById('holdDate')._flatpickr.setDate(convertToYMD(item.holdDate)); 
+           if(item.holdDate) document.getElementById('holdDate')._flatpickr.setDate(item.holdDate); 
            else document.getElementById('holdDate')._flatpickr.clear();
            
            document.getElementById('needsRetrain').value = item.needsRetrain || "ไม่ต้อง";
            document.getElementById('trainingCenter').value = item.trainingCenter || "";
            
-           // 🌟 Load Retrain Date 🌟
-           if(item.retrainDate) document.getElementById('retrainDate')._flatpickr.setDate(convertToYMD(item.retrainDate)); 
+           if(item.retrainDate) document.getElementById('retrainDate')._flatpickr.setDate(item.retrainDate); 
            else document.getElementById('retrainDate')._flatpickr.clear();
 
            toggleRetrain();
@@ -1030,7 +1152,7 @@
                item.lastVerifyDate = mapData.verifyDate; 
            }
 
-           if(item.lastVerifyDate) document.getElementById('lastVerifyDate')._flatpickr.setDate(convertToYMD(item.lastVerifyDate)); 
+           if(item.lastVerifyDate) document.getElementById('lastVerifyDate')._flatpickr.setDate(item.lastVerifyDate); 
            else document.getElementById('lastVerifyDate')._flatpickr.clear();
            
            document.getElementById('verifyMethod').value = item.verifyMethod || "ใช้ผลตรวจเดิม";
@@ -1056,7 +1178,7 @@
            document.querySelectorAll('.dynamic-tag').forEach(cb => { cb.checked = tags.includes(cb.value); });
 
            document.getElementById('status').value = item.status || "รอดำเนินการ";
-           if(item.reactivationDate) document.getElementById('reactivationDate')._flatpickr.setDate(convertToYMD(item.reactivationDate)); 
+           if(item.reactivationDate) document.getElementById('reactivationDate')._flatpickr.setDate(item.reactivationDate); 
            else document.getElementById('reactivationDate')._flatpickr.clear();
            
            toggleKpiSection();
@@ -1103,7 +1225,7 @@
     function toggleRetrain() {
         const val = document.getElementById('needsRetrain').value;
         const divCenter = document.getElementById('retrainCenterDiv');
-        const divDate = document.getElementById('retrainDateDiv'); // 🌟 Show/Hide ช่องวันที่
+        const divDate = document.getElementById('retrainDateDiv'); 
         if (val === 'ต้อง Retrain') {
             divCenter.style.display = 'block'; 
             divDate.style.display = 'block';
@@ -1353,24 +1475,56 @@
     }
     function removeLog(index) { currentHistory.splice(index, 1); renderTimeline(); }
 
-    function sendToFastTrackDirect(id) {
+    // 🚀 SUPABASE DATA MUTATIONS
+    
+    async function sendFastTrackDirect(id) {
         Swal.fire({
             title: 'ยืนยันการส่งตรวจ?',
             text: 'ระบบจะส่งข้อมูลไปยังส่วนตรวจสอบประวัติ',
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#0d6efd'
-        }).then(r => {
+        }).then(async r => {
             if(r.isConfirmed) {
                 showLoading();
-                google.script.run.withSuccessHandler(res => {
-                    hideLoading();
-                    if(res.success) { 
-                        Swal.fire('ส่งตรวจสำเร็จ', 'ส่งข้อมูลไปยัง Fast Track แล้ว', 'success'); 
-                        loadData(); 
+                try {
+                    const holdRow = globalData.find(x => x.id === id);
+                    if (!holdRow) throw new Error("Hold ID not found");
+                    
+                    if (!holdRow.name || !holdRow.idCard) throw new Error("กรุณาระบุ ชื่อ และ เลขบัตรประชาชน ก่อนส่งตรวจ");
+
+                    const masterId = "VM-" + new Date().getTime().toString().substring(5);
+                    const submitDate = new Date().toISOString().split('T')[0];
+                    
+                    const masterPayload = {
+                        verify_id: masterId,
+                        maid_code: holdRow.maidCode,
+                        full_name: holdRow.name,
+                        id_card: holdRow.idCard,
+                        phone: holdRow.phone,
+                        submit_date: submitDate,
+                        officer: currentUser,
+                        center: holdRow.trainingCenter || holdRow.center, 
+                        ft_status: "รอตรวจสอบ",
+                        notes: "ส่งตรวจจากกลุ่ม H (Return)",
+                        master_type: holdRow.masterType
+                    };
+
+                    const { error: mErr } = await supabase.from('prs_verify_master').insert([masterPayload]);
+                    if (mErr) throw mErr;
+                    
+                    const { error: hErr } = await supabase.from('prs_hold').update({ fast_track_status: "Sent" }).eq('hold_id', id);
+                    if (hErr) throw hErr;
+                    
+                    if(typeof writeLogToSupabase === 'function') {
+                        await writeLogToSupabase('SEND_FAST_TRACK_HOLD', 'Hold', `Sent ${id} to Master Verify`, currentUser);
                     }
-                    else showError(res.message);
-                }).sendHoldToFastTrack(id);
+                    Swal.fire('ส่งตรวจสำเร็จ', 'ส่งข้อมูลไปยัง Fast Track แล้ว', 'success'); 
+                    initHoldPage(); 
+                } catch(err) {
+                    hideLoading();
+                    showError(err.message);
+                }
             }
         });
     }
@@ -1378,30 +1532,13 @@
     function sendToFastTrackFromModal() {
         const id = document.getElementById('recordId').value;
         if (!id) { 
-            Swal.fire({
-                title: 'คำเตือน', 
-                text: 'กรุณาบันทึกข้อมูลหลักก่อนส่งตรวจ Fast Track', 
-                icon: 'warning'
-            }); 
+            Swal.fire({ title: 'คำเตือน', text: 'กรุณาบันทึกข้อมูลหลักก่อนส่งตรวจ Fast Track', icon: 'warning' }); 
             return; 
         }
-        Swal.fire({ 
-            title: 'ยืนยันส่งตรวจ?', 
-            icon: 'question', 
-            showCancelButton: true 
-        }).then(r => {
-            if(r.isConfirmed) {
-                showLoading();
-                google.script.run.withSuccessHandler(res => {
-                    hideLoading();
-                    if(res.success) { Swal.fire('สำเร็จ', 'ส่งข้อมูลไปยังส่วนตรวจสอบประวัติแล้ว', 'success'); loadData(); formModal.hide(); }
-                    else showError(res.message);
-                }).sendHoldToFastTrack(id);
-            }
-        });
+        sendFastTrackDirect(id);
     }
 
-    function saveData() {
+    async function saveData() {
        const idInput = document.getElementById('idCard');
        if(idInput.value && !validateIdCard(idInput)) { 
            Swal.fire({title: 'เลขบัตรไม่ถูกต้อง', text: '', icon: 'warning'}); 
@@ -1433,44 +1570,72 @@
           }
        }
 
-       const form = {
-         id: document.getElementById('recordId').value,
-         maidCode: document.getElementById('maidCode').value,
-         name: document.getElementById('name').value,
-         idCard: document.getElementById('idCard').value.replace(/-/g, ''),
-         phone: document.getElementById('phone').value,
-         contactChannel: document.getElementById('contactChannel').value,
-         contactDate: document.getElementById('contactDate').value, // 🌟 ค่าใหม่ 🌟
-         holdDate: document.getElementById('holdDate').value,
-         needsRetrain: document.getElementById('needsRetrain').value,
-         trainingCenter: document.getElementById('trainingCenter').value,
-         retrainDate: document.getElementById('retrainDate').value, // 🌟 ค่าใหม่ 🌟
-         lastVerifyDate: document.getElementById('lastVerifyDate').value,
-         verifyMethod: document.getElementById('verifyMethod').value,
-         masterType: document.getElementById('masterType').value,
-         tags: tags,
-         status: document.getElementById('status').value,
-         reactivationDate: document.getElementById('reactivationDate').value,
-         kpiJobs: kpiData,
-         history: currentHistory,
-         officer: currentUser,
-         fastTrackStatus: finalFtStatus, 
-         manualFtStatus: finalFtStatus
-       };
+       const recordId = document.getElementById('recordId').value;
+       const newStatus = document.getElementById('status').value;
+       const oldStatus = recordId ? (globalData.find(x => x.id === recordId)?.status || "") : "";
 
-       if(!form.name || !form.maidCode) { 
+       if (oldStatus !== newStatus && newStatus !== "") {
+           const now = new Date();
+           const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+           currentHistory.unshift({ date: dateStr, note: `เปลี่ยนสถานะ: "${oldStatus||'ว่าง'}" -> "${newStatus}"`, user: currentUser });
+       }
+
+       const nameVal = document.getElementById('name').value;
+       const maidCodeVal = document.getElementById('maidCode').value;
+
+       if(!nameVal || !maidCodeVal) { 
            Swal.fire({title: 'ข้อมูลไม่ครบ', text: 'ระบุรหัส และ ชื่อ-นามสกุล', icon: 'warning'}); 
            return; 
        }
 
        showLoading();
-       google.script.run.withSuccessHandler(res => {
-         hideLoading();
-         if(res.success) { formModal.hide(); Swal.fire({ icon:'success', title:'บันทึกเรียบร้อย', timer: 1000, showConfirmButton:false }); loadData(); } 
-         else showError(res.message);
-       }).withFailureHandler(err => {
-         hideLoading(); showError(err.message);
-       }).saveHoldData(form);
+       try {
+           const payload = {
+               maid_code: maidCodeVal,
+               full_name: nameVal,
+               id_card: document.getElementById('idCard').value.replace(/-/g, ''),
+               phone: document.getElementById('phone').value,
+               contact_channel: document.getElementById('contactChannel').value,
+               contact_date: document.getElementById('contactDate').value || null,
+               hold_date: document.getElementById('holdDate').value || null,
+               needs_retrain: document.getElementById('needsRetrain').value,
+               training_center: document.getElementById('trainingCenter').value,
+               retrain_date: document.getElementById('retrainDate').value || null,
+               last_verify_date: document.getElementById('lastVerifyDate').value || null,
+               verify_method: verifyMethod,
+               fast_track_status: finalFtStatus,
+               master_type: document.getElementById('masterType').value,
+               tags: tags,
+               status: newStatus,
+               reactivation_date: document.getElementById('reactivationDate').value || null,
+               kpi_jobs: kpiData,
+               officer: currentUser,
+               history: currentHistory
+           };
+
+           if (recordId) {
+               const { error } = await supabase.from('prs_hold').update(payload).eq('hold_id', recordId);
+               if (error) throw error;
+               if(typeof writeLogToSupabase === 'function') {
+                   await writeLogToSupabase('UPDATE_HOLD', 'Hold', `Updated Hold ID: ${recordId}`, currentUser);
+               }
+           } else {
+               const newId = "H-" + new Date().getTime().toString().substring(5);
+               payload.hold_id = newId;
+               const { error } = await supabase.from('prs_hold').insert([payload]);
+               if (error) throw error;
+               if(typeof writeLogToSupabase === 'function') {
+                   await writeLogToSupabase('CREATE_HOLD', 'Hold', `Created Hold ID: ${newId}`, currentUser);
+               }
+           }
+
+           formModal.hide(); 
+           Swal.fire({ icon:'success', title:'บันทึกเรียบร้อย', timer: 1000, showConfirmButton:false }); 
+           initHoldPage(); 
+       } catch(err) {
+           hideLoading();
+           showError(err.message);
+       }
     }
 
     function returnJobFromModal(index) {
@@ -1527,35 +1692,55 @@
         });
     }
 
-    function deleteItem(id) {
-        Swal.fire({ title: 'ยืนยันลบ?', text: "เฉพาะ Admin เท่านั้นที่ลบได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((r) => {
+    async function deleteItem(id) {
+        if (!isUserAdmin) return Swal.fire('Error', 'เฉพาะ Admin เท่านั้นที่ลบได้', 'error');
+        Swal.fire({ title: 'ยืนยันลบ?', text: "ไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then(async (r) => {
             if (r.isConfirmed) {
                 showLoading();
-                google.script.run.withSuccessHandler((res) => { 
-                    hideLoading(); 
-                    if(res.success) { Swal.fire('ลบแล้ว!', '', 'success'); loadData(); } else { showError(res.message); }
-                }).deleteHoldData(id);
+                try {
+                    const { error } = await supabase.from('prs_hold').delete().eq('hold_id', id);
+                    if (error) throw error;
+                    if(typeof writeLogToSupabase === 'function') {
+                        await writeLogToSupabase('DELETE_HOLD', 'Hold', `Deleted Hold ID: ${id}`, currentUser);
+                    }
+                    Swal.fire('Deleted!', '', 'success'); 
+                    initHoldPage();
+                } catch(err) {
+                    hideLoading();
+                    showError(err.message);
+                }
             }
         });
     }
 
     function exportReport() {
         showLoading();
-        google.script.run.withSuccessHandler(url => {
-            hideLoading();
-            if(url) {
-                window.open(url, '_blank');
-            } else {
-                showError('ไม่สามารถสร้างไฟล์ Export ได้ หรือไม่มีข้อมูล');
-            }
-        }).withFailureHandler(err => {
-            hideLoading();
-            if (err.message.includes("is not a function")) {
-                showError('ระบบหลังบ้านยังไม่รองรับฟังก์ชัน Export (โปรดเพิ่มฟังก์ชัน exportHoldData ใน Code.gs)');
-            } else {
-                showError(err.message);
-            }
-        }).exportHoldData();
+        try {
+            let csvContent = "รหัสแม่บ้าน,ชื่อ-นามสกุล,เลขบัตร,เบอร์โทร,ช่องทางติดต่อ,วันที่โดนปลด,Retrain,ศูนย์เทรน,วันที่รับผลตรวจเดิม,สถานะ FT,สถานะปัจจุบัน,วันที่เปิดระบบใหม่,KPI-1,KPI-2,KPI-3,KPI-4,เจ้าหน้าที่\n";
+            
+            globalData.forEach(row => {
+                let kpis = ["-","-","-","-"];
+                if (row.kpiJobs && Array.isArray(row.kpiJobs)) {
+                    row.kpiJobs.forEach((k, idx) => { if(idx < 4) kpis[idx] = k.booking || "-"; });
+                }
+
+                const rowString = [
+                    row.maidCode, row.name, row.idCard, `"${row.phone}"`, row.contactChannel, row.holdDate, row.needsRetrain, row.trainingCenter, row.lastVerifyDate, row.fastTrackStatus, row.status, row.reactivationDate,
+                    kpis[0], kpis[1], kpis[2], kpis[3], row.officer
+                ].map(f => `"${String(f || "").replace(/"/g, '""').replace(/[\r\n]+/g, " ")}"`).join(",");
+                
+                csvContent += rowString + "\n";
+            });
+
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Hold_Return_Report_${new Date().getTime()}.csv`;
+            link.click();
+            Swal.close();
+        } catch (e) {
+            showError("Export failed: " + e.message);
+        }
     }
 
   </script>
