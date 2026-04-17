@@ -10,6 +10,7 @@
         display: flex;
         flex-direction: column;
         transition: var(--transition, all 0.3s ease);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.02);
     }
     .sidebar-header {
         height: 90px;
@@ -45,11 +46,12 @@
     }
     
     .brand-text {
-        font-weight: 700;
-        font-size: 1.1rem;
+        font-weight: 800;
+        font-size: 1.2rem;
         color: #2d3436;
         opacity: 1;
         transition: opacity 0.2s;
+        letter-spacing: 0.5px;
     }
 
     /* ปุ่ม Toggle ใน Sidebar (แสดงเฉพาะ Desktop) */
@@ -75,7 +77,12 @@
         flex-grow: 1;
         overflow-y: auto;
     }
-    .sidebar-menu li { margin-bottom: 8px; }
+    
+    /* ซ่อน Scrollbar แต่ยัง Scroll ได้ */
+    .sidebar-menu::-webkit-scrollbar { width: 4px; }
+    .sidebar-menu::-webkit-scrollbar-thumb { background-color: #e9ecef; border-radius: 4px; }
+
+    .sidebar-menu li { margin-bottom: 6px; }
 
     .nav-link-custom {
         display: flex;
@@ -85,22 +92,28 @@
         text-decoration: none;
         border-radius: 12px;
         transition: all 0.2s;
-        font-weight: 500;
+        font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
     }
     .nav-link-custom:hover {
         background-color: #f8f9fa;
         color: var(--ci-primary);
-        transform: translateX(5px);
+        transform: translateX(4px);
     }
     .nav-link-custom.active {
         background-color: #f0fbff;
         color: var(--ci-primary);
         border-right: 4px solid var(--ci-primary);
-        font-weight: 700;
     }
-    .nav-link-custom i { width: 25px; text-align: center; margin-right: 10px; font-size: 1.1rem; flex-shrink: 0; transition: margin 0.3s ease; }
+    .nav-link-custom i { 
+        width: 25px; 
+        text-align: center; 
+        margin-right: 10px; 
+        font-size: 1.1rem; 
+        flex-shrink: 0; 
+        transition: margin 0.3s ease; 
+    }
     
     /* Collapsed Logic (Desktop) */
     @media (min-width: 769px) {
@@ -109,18 +122,12 @@
             justify-content: center; 
             padding: 0;
         }
-        .sidebar.collapsed .brand-text { 
-            display: none; 
-        }
-        .sidebar.collapsed .sidebar-toggle-btn {
-            display: none; 
-        }
-        .sidebar.collapsed .brand-group {
-             margin: 0;
-        }
+        .sidebar.collapsed .brand-text { display: none; }
+        .sidebar.collapsed .sidebar-toggle-btn { display: none; }
+        .sidebar.collapsed .brand-group { margin: 0; }
         
         .sidebar.collapsed .nav-link-custom { justify-content: center; padding: 12px 0; }
-        .sidebar.collapsed .nav-link-custom i { margin-right: 0; }
+        .sidebar.collapsed .nav-link-custom i { margin-right: 0; font-size: 1.3rem; }
         .sidebar.collapsed .nav-link-custom span { display: none; }
         .sidebar.collapsed .nav-link-custom:hover { transform: none; background-color: #f1f3f5; }
         
@@ -128,18 +135,28 @@
     }
     
     /* Mobile Overlay */
-    .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(2px); z-index: 999; }
-    .sidebar-overlay.active { display: block; }
+    .sidebar-overlay { 
+        display: none; 
+        position: fixed; 
+        top: 0; left: 0; 
+        width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.4); 
+        backdrop-filter: blur(3px); 
+        z-index: 999; 
+    }
+    .sidebar-overlay.active { display: block; animation: fadeIn 0.2s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     
     @media (max-width: 768px) {
         .sidebar { transform: translateX(-100%); }
-        .sidebar.active { transform: translateX(0); box-shadow: 5px 0 25px rgba(0,0,0,0.1); }
+        .sidebar.active { transform: translateX(0); box-shadow: 5px 0 25px rgba(0,0,0,0.15); }
         .sidebar-toggle-btn { display: none; } 
     }
     
     .sidebar-footer-text {
         font-size: 0.75rem;
         color: #adb5bd;
+        font-weight: 500;
     }
     .sidebar.collapsed .sidebar-footer-text { display: none; }
 </style>
@@ -147,7 +164,7 @@
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header" onclick="checkCollapseExpand(event)">
         <!-- Logo Group -->
-        <div class="brand-group" title="PRS">
+        <div class="brand-group" title="Partner Relation System">
             <div class="logo-box"><i class="fas fa-bolt"></i></div>
             <div class="brand-text">PRS</div>
         </div>
@@ -175,7 +192,7 @@
             </a>
         </li>
         
-        <div class="my-3 border-top mx-3"></div>
+        <div class="my-3 border-top mx-3 opacity-50"></div>
 
          <li>
             <a href="<?= ScriptApp.getService().getUrl() ?>?page=hold" class="nav-link-custom" data-page="hold">
@@ -183,10 +200,9 @@
             </a>
         </li>
         
-        <div class="my-3 border-top mx-3"></div>
+        <div class="my-3 border-top mx-3 opacity-50"></div>
         
-        
-        <!-- 🌟 รวบเมนูตรวจประวัติ (Master + Annual) เข้าด้วยกันตามระบบ Single Workspace 🌟 -->
+        <!-- เมนูตรวจประวัติ (Master + Annual) -->
         <li>
             <a href="<?= ScriptApp.getService().getUrl() ?>?page=verify_workspace" class="nav-link-custom" data-page="verify_workspace">
                 <i class="fas fa-user-shield"></i> <span>จัดการตรวจประวัติ (Verify)</span>
@@ -195,11 +211,11 @@
         
         <li>
             <a href="<?= ScriptApp.getService().getUrl() ?>?page=account_verify" class="nav-link-custom" data-page="account_verify">
-                <i class="fas fa-search-dollar"></i> <span>กระทบยอดบัญชี (Account Verify)</span>
+                <i class="fas fa-search-dollar"></i> <span>กระทบยอดบัญชี (Account)</span>
             </a>
         </li>
         
-        <div class="my-3 border-top mx-3"></div>
+        <div class="my-3 border-top mx-3 opacity-50"></div>
 
         <!-- เมนู Fast Report -->
         <li>
@@ -208,6 +224,7 @@
             </a>
         </li>
         
+        <!-- เมนูตั้งค่า (แสดงเฉพาะ Admin ที่ตั้งค่าไว้ใน Supabase) -->
         <li>
             <a href="<?= ScriptApp.getService().getUrl() ?>?page=config" class="nav-link-custom d-none mt-2" id="nav-config" data-page="config">
                 <i class="fas fa-cogs"></i> <span>ตั้งค่าระบบ (Config)</span>
