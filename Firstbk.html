@@ -217,8 +217,8 @@
   </div>
 
   <!-- Action Modal -->
-  <div class="modal fade" id="actionModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+  <div class="modal fade" id="actionModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-white border-bottom-0 pb-0 d-flex justify-content-between">
           <h5 class="modal-title fw-bold text-primary" id="modalTitleText">จัดการข้อมูล</h5>
@@ -300,7 +300,6 @@
                                  <div class="col-md-5">
                                      <label class="form-label small fw-bold">คะแนนรีวิว <span class="text-danger">*</span></label>
                                      
-                                     <!-- 🌟 เพิ่มการสลับ Checkbox อัตโนมัติใน HTML 🌟 -->
                                      <div class="rate">
                                           <input type="radio" id="star5" name="rating" value="5" onchange="document.getElementById('noReview').checked=false;" /><label for="star5">5</label>
                                           <input type="radio" id="star4" name="rating" value="4" onchange="document.getElementById('noReview').checked=false;" /><label for="star4">4</label>
@@ -330,27 +329,81 @@
         </div>
         <div class="modal-footer border-top-0 bg-white">
           <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
-          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึก</button>
+          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึกข้อมูล</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Config & History Modals -->
-  <div class="modal fade" id="configModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header bg-dark text-white"><h5 class="modal-title fs-6"><i class="fas fa-cogs me-2"></i>จัดการคำถาม (Checklist Config)</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body p-0"><div class="alert alert-warning m-3 small"><i class="fas fa-exclamation-triangle me-1"></i> การปิดคำถามจะมีผลกับหน้าจอการบันทึกเท่านั้น ข้อมูลเก่าจะไม่ถูกลบ</div><div class="list-group list-group-flush" id="configListContainer" style="max-height: 400px; overflow-y: auto;"></div></div><div class="modal-footer bg-light"><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">ปิด</button></div></div></div></div>
-  <div class="modal fade" id="summaryModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content border-0 shadow-lg"><div class="modal-header bg-white text-success border-bottom"><h5 class="modal-title fw-bold">สรุปผลงานแรก</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body bg-light p-4"><div class="card border-0 shadow-sm mb-3"><div class="card-body"><h6 class="fw-bold text-primary mb-2" id="sum_maid_name">Maid Name</h6><div class="small text-muted"><span id="sum_booking" class="fw-bold text-dark"></span> | <span id="sum_date"></span> | <span id="sum_hours"></span> ชม.</div><div class="mt-2 h4 text-warning" id="sum_stars"></div></div></div><div class="row g-3"><div class="col-md-6"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small fw-bold text-muted text-uppercase mb-2 border-bottom pb-1">ก่อนเริ่มงาน</div><div id="sum_pre_list" class="small"></div><div class="mt-3 bg-light p-2 rounded small text-muted"><strong class="text-primary">คำแนะนำ:</strong> <span id="sum_pre_advice">-</span></div></div></div><div class="col-md-6"><div class="bg-white p-3 rounded shadow-sm h-100"><div class="small fw-bold text-muted text-uppercase mb-2 border-bottom pb-1">หลังจบงาน</div><div id="sum_post_list" class="small"></div><div class="mt-3 bg-light p-2 rounded small text-muted"><strong class="text-primary">คำแนะนำ:</strong> <span id="sum_post_advice">-</span></div></div></div></div><div class="mt-3 bg-white p-3 rounded shadow-sm"><h6 class="fw-bold small text-secondary">ความคิดเห็น & ประวัติ</h6><div class="small text-muted mb-2">Comment: <span id="sum_comment" class="fst-italic"></span></div><div class="small text-danger mb-2" id="sum_problem_section">Problem ID: <span id="sum_problem_text" class="fw-bold"></span></div><div id="historyTimelineSummary" class="border-top pt-2 mt-2" style="max-height:150px; overflow-y:auto;"></div><div class="text-end mt-2"><button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="editFromSummary()">แก้ไข</button></div></div></div></div></div></div>
-  <div class="modal fade" id="historyModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><div class="modal-header border-bottom-0"><h5 class="modal-title fw-bold text-secondary">ประวัติการติดตาม</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body bg-light"><div id="timelineContainer" style="max-height: 400px; overflow-y: auto;"></div></div></div></div></div>
+  <!-- Summary Modal -->
+  <div class="modal fade" id="summaryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-white text-success border-bottom">
+          <h5 class="modal-title fw-bold">สรุปผลงานแรก</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light p-4">
+          <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+              <h6 class="fw-bold text-primary mb-2" id="sum_maid_name">Maid Name</h6>
+              <div class="small text-muted"><span id="sum_booking" class="fw-bold text-dark"></span> | <span id="sum_date"></span> | <span id="sum_hours"></span> ชม.</div>
+              <div class="mt-2 h4 text-warning" id="sum_stars"></div>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="bg-white p-3 rounded shadow-sm h-100">
+                <div class="small fw-bold text-muted text-uppercase mb-2 border-bottom pb-1">ก่อนเริ่มงาน</div>
+                <div id="sum_pre_list" class="small"></div>
+                <div class="mt-3 bg-light p-2 rounded small text-muted"><strong class="text-primary">คำแนะนำ:</strong> <span id="sum_pre_advice">-</span></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="bg-white p-3 rounded shadow-sm h-100">
+                <div class="small fw-bold text-muted text-uppercase mb-2 border-bottom pb-1">หลังจบงาน</div>
+                <div id="sum_post_list" class="small"></div>
+                <div class="mt-3 bg-light p-2 rounded small text-muted"><strong class="text-primary">คำแนะนำ:</strong> <span id="sum_post_advice">-</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 bg-white p-3 rounded shadow-sm">
+            <h6 class="fw-bold small text-secondary">ความคิดเห็น & ประวัติ</h6>
+            <div class="small text-muted mb-2">Comment: <span id="sum_comment" class="fst-italic"></span></div>
+            <div class="small text-danger mb-2" id="sum_problem_section">Problem ID: <span id="sum_problem_text" class="fw-bold"></span></div>
+            <div id="historyTimelineSummary" class="border-top pt-2 mt-2" style="max-height:150px; overflow-y:auto;"></div>
+            <div class="text-end mt-2"><button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="editFromSummary()">แก้ไข</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal fade" id="historyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow">
+        <div class="modal-header border-bottom-0">
+          <h5 class="modal-title fw-bold text-secondary">ประวัติการติดตาม</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body bg-light">
+          <div id="timelineContainer" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <?!= include('_Scripts') ?>
   
   <script>
     let rawData = [], currentUser = "", isUserAdmin = false;
-    let actionModal, historyModal, summaryModal, configModal, rangePicker;
+    let actionModal, historyModal, summaryModal, rangePicker;
     let currentViewingId = null;
-    let checklistQuestions = []; // Load from server
+    let checklistQuestions = []; 
+    let currentHistory = []; // 🌟 ตัวแปรเก็บ History ให้ UI อัปเดตแบบเรียลไทม์
     
-    // ประกาศตัวแปรเก็บ instance ของ flatpickr แยกกัน
     let datepickerAssignInstance, datepickerCleanInstance;
 
     window.onload = function() {
@@ -362,12 +415,10 @@
         actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
         historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
         summaryModal = new bootstrap.Modal(document.getElementById('summaryModal'));
-        configModal = new bootstrap.Modal(document.getElementById('configModal'));
         
         datepickerAssignInstance = flatpickr(".datepicker-assign", { dateFormat: "d/m/Y", locale: "th" });
         datepickerCleanInstance = flatpickr(".datepicker-clean", { dateFormat: "j M Y", locale: "th" });
 
-        // Range Filter (No Default to show ALL)
         rangePicker = flatpickr("#dateRangeFilter", {
              mode: "range", dateFormat: "d/m/Y", locale: "th",
              onChange: function(selectedDates) { if(selectedDates.length===2) renderTables(); }
@@ -375,27 +426,145 @@
         
         populateTimeSelect();
         
-        document.getElementById('pageTitle').textContent = "ติดตามงานแรก (First Job)";
-        document.getElementById('pageSubtitle').textContent = "ดูแลและติดตามผลการทำงาน";
+        if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "ติดตามงานแรก (First Job)";
+        if(document.getElementById('pageSubtitle')) document.getElementById('pageSubtitle').textContent = "ดูแลและติดตามผลการทำงาน";
 
-        // Load Config then Data
-        google.script.run.withSuccessHandler(data => {
-             checklistQuestions = data || [];
-             renderChecklistForm(); 
-             loadData(); 
-        }).getChecklistConfig();
+        // 🚀 ดึงข้อมูลทุกอย่างจาก Supabase 100%
+        initFirstJobPage();
+    };
 
-        google.script.run.withSuccessHandler(res => { 
-            isUserAdmin = res.isAdmin; 
-            if(res.isAdmin && document.getElementById('nav-config')) {
+    // 🌟 ระบบเชื่อมต่อ SUPABASE (แทนที่ Google Apps Script)
+    async function initFirstJobPage() {
+        showLoading();
+        try {
+            // 1. ตรวจสอบสิทธิ์ผู้ใช้งาน (Auth) ผ่าน Google Apps Script
+            const configRes = await new Promise((resolve) => {
+                google.script.run.withSuccessHandler(resolve).getClientConfig();
+            });
+            currentUser = configRes.userEmail || "System";
+            isUserAdmin = configRes.isAdmin;
+            
+            if(isUserAdmin && document.getElementById('nav-config')) {
                 document.getElementById('nav-config').classList.remove('d-none');
             }
-            if(res.onboardCenters) {
-               const sel = document.getElementById('centerFilter');
-               res.onboardCenters.forEach(c => sel.add(new Option(c, c)));
+
+            // 2. ดึงข้อมูลตัวเลือกศูนย์ Center จาก Supabase
+            const { data: dropData } = await supabase.from('config_dropdowns').select('*').eq('category', 'Onboard Centers');
+            if (dropData) {
+                 const sel = document.getElementById('centerFilter');
+                 dropData.forEach(d => sel.add(new Option(d.value, d.value)));
             }
-        }).getClientConfig();
-    };
+
+            // 3. ดึงโครงสร้างชุดคำถาม Checklist จาก Supabase
+            const { data: checklistData } = await supabase.from('prs_config_checklist').select('*').order('sort_order', { ascending: true });
+            
+            if (!checklistData || checklistData.length === 0) {
+                // 💡 ถ้าในฐานข้อมูลว่างเปล่า (เพิ่งย้ายระบบมา) จะสร้างชุดคำถามเริ่มต้นให้อัตโนมัติ!
+                const defaults = [
+                    { question_id: 'c1_1', label: '1.1 การกดรับงาน', section: 'pre', answer_type: 'select', options: ['มีงานขึ้นปกติ', 'มีงานขึ้นแต่น้อย', 'งานไม่ขึ้น'], is_active: true, sort_order: 1 },
+                    { question_id: 'c1_2', label: '1.2 การโทรยืนยัน', section: 'pre', answer_type: 'select', options: ['โทรยืนยันแล้ว', 'ไม่ได้โทรยืนยัน'], is_active: true, sort_order: 2 },
+                    { question_id: 'c1_3', label: '1.3 ระยะทาง', section: 'pre', answer_type: 'select', options: ['สามารถเดินทางได้', 'ค่อนข้างไกล', 'ไกล'], is_active: true, sort_order: 3 },
+                    { question_id: 'c1_4', label: '1.4 ปัญหาแอพ', section: 'pre', answer_type: 'select', options: ['ใช้งานได้ปกติ', 'ใช้งานค่อนข้างยาก', 'ใช้งานไม่ได้เลย'], is_active: true, sort_order: 4 },
+                    { question_id: 'c1_5', label: '1.5 อุปกรณ์', section: 'pre', answer_type: 'select', options: ['อุปกรณ์ครบ', 'ขาดบางอย่าง', 'ไม่มีอุปกรณ์'], is_active: true, sort_order: 5 },
+                    { question_id: 'c1_6', label: '1.6 ถ่ายรูป Check-in', section: 'post', answer_type: 'select', options: ['ผ่านปกติ', 'ไม่สามารถทำได้'], is_active: true, sort_order: 6 },
+                    { question_id: 'c1_7', label: 'เข้าใจ AI Feature', section: 'post', answer_type: 'select', options: ['เข้าใจ', 'ไม่เข้าใจ'], is_active: true, sort_order: 7 },
+                    { question_id: 'c2_1', label: '2.1 ประเมินหน้างาน', section: 'post', answer_type: 'select', options: ['งานตรงปก', 'งานไม่ตรงปก'], is_active: true, sort_order: 8 },
+                    { question_id: 'c2_2', label: '2.2 งานรีโนเวท', section: 'post', answer_type: 'select', options: ['ไม่พบ', 'พบเจอ'], is_active: true, sort_order: 9 },
+                    { question_id: 'c2_3', label: '2.3 งานเกินขอบเขต', section: 'post', answer_type: 'select', options: ['ไม่พบ', 'พบเจอ'], is_active: true, sort_order: 10 },
+                    { question_id: 'c2_4', label: 'การจัดการงานเกิน', section: 'post', answer_type: 'select', options: ['คุยกับลูกค้าเรียบร้อย', 'ไม่พบ/ลูกค้าไม่อยู่'], is_active: true, sort_order: 11 },
+                    { question_id: 'c2_5', label: '2.5 สัตว์เลี้ยง', section: 'post', answer_type: 'select', options: ['ไม่พบ', 'พบเจอ'], is_active: true, sort_order: 12 },
+                    { question_id: 'c2_6', label: '2.6 อุปกรณ์หน้างาน', section: 'post', answer_type: 'select', options: ['ครบ', 'ไม่ครบ', 'ชำรุด'], is_active: true, sort_order: 13 },
+                    { question_id: 'c2_7', label: '2.7 ปัญหาที่พบ', section: 'post', answer_type: 'select', options: ['ไม่พบ', 'พบเจอ'], is_active: true, sort_order: 14 },
+                    { question_id: 'c2_8', label: 'ข้อเสนอแนะ', section: 'post', answer_type: 'text', options: [], is_active: true, sort_order: 15 }
+                ];
+                await supabase.from('prs_config_checklist').insert(defaults);
+                checklistQuestions = defaults.map(q => ({ id: q.question_id, label: q.label, section: q.section, type: q.answer_type, options: q.options, active: q.is_active, condition: null }));
+            } else {
+                checklistQuestions = checklistData.map(q => ({
+                    id: q.question_id, label: q.label, section: q.section, type: q.answer_type, options: q.options, active: q.is_active, condition: q.condition
+                }));
+            }
+            renderChecklistForm();
+
+            // 4. ดึงข้อมูล Onboard และ First Job มาประกอบร่างกัน
+            await fetchFirstJobDataFromSupabase();
+
+        } catch(err) {
+            hideLoading();
+            showError(err.message);
+        }
+    }
+
+    async function fetchFirstJobDataFromSupabase() {
+        try {
+            // ดึงข้อมูลฝั่ง Onboard เพื่อเป็นสารตั้งต้น (เอาเฉพาะคนที่เปิดระบบแล้ว หรือมีงานแรกแล้ว)
+            const { data: obData } = await supabase.from('prs_onboard').select('*');
+            
+            // ดึงข้อมูล First Job ทั้งหมด
+            const { data: fbData } = await supabase.from('prs_firstjob').select('*');
+            
+            const fbMap = new Map();
+            (fbData || []).forEach(fb => {
+                 fbMap.set(fb.onboard_id, fb);
+            });
+
+            rawData = (obData || []).reduce((acc, ob) => {
+                const obId = ob.onboard_id;
+                const statusOnboard = ob.onboard_type;
+                const fbRecord = fbMap.get(obId);
+                
+                const bookingCode = fbRecord ? fbRecord.booking_code : "";
+                const jobId = fbRecord ? fbRecord.job_id : "";
+                const cleanDateStr = fbRecord ? fbRecord.clean_date : "";
+                const status = fbRecord ? fbRecord.process_status : "";
+                
+                // แปลงสถานะให้ตรงกับ UI ที่ผู้ใช้เข้าใจ
+                let processStatus = "รอรับงานแรก";
+                if (bookingCode) {
+                    if (status === 'PreCallDone' || status === 'โทรเยี่ยมเรียบร้อย') processStatus = "โทรเยี่ยมเรียบร้อย";
+                    else if (status === 'Done' || status === 'จบงานสมบูรณ์') processStatus = "จบงานสมบูรณ์";
+                    else processStatus = "รอโทรเยี่ยม";
+                }
+                
+                const isPreCallDone = processStatus === 'โทรเยี่ยมเรียบร้อย' || processStatus === 'จบงานสมบูรณ์';
+                const isPostCallDone = processStatus === 'จบงานสมบูรณ์';
+                
+                // แสดงเฉพาะคนที่สถานะ Onboard = 'เปิดระบบ' หรือ มีรหัสการจองงานไปแล้ว
+                if (statusOnboard === 'เปิดระบบ' || bookingCode) {
+                    acc.push({
+                        id: obId,
+                        maidCode: ob.maid_code,
+                        name: ob.full_name,
+                        phone: ob.phone,
+                        center: ob.center,
+                        bookingCode: bookingCode,
+                        jobId: jobId,
+                        cleanDate: cleanDateStr,
+                        acceptDate: fbRecord ? fbRecord.accept_date : "",
+                        processStatus: processStatus,
+                        isPreCallDone: isPreCallDone,
+                        isPostCallDone: isPostCallDone,
+                        checklist: fbRecord ? fbRecord.question : null,
+                        history: fbRecord ? fbRecord.history : [],
+                        workHours: fbRecord ? fbRecord.work_hours : "",
+                        preAdvice: fbRecord ? fbRecord.pre_advice : "",
+                        postAdvice: fbRecord ? fbRecord.post_advice : "",
+                        firstjob_id: fbRecord ? fbRecord.firstjob_id : null,
+                        reviewScore: fbRecord ? fbRecord.reviewscore : null,
+                        customerComment: fbRecord ? fbRecord.customercomment : null,
+                        problemId: fbRecord ? fbRecord.problem_id : null
+                    });
+                }
+                return acc;
+            }, []);
+            
+            renderTables();
+            hideLoading();
+        } catch (err) {
+            hideLoading();
+            showError(err.message);
+        }
+    }
     
     function populateTimeSelect() {
         const sel = document.getElementById('fj_cleanDate_time');
@@ -422,7 +591,6 @@
             if (q.active === false) return;
 
             const rowDiv = document.createElement('div');
-            // Condition Check
             if (q.condition) {
                 rowDiv.className = 'checklist-row row align-items-center d-none is-child';
                 rowDiv.setAttribute('data-parent', q.condition.parentId);
@@ -432,7 +600,6 @@
             }
             
             let inputHtml = '';
-            // Change Action based on type
             const changeAction = (q.type === 'checkbox') ? "handleCheckboxChange(this)" : "handleSelectChange(this)";
 
             if (q.type === 'select') {
@@ -567,18 +734,6 @@
                 }
             }
         });
-    }
-
-    // --- Data Handlers (Updated Logic) ---
-    function loadData() {
-        showLoading();
-        google.script.run.withSuccessHandler(res => {
-            hideLoading();
-            rawData = res.data || [];
-            currentUser = res.currentUser;
-            if(document.getElementById('userEmailDisplay')) document.getElementById('userEmailDisplay').textContent = currentUser;
-            renderTables();
-        }).withFailureHandler(err => { hideLoading(); showError(err.message); }).getFirstBkData();
     }
 
     function parseThaiDateToDateObj(dateStr) {
@@ -718,7 +873,7 @@
             }
             
             let histBtn = `<button class="btn btn-sm btn-light text-secondary border rounded-pill ms-1" onclick="viewHistory('${item.id}')" title="ประวัติ"><i class="fas fa-history"></i></button>`;
-            let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-outline-danger rounded-pill ms-1" onclick="deleteItem('${item.id}')" title="ลบข้อมูล"><i class="fas fa-trash"></i></button>` : '';
+            let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-outline-danger rounded-pill ms-1" onclick="deleteFirstJobSupabase('${item.id}')" title="ลบข้อมูลงานแรก"><i class="fas fa-trash"></i></button>` : '';
 
             let row = `<td class="text-center text-muted">${index + 1}</td>`;
             row += `<td class="text-center">${maidLink}</td>`; 
@@ -732,17 +887,17 @@
                 row += `<td class="text-center">${statusBadge}</td>`;
             } else {
                 let stars = '-';
-                if(item.checklist?.reviewScore) {
-                     if(item.checklist.reviewScore === "NO_REVIEW") stars = '<span class="badge bg-light text-muted">No Review</span>';
-                     else stars = '<span class="text-warning">'+'★'.repeat(parseInt(item.checklist.reviewScore))+'</span>';
+                if(item.reviewScore) {
+                     if(item.reviewScore === "NO_REVIEW") stars = '<span class="badge bg-light text-muted border">ไม่มีรีวิว</span>';
+                     else stars = '<span class="text-warning">'+'★'.repeat(parseInt(item.reviewScore))+'</span>';
                 }
-                let problemDisplay = item.checklist?.problemId ? `<a href="https://admin-test.beneat.co/report-problems/${item.checklist.problemId}/edit" target="_blank" class="text-danger fw-bold text-decoration-none deeplink">${item.checklist.problemId}</a>` : '-';
+                let problemDisplay = item.problemId ? `<a href="https://admin-test.beneat.co/report-problems/${item.problemId}/edit" target="_blank" class="text-danger fw-bold text-decoration-none deeplink">${item.problemId}</a>` : '-';
 
                 row += `<td>${item.phone||'-'}</td>`;
                 row += `<td>${bookingDisplay}</td>`;
                 row += `<td>${item.cleanDate||'-'}</td>`;
                 row += `<td class="text-center">${stars}</td>`;
-                row += `<td>${item.checklist?.customerComment||'-'}</td>`;
+                row += `<td>${item.customerComment||'-'}</td>`;
                 row += `<td>${problemDisplay}</td>`;
             }
 
@@ -762,35 +917,6 @@
     
     function toggleNoData(elId, count) { document.getElementById(elId).classList.toggle('d-none', count > 0); }
     
-    // 🌟 🌟 🌟 Helper Function สำหรับดึงคำแนะนำจากประวัติ (History) แบบชั่วคราว (Fallback) 🌟 🌟 🌟
-    function extractAdviceFromHistory(historyArray, tag) {
-        if (!historyArray || !Array.isArray(historyArray)) return "-";
-        for (let h of historyArray) {
-            if (h.note && h.note.includes(tag)) {
-                let noteStr = h.note;
-                let match = noteStr.match(/(?:Note|คำแนะนำ)\s*:\s*([\s\S]*)/i);
-                if (match && match[1]) {
-                    let val = match[1].trim();
-                    if (val && val !== '-' && !val.includes('บันทึกข้อมูลเรียบร้อย')) {
-                        return val;
-                    }
-                }
-                
-                let cleanStr = noteStr.replace(/\[Pre-Call\]/ig, '')
-                                      .replace(/\[Post-Call\]/ig, '')
-                                      .replace(/อัปเดตข้อมูล/ig, '')
-                                      .replace(/บันทึกข้อมูลเรียบร้อย/ig, '')
-                                      .trim();
-                                      
-                if (cleanStr && cleanStr !== '-') {
-                    cleanStr = cleanStr.replace(/^[-:]\s*/, '');
-                    if (cleanStr) return cleanStr;
-                }
-            }
-        }
-        return "-";
-    }
-
     function openModal(id, mode) {
         const item = rawData.find(x => String(x.id) === String(id)); if(!item) return;
         document.getElementById('fj_id').value = item.id;
@@ -835,18 +961,10 @@
 
         const titleText = document.getElementById('modalTitleText');
         
-        // 🌟 🌟 กำหนดค่า Advice แบบแยก 2 ตัวแปร (Pre และ Post) 🌟 🌟
         let preAdv = item.preAdvice || "";
         let postAdv = item.postAdvice || "";
 
-        // Fallback หาข้อมูลเก่าเผื่อไว้ ในกรณีที่เพิ่งเปลี่ยนระบบมา
-        if (!preAdv && item.isPreCallDone) {
-            preAdv = extractAdviceFromHistory(item.history, '[Pre-Call]');
-            if (preAdv === "-") preAdv = item.checklist ? (item.checklist.advice || "") : "";
-        }
-        if (!postAdv && item.isPostCallDone) {
-            postAdv = item.checklist ? (item.checklist.advice || "") : "";
-        }
+        currentHistory = item.history || [];
 
         if (mode === 'assign') {
             titleText.textContent = "บันทึก/แก้ไข ข้อมูลงานแรก";
@@ -858,13 +976,11 @@
             document.getElementById('fj_callResult').value = "";
 
             if (mode === 'precall') {
-                // เปลี่ยนข้อความกำกับ Label ให้เป็น "ก่อนเริ่มงาน"
                 document.getElementById('adviceLabelTitle').textContent = "คำแนะนำก่อนเริ่มงาน (Pre-Start Advice)";
                 resetChecklist(item.checklist, false); 
                 document.getElementById('fj_advice').value = preAdv;
             } 
             else { 
-                // โหมด Post-call
                 document.getElementById('adviceLabelTitle').textContent = "คำแนะนำจากเทรนเนอร์หลังจบงาน (Post-Start Advice)";
                 resetChecklist(item.checklist, true); 
                 document.getElementById('feedbackSection').classList.remove('d-none');
@@ -874,6 +990,13 @@
                 const adDiv = document.getElementById('preAdviceDisplay'); 
                 adDiv.innerHTML = `<strong>คำแนะนำที่ให้ไว้ก่อนเริ่มงาน:</strong> ${preAdv || "-"}`; 
                 adDiv.classList.remove('d-none');
+
+                if(item.reviewScore) { 
+                    if(item.reviewScore === "NO_REVIEW") document.getElementById('noReview').checked = true; 
+                    else { const s = document.querySelector(`input[name="rating"][value="${item.reviewScore}"]`); if(s) s.checked = true; } 
+                }
+                if(item.customerComment) document.getElementById('fj_customerComment').value = item.customerComment;
+                if(item.problemId) document.getElementById('fj_problemId').value = item.problemId;
             }
         }
         
@@ -896,16 +1019,10 @@
         document.querySelectorAll('.checkbox-option').forEach(cb => cb.checked = false);
         document.querySelectorAll('.other-input-container').forEach(el => el.classList.add('d-none'));
 
-        // เอา fj_advice ออกจากการเคลียร์อัตโนมัติตรงนี้
-        ['fj_customerComment','fj_problemId'].forEach(id => {
-            let el = document.getElementById(id);
-            if(el) el.value = "";
-        });
+        ['fj_customerComment','fj_problemId'].forEach(id => { let el = document.getElementById(id); if(el) el.value = ""; });
         document.getElementById('fj_advice').value = "";
         
         document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
-        
-        // 🌟 เพิ่มการเคลียร์ปุ่ม "ไม่ได้รับรีวิว" ด้วย
         const noReviewEl = document.getElementById('noReview');
         if(noReviewEl) noReviewEl.checked = false;
 
@@ -957,14 +1074,6 @@
                      }
                  }
              }
-             if(data.reviewScore) { 
-                 if(data.reviewScore === "NO_REVIEW" && noReviewEl) {
-                     noReviewEl.checked = true; 
-                 } else { 
-                     const s = document.querySelector(`input[name="rating"][value="${data.reviewScore}"]`); 
-                     if(s) s.checked = true; 
-                 } 
-             }
         }
         
         if(document.getElementById('fj_mode').value === 'postcall') {
@@ -994,12 +1103,7 @@
             } 
         }).then((r) => {
             if (r.isConfirmed && r.value.reason) { 
-                showLoading(); 
-                google.script.run.withSuccessHandler(res => { 
-                    hideLoading(); 
-                    Swal.fire('คืนงานเรียบร้อย', 'ข้อมูลถูกรีเซ็ตให้รอรับงานใหม่แล้ว', 'success'); 
-                    loadData(); 
-                }).returnFirstJob(id, r.value.reason, currentUser, r.value.problemId); 
+                returnFirstJobSupabase(id, r.value.reason, r.value.problemId);
             } else if (r.isConfirmed && !r.value.reason) {
                 Swal.fire('ข้อผิดพลาด', 'กรุณาระบุสาเหตุการคืนงาน', 'warning');
             }
@@ -1019,7 +1123,7 @@
                    let boxClass = 'log-default';
                    if(log.note.includes('[Returned]')) boxClass = 'log-returned';
                    else if(log.note.includes('Assign')) boxClass = 'log-status-change';
-                   html += `<div class="log-box ${boxClass}"><div>${log.note.replace(/\n/g, '<br>')}</div><div class="log-footer">โดย ${log.by || '-'}</div></div>`;
+                   html += `<div class="log-box ${boxClass}"><div>${log.note.replace(/\n/g, '<br>')}</div><div class="log-footer">โดย ${log.user || log.by || '-'}</div></div>`;
                });
                html += `</div>`;
            });
@@ -1028,7 +1132,6 @@
        historyModal.show();
     }
 
-    // 🌟 🌟 🌟 ปรับปรุงการดูสรุป ให้ดึง preAdvice / postAdvice ตรงๆ 🌟 🌟 🌟
     function viewJobSummary(id) {
        const item = rawData.find(x => String(x.id) === String(id)); if(!item) return;
        currentViewingId = id; 
@@ -1056,23 +1159,15 @@
        let preAdvice = item.preAdvice || "";
        let postAdvice = item.postAdvice || "";
 
-       // Fallback for old data
-       if (!preAdvice && item.isPreCallDone) {
-            preAdvice = extractAdviceFromHistory(item.history, '[Pre-Call]');
-            if (preAdvice === "-") preAdvice = c.advice || "";
-       }
-       if (!postAdvice && item.isPostCallDone) {
-            postAdvice = c.advice || "";
-       }
-
        document.getElementById('sum_pre_advice').textContent = preAdvice || "-";
        document.getElementById('sum_post_advice').textContent = postAdvice || "-";
        
        let stars = "-";
-       if(c.reviewScore && c.reviewScore !== "NO_REVIEW") stars = '★'.repeat(parseInt(c.reviewScore));
+       if(item.reviewScore && item.reviewScore !== "NO_REVIEW") stars = '★'.repeat(parseInt(item.reviewScore));
+       else if(item.reviewScore === "NO_REVIEW") stars = '<span class="badge bg-light text-muted border">ไม่มีรีวิว</span>';
        document.getElementById('sum_stars').innerHTML = stars;
-       document.getElementById('sum_comment').textContent = c.customerComment || "-";
-       document.getElementById('sum_problem_text').textContent = c.problemId || "-";
+       document.getElementById('sum_comment').textContent = item.customerComment || "-";
+       document.getElementById('sum_problem_text').textContent = item.problemId || "-";
        
        summaryModal.show();
     }
@@ -1111,39 +1206,14 @@
 
             if(!form.bookingCode) { Swal.fire('เตือน', 'ระบุรหัสการจอง', 'warning'); return; }
 
-            const item = rawData.find(x => String(x.id) === String(id));
-            const isReturned = item && item.history && item.history.some(h => h.note && h.note.includes('[Returned]'));
-
             showLoading();
-            google.script.run.withSuccessHandler(res => {
-                if(res.success) {
-                    if (isReturned && item.checklist) {
-                         const skipForm = { 
-                             id: id, 
-                             officer: currentUser, 
-                             type: 'precall', 
-                             callResult: 'contacted',
-                             preAdvice: item.preAdvice || item.checklist.advice || "ข้ามการโทรเยี่ยมเนื่องจากรับงานใหม่หลังคืนงาน"
-                         };
-                         checklistQuestions.filter(q => q.section === 'pre').forEach(q => {
-                             skipForm[q.id] = item.checklist[q.id] || "-";
-                         });
-
-                         google.script.run.withSuccessHandler(res2 => {
-                             hideLoading(); actionModal.hide(); Swal.fire('สำเร็จ', 'บันทึกงานใหม่และข้ามการโทรเยี่ยมเรียบร้อย', 'success'); loadData();
-                         }).saveFirstJobChecklist(skipForm);
-                    } else {
-                         hideLoading(); actionModal.hide(); Swal.fire('สำเร็จ', '', 'success'); loadData();
-                    }
-                } else { hideLoading(); showError(res.message); }
-            }).saveFirstJobDetails(form);
+            saveFirstJobDetailsSupabase(id, form);
             return;
         } 
         
         const callResultEl = document.getElementById('fj_callResult');
         form.callResult = callResultEl ? callResultEl.value : "";
         
-        // 🌟 🌟 🌟 แก้ไข: ตรวจสอบทั้งตัวเลือกดาว และ ตัวเลือก "ไม่ได้รับรีวิว" 🌟 🌟 🌟
         if(mode === 'postcall') {
              const r = document.querySelector('input[name="rating"]:checked'); 
              const noReview = document.getElementById('noReview');
@@ -1185,32 +1255,234 @@
         }
         
         showLoading();
-        google.script.run.withSuccessHandler(res => { 
-            hideLoading(); 
-            if(res.success) { actionModal.hide(); Swal.fire('สำเร็จ', '', 'success'); loadData(); } 
-            else showError(res.message); 
-        }).saveFirstJobChecklist(form);
+        saveFirstJobChecklistSupabase(id, form, mode);
     }
     
-    function deleteItem(id) {
-        Swal.fire({ title: 'ลบข้อมูล?', text: "ไม่สามารถกู้คืนได้", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((r) => {
+    // 🚀 SUPABASE DATA MUTATIONS
+    
+    async function saveFirstJobDetailsSupabase(onboardId, form) {
+        try {
+            const obRow = rawData.find(x => x.id === onboardId);
+            
+            const logEntry = {
+                date: formatDateForDisplay(new Date()),
+                note: `[Assign Job] จ่ายงานแรก: ${form.bookingCode} (Clean: ${form.cleanDate})`,
+                user: currentUser
+            };
+            currentHistory.unshift(logEntry);
+
+            const payload = {
+                onboard_id: onboardId,
+                maid_code: obRow.maidCode,
+                full_name: obRow.name,
+                phone: obRow.phone,
+                center: obRow.center,
+                booking_code: form.bookingCode,
+                job_id: form.jobId,
+                clean_date: form.cleanDate,
+                accept_date: form.acceptDate ? formatDateForDB(form.acceptDate) : null,
+                work_hours: form.workHours ? parseFloat(form.workHours) : null,
+                process_status: 'Assigned', 
+                officer: currentUser,
+                history: currentHistory,
+                record_timestamp: new Date().toISOString()
+            };
+
+            if (obRow.firstjob_id) {
+                const { error } = await supabase.from('prs_firstjob').update(payload).eq('firstjob_id', obRow.firstjob_id);
+                if(error) throw error;
+            } else {
+                const fjId = "FJ-" + new Date().getTime().toString().substring(5);
+                payload.firstjob_id = fjId;
+                const { error } = await supabase.from('prs_firstjob').insert([payload]);
+                if(error) throw error;
+            }
+
+            await writeLogToSupabase('ASSIGN_FIRST_JOB', 'First Job', `Assigned ${form.bookingCode} to ${obRow.maidCode}`, currentUser);
+            
+            actionModal.hide(); 
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกงานใหม่เรียบร้อย', showConfirmButton:false, timer:2000}); 
+            fetchFirstJobDataFromSupabase();
+        } catch(err) {
+            showError(err.message);
+        }
+    }
+
+    async function saveFirstJobChecklistSupabase(onboardId, form, mode) {
+        try {
+            const obRow = rawData.find(x => x.id === onboardId);
+            if (!obRow || !obRow.firstjob_id) throw new Error("ไม่พบข้อมูลงาน (ต้องจ่ายงานก่อน)");
+
+            let logTitle = "";
+            let isComplete = false;
+            let noteContent = "";
+            let processStatus = "Assigned";
+            
+            const extraData = {...form}; 
+            delete extraData.id; delete extraData.officer; delete extraData.type; delete extraData.callResult; delete extraData.reviewScore; delete extraData.customerComment; delete extraData.problemId; delete extraData.preAdvice; delete extraData.postAdvice;
+
+            if (mode === 'precall') {
+                if (form.callResult === 'contacted') {
+                    logTitle = "[Pre-Call] โทรเยี่ยม (ติดต่อได้)";
+                    isComplete = true; 
+                    processStatus = "PreCallDone";
+                    noteContent = `${logTitle}\nบันทึกข้อมูลเรียบร้อย`;
+                } else {
+                    logTitle = `[Pre-Call] โทรไม่ติด (${form.callResult})`;
+                    noteContent = logTitle;
+                    processStatus = "Assigned";
+                }
+            } else {
+                logTitle = "[Post-Call] ติดตามหลังจบงาน";
+                isComplete = true;
+                processStatus = "Done";
+                noteContent = `${logTitle}\nReview: ${form.reviewScore || '-'}`;
+            }
+
+            const logEntry = { date: formatDateForDisplay(new Date()), note: noteContent, user: currentUser };
+            currentHistory.unshift(logEntry);
+
+            const payload = {
+                process_status: processStatus,
+                officer: currentUser,
+                history: currentHistory,
+                question: extraData 
+            };
+
+            if (mode === 'precall') {
+                payload.pre_advice = form.preAdvice || "";
+            } else {
+                payload.post_advice = form.postAdvice || "";
+                payload.reviewscore = form.reviewScore || "";
+                payload.customercomment = form.customerComment || "";
+                payload.problem_id = form.problemId || "";
+                
+                await supabase.from('prs_onboard').update({ is_first_job: "✓" }).eq('onboard_id', onboardId);
+            }
+
+            await supabase.from('prs_firstjob').update(payload).eq('firstjob_id', obRow.firstjob_id);
+            await writeLogToSupabase('UPDATE_FIRST_JOB_CHECKLIST', 'First Job', logTitle, currentUser);
+            
+            actionModal.hide(); 
+            Swal.fire('สำเร็จ', isComplete ? "บันทึกเรียบร้อย" : "บันทึกสถานะเรียบร้อย", 'success'); 
+            fetchFirstJobDataFromSupabase();
+        } catch(err) {
+            showError(err.message);
+        }
+    }
+
+    async function returnFirstJobSupabase(onboardId, reason, problemId) {
+        try {
+            showLoading();
+            const obRow = rawData.find(x => x.id === onboardId);
+            if (!obRow || !obRow.firstjob_id) throw new Error("ไม่พบข้อมูล");
+
+            const noteText = `[Returned] คืนงานเนื่องจาก: ${reason}` + (problemId ? `\nProblem ID: ${problemId}` : "");
+            
+            currentHistory.unshift({ date: formatDateForDisplay(new Date()), note: noteText, user: currentUser });
+
+            const payload = {
+                booking_code: null,
+                job_id: null,
+                clean_date: null,
+                accept_date: null,
+                work_hours: null,
+                process_status: 'รอรับงานแรก',
+                question: {},
+                pre_advice: null,
+                post_advice: null,
+                reviewscore: null,
+                customercomment: null,
+                problem_id: null,
+                history: currentHistory
+            };
+
+            const { error } = await supabase.from('prs_firstjob').update(payload).eq('firstjob_id', obRow.firstjob_id);
+            if (error) throw error;
+            
+            await writeLogToSupabase('RETURN_FIRST_JOB', 'First Job', noteText, currentUser);
+            
+            actionModal.hide();
+            Swal.fire('คืนงานสำเร็จ', 'ล้างข้อมูลงานและบันทึกประวัติแล้ว', 'success');
+            fetchFirstJobDataFromSupabase();
+        } catch(err) {
+            showError(err.message);
+        }
+    }
+
+    async function deleteFirstJobSupabase(id) {
+        if (!isUserAdmin) return Swal.fire('Error', 'เฉพาะ Admin เท่านั้นที่สามารถลบข้อมูลได้', 'error');
+        Swal.fire({ title: 'ลบข้อมูล?', text: "ข้อมูลงานแรกทั้งหมดของคนนี้จะถูกลบทิ้ง และจะกลับไปอยู่ในสถานะรอรับงานแรกอีกครั้ง", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then(async (r) => {
             if (r.isConfirmed) {
                 showLoading();
-                google.script.run.withSuccessHandler(() => { hideLoading(); Swal.fire('Deleted!', '', 'success'); loadData(); }).deleteOnboardData(id);
+                try {
+                    const obRow = rawData.find(x => x.id === id);
+                    if(obRow && obRow.firstjob_id) {
+                        await supabase.from('prs_firstjob').delete().eq('firstjob_id', obRow.firstjob_id);
+                        await writeLogToSupabase('DELETE_FIRST_JOB', 'First Job', `Deleted first job for ${obRow.maidCode}`, currentUser);
+                    }
+                    Swal.fire('Deleted!', 'ลบข้อมูลเรียบร้อยแล้ว', 'success'); 
+                    fetchFirstJobDataFromSupabase();
+                } catch(e) { showError(e.message); }
             }
         });
     }
 
-    function parseDateForSort(d) {
-        if (!d) return 0;
-        if (d.match(/^\d{4}-\d{2}-\d{2}/)) return new Date(d).getTime(); 
-        const parts = d.split(/[-/]/); if(parts.length===3) return new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0])).getTime();
-        return 0;
-    }
     function checkWorkHours(input) { document.getElementById('hourWarning').classList.toggle('d-none', parseFloat(input.value) <= 3); }
-    function exportReport() { showLoading(); google.script.run.withSuccessHandler(r => { hideLoading(); if(r.count>0) { const b=new Blob(["\ufeff"+r.content],{type:'text/csv'}); const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=r.filename; l.click(); } else Swal.fire('ไม่พบข้อมูล','','info'); }).exportFirstBkReport(); }
+    
+    // 🚀 EXPORT CSV (Client-side Dynamic Headers) 🚀
+    function exportReport() { 
+        showLoading(); 
+        try {
+            let headers = ["รหัสแม่บ้าน","ชื่อ-นามสกุล","ศูนย์","เบอร์โทร","รหัสการจอง","JobID","วันทำความสะอาด","จำนวนชั่วโมง","สถานะ"];
+            checklistQuestions.forEach(q => headers.push(q.label));
+            headers.push("คำแนะนำก่อนเริ่มงาน", "คำแนะนำหลังจบงาน", "รีวิว", "คอมเม้น", "รหัสปัญหา");
+            
+            let csvContent = headers.join(",") + "\n";
+            
+            rawData.forEach(row => {
+                const q = row.checklist || {};
+                let rowData = [
+                    row.maidCode, row.name, row.center, `"${row.phone}"`, row.bookingCode, row.jobId, row.cleanDate, row.workHours, row.processStatus
+                ];
+                
+                checklistQuestions.forEach(question => {
+                    rowData.push(q[question.id] || "");
+                });
+                
+                rowData.push(row.preAdvice, row.postAdvice, row.reviewScore || "", row.customerComment || "", row.problemId || "");
+                
+                const rowString = rowData.map(f => `"${String(f || "").replace(/"/g, '""')}"`).join(",");
+                csvContent += rowString + "\n";
+            });
+            
+            const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); 
+            link.href = URL.createObjectURL(blob); 
+            link.download = `FirstJob_Report_${new Date().getTime()}.csv`; 
+            link.click();
+            Swal.close();
+        } catch(e) {
+            showError("Export failed: " + e.message);
+        }
+    }
     
     // Helpers
+    function formatDateForDB(d) {
+        if (!d) return null;
+        let parts = d.split('/');
+        if (parts.length === 3) return `${parseInt(parts[2]) > 2400 ? parts[2]-543 : parts[2]}-${parts[1]}-${parts[0]}`;
+        return d.substring(0, 10);
+    }
+
+    function formatDateForDisplay(d) {
+        if (!d) return '-';
+        if (d.includes('/')) return d; 
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return d;
+        return date.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
+    }
+
     function showLoading() { Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); }
     function hideLoading() { Swal.close(); }
     function showError(msg) { Swal.fire('เกิดข้อผิดพลาด', msg, 'error'); }
