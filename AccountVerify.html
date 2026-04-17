@@ -200,10 +200,9 @@
   <script>
     let referenceData = {};
     let processedData = [];
-    let isRefDataLoaded = false; // 🌟 เพิ่มตัวแปรเช็คสถานะการโหลดข้อมูล
+    let isRefDataLoaded = false;
 
     window.onload = function() {
-        // Active Menu
         const navLinks = document.querySelectorAll('.nav-link-custom');
         navLinks.forEach(link => link.classList.remove('active'));
         const activeLink = document.querySelector('.nav-link-custom[data-page="account_verify"]');
@@ -211,41 +210,105 @@
 
         if(document.getElementById('pageTitle')) document.getElementById('pageTitle').textContent = "กระทบยอดบัญชี";
         
-        loadReferenceData();
+        loadReferenceDataSupabase();
         loadFromLocal();
     };
 
-    function loadReferenceData() {
-        // 🌟 เพิ่ม withFailureHandler เพื่อดักจับ Error หากหลังบ้านพังหรือไม่มีฟังก์ชัน
-        google.script.run
-            .withSuccessHandler(res => {
-                isRefDataLoaded = true; // เปลี่ยนสถานะว่าโหลดเสร็จแล้ว
-                if (res && res.success) {
-                    referenceData = res.referenceData || {};
-                    
-                    // 🌟 แจ้งเตือนแอดมินหากฐานข้อมูลว่างเปล่า (หาคอลัมน์ไม่เจอ)
-                    const loadedCount = Object.keys(referenceData).length;
-                    if (loadedCount === 0) {
-                         Swal.fire({
-                             toast: true, position: 'top-end', icon: 'warning',
-                             title: 'โหลดเสร็จสิ้น แต่ไม่พบรายชื่อในฐานข้อมูล (อาจหาคอลัมน์เลขบัตรไม่เจอ)',
-                             showConfirmButton: false, timer: 5000
-                         });
+    // 🌟 ฟังก์ชันดึงข้อมูลแบบทะลุขีดจำกัด 1,000 แถว
+    async function fetchAllSupabaseDataSelected(tableName, selectQuery) {
+        let allData = [];
+        let from = 0;
+        const limit = 1000;
+        let hasMore = true;
+
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from(tableName)
+                .select(selectQuery)
+                .range(from, from + limit - 1);
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                allData = allData.concat(data);
+                from += limit;
+                if (data.length < limit) {
+                    hasMore = false;
+                }
+            } else {
+                hasMore = false;
+            }
+        }
+        return allData;
+    }
+
+    // 🚀 เปลี่ยนมาดึงข้อมูลอ้างอิงจาก Supabase 100%
+    async function loadReferenceDataSupabase() {
+        try {
+            // 1. ดึงอีเมลผู้ใช้มาโชว์ (Auth ยังพึ่ง Google อยู่)
+            const configRes = await new Promise((resolve) => {
+                google.script.run.withSuccessHandler(resolve).getClientConfig();
+            });
+            if(document.getElementById('userEmailDisplay')) {
+                document.getElementById('userEmailDisplay').textContent = configRes.userEmail || "System";
+            }
+
+            // 2. ดึงข้อมูล 2 ตารางจาก Supabase แบบขนาน (และกวาดมาทั้งหมดไม่สนลิมิต)
+            const [
+                masterData,
+                annualData
+            ] = await Promise.all([
+                fetchAllSupabaseDataSelected('prs_verify_master', 'id_card, full_name, ft_status'),
+                fetchAllSupabaseDataSelected('prs_verify_annual', 'id_card, full_name, status_process, result')
+            ]);
+
+            referenceData = {};
+            const cleanId = (id) => String(id || '').replace(/\D/g, '');
+
+            // แมปข้อมูล Master
+            (masterData || []).forEach(row => {
+                const id = cleanId(row.id_card);
+                if (id) {
+                    referenceData[id] = {
+                        name: row.full_name || "-",
+                        status: row.ft_status || "-",
+                        type: "ผู้ให้บริการใหม่"
+                    };
+                }
+            });
+
+            // แมปข้อมูล Annual (เอาทับถ้าเจอคนซ้ำ)
+            (annualData || []).forEach(row => {
+                const id = cleanId(row.id_card);
+                if (id) {
+                    let displayStatus = row.status_process || "-";
+                    // ถ้าระบบบอกว่า "ผลตรวจออกแล้ว" ให้โชว์ผลตรวจ (result) ของจริงให้เห็นด้วย
+                    if (row.status_process === 'ผลตรวจออกแล้ว' && row.result) {
+                        displayStatus = row.result;
                     }
-                } else {
-                    console.error("Backend Error:", res ? res.message : "Unknown");
-                    Swal.fire('ดึงข้อมูลไม่สำเร็จ', 'เกิดข้อผิดพลาดที่หลังบ้าน: ' + (res ? res.message : ''), 'warning');
+                    referenceData[id] = {
+                        name: row.full_name || "-",
+                        status: displayStatus,
+                        type: "ตรวจประวัติรายปี"
+                    };
                 }
-                if(res && document.getElementById('userEmailDisplay')) {
-                    document.getElementById('userEmailDisplay').textContent = res.currentUser;
-                }
-            })
-            .withFailureHandler(err => {
-                isRefDataLoaded = true; // โหลดเสร็จแล้ว (แต่พัง)
-                console.error("RPC Error:", err);
-                Swal.fire('การเชื่อมต่อขัดข้อง', 'ไม่สามารถเชื่อมต่อฟังก์ชันหลังบ้านได้ (อาจลืม Deploy หรือโค้ด Code.gs มีปัญหา)', 'error');
-            })
-            .getAccountVerifyReferenceData();
+            });
+
+            isRefDataLoaded = true;
+
+            const loadedCount = Object.keys(referenceData).length;
+            if (loadedCount === 0) {
+                 Swal.fire({
+                     toast: true, position: 'top-end', icon: 'warning',
+                     title: 'โหลดเสร็จสิ้น แต่ไม่พบรายชื่อในฐานข้อมูล',
+                     showConfirmButton: false, timer: 5000
+                 });
+            }
+        } catch (err) {
+            isRefDataLoaded = true; 
+            console.error("Supabase Error:", err);
+            Swal.fire('การเชื่อมต่อขัดข้อง', 'ไม่สามารถดึงข้อมูลจากฐานข้อมูลได้: ' + err.message, 'error');
+        }
     }
 
     function saveToLocal(data) {
@@ -304,12 +367,10 @@
         }
     }
 
-    // 🌟 ปรับปรุง: แยกจังหวะการปิดวงล้อ Loading และดักจับ Error ป้องกันหน้าจอค้าง
     function handleFileSelect(input) {
         if (!input.files || input.files.length === 0) return;
         const file = input.files[0];
         
-        // เช็คนามสกุลไฟล์ก่อนเบื้องต้น
         const fileName = file.name.toLowerCase();
         if (!fileName.endsWith('.csv') && !fileName.endsWith('.xlsx') && !fileName.endsWith('.xls')) {
             Swal.fire('รูปแบบไฟล์ไม่ถูกต้อง', 'กรุณาอัปโหลดไฟล์นามสกุล .csv, .xlsx หรือ .xls เท่านั้น', 'error');
@@ -326,15 +387,13 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
                 
-                Swal.close(); // ปิด Loading ทิ้งก่อน เพื่อไม่ให้มันทับกล่อง Alert ด้านล่าง
-                
-                // ถัดมาจึงโยนเข้ากระบวนการตรวจสอบ
+                Swal.close(); 
                 processData(jsonData);
                 
             } catch (error) {
                 Swal.fire('ไม่สามารถอ่านไฟล์ได้', 'ไฟล์อาจจะเสีย หรือรูปแบบไม่ถูกต้อง: ' + error.message, 'error');
             } finally {
-                input.value = ""; // ต้องล้างค่าช่องเลือกไฟล์เสมอ
+                input.value = ""; 
             }
         };
         
@@ -347,7 +406,6 @@
     }
 
     function processData(rows) {
-        // 🌟 เปลี่ยนเงื่อนไขการเช็ค ให้ดูที่สถานะโหลดแทน Object เปล่า
         if (!isRefDataLoaded) {
              Swal.fire('ระบบกำลังเตรียมข้อมูล', 'กรุณารอสักครู่ให้ระบบดึงฐานข้อมูลเสร็จก่อน แล้วลองเลือกไฟล์ใหม่อีกครั้ง', 'info'); 
              return;
