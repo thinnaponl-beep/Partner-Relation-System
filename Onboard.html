@@ -570,6 +570,25 @@
     // 🌟 PHASE 2: WAITING ROOM (Pre-Registration) 🌟
     // ==========================================
     
+    // 🌟 ฟังก์ชันคำนวณ Effective Status 🌟
+    function getEffectiveTrainStatus(lead) {
+        let status = lead.status || lead.Status || '';
+
+        if (status.includes('อบรมแล้ว') || status.includes('ผ่าน') || status.includes('เข้ารับการอบรมแล้ว')) return 'อบรมแล้ว';
+        if (status.includes('ยกเลิก') || status.includes('สละสิทธิ์') || status === 'ยกเลิกอบรม') return 'ยกเลิกอบรม';
+
+        const tDateStr = lead.train_date || lead.TrainDate;
+        const reschedCount = parseInt(lead.reschedule_count || lead.reschedulecount || lead.RescheduleCount || 0);
+
+        if (!tDateStr) {
+            if (reschedCount > 0) return 'เลื่อนไม่ระบุวันอบรม';
+            return 'รอเลือกวันอบรม';
+        } else {
+            if (reschedCount > 0) return 'ระบุวันอบรม(เลื่อน)';
+            return 'รออบรม';
+        }
+    }
+
     async function checkWaitingRoomBadge() {
         try {
             const { data, error } = await supabase.from('db_training').select('*');
@@ -579,8 +598,8 @@
             let todayCount = 0;
             
             data.forEach(lead => {
-                const status = lead.status || lead.Status || '';
-                if (status.includes('เข้ารับการอบรมแล้ว') || status.includes('ยกเลิก') || status.includes('สละสิทธิ์')) return;
+                const effStatus = getEffectiveTrainStatus(lead);
+                if (effStatus === 'อบรมแล้ว' || effStatus === 'ยกเลิกอบรม') return;
                 if (currentCenterFilter !== 'ALL' && lead.center !== currentCenterFilter) return;
 
                 const tDateRaw = lead.train_date || lead.TrainDate;
@@ -607,8 +626,8 @@
             if (error) throw error;
             
             waitingListData = data.filter(d => {
-                const s = d.status || d.Status || '';
-                return !s.includes('เข้ารับการอบรมแล้ว') && !s.includes('ยกเลิก') && !s.includes('สละสิทธิ์');
+                const effStatus = getEffectiveTrainStatus(d);
+                return effStatus !== 'อบรมแล้ว' && effStatus !== 'ยกเลิกอบรม';
             });
             
             renderWaitingRoomTabs();
@@ -644,11 +663,11 @@
             if (currentCenterFilter !== 'ALL' && lead.center !== currentCenterFilter) return;
 
             const tDateRaw = lead.train_date || lead.TrainDate;
-            const status = lead.status || lead.Status || '';
+            const effStatus = getEffectiveTrainStatus(lead);
 
-            if (status.includes('รอระบุวัน') || status.includes('เลื่อน') || status.includes('รอเลือกวัน')) {
+            if (!tDateRaw || effStatus === 'รอเลือกวันอบรม' || effStatus === 'เลื่อนไม่ระบุวันอบรม') {
                 pendingList.push(lead);
-            } else if (tDateRaw) {
+            } else {
                 let tDateObj = parseDateForDB(tDateRaw); 
                 if (tDateObj === todayStr) {
                     todayList.push(lead);
@@ -657,8 +676,6 @@
                 } else {
                     pendingList.push(lead);
                 }
-            } else {
-                pendingList.push(lead);
             }
         });
 
@@ -701,11 +718,20 @@
             const idCardRaw = lead.id_card || lead.ID_Card || lead.idcard || '';
             const idCardDisplay = idCardRaw ? idCardRaw.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, "$1-$2-$3-$4-$5") : '<span class="text-muted fst-italic">ไม่ระบุ</span>';
             const center = lead.center || '-';
-            const status = lead.status || lead.Status || '-';
+            const effStatus = getEffectiveTrainStatus(lead);
+            
+            const reschedCount = parseInt(lead.reschedule_count || lead.reschedulecount || lead.RescheduleCount || 0);
+            
+            let nameHtml = name;
+            // 🌟 เพิ่ม Badge เลื่อนนัด 🌟
+            if (reschedCount > 0 && type !== 'pending') {
+                nameHtml += ' <span class="badge bg-warning text-dark border border-warning-subtle shadow-sm ms-2" style="font-size: 0.65rem;"><i class="fas fa-history me-1"></i>เลื่อนนัด</span>';
+            }
             
             let dateDisplay = '-';
             if (type === 'pending') {
-                dateDisplay = `<span class="badge bg-warning text-dark">${status}</span>`;
+                // 🌟 แสดงสถานะ Effective ถ้าอยู่ใน Pending 🌟
+                dateDisplay = `<span class="badge bg-warning text-dark">${effStatus}</span>`;
             } else {
                 const tDateRaw = lead.train_date || lead.TrainDate;
                 if (tDateRaw) {
@@ -719,7 +745,7 @@
             tbody.innerHTML += `
                 <tr>
                     <td>${dateDisplay}</td>
-                    <td class="fw-bold text-dark">${name}</td>
+                    <td class="text-dark"><span class="fw-bold">${nameHtml}</span></td>
                     <td><i class="fas fa-phone text-success small"></i> ${phone}</td>
                     <td class="font-monospace">${idCardDisplay}</td>
                     <td><span class="badge bg-light text-dark border">${center}</span></td>
@@ -955,7 +981,7 @@
           } else if (row.idCard) {
               let btnText = isReturningMaid ? "ส่งตรวจใหม่" : "ส่งตรวจ";
               let btnIcon = isReturningMaid ? "fa-redo" : "fa-paper-plane";
-              ftBadge = `<button class="btn btn-sm btn-outline-primary rounded-pill fw-bold shadow-sm" style="font-size:0.75rem;" onclick="sendFastTrackDirect('${row.id}')"><i class="fas ${btnIcon} me-1"></i>${btnText}</button>`;
+              ftBadge = `<button type="button" class="btn btn-sm btn-outline-primary rounded-pill fw-bold shadow-sm" style="font-size:0.75rem;" onclick="event.stopPropagation(); sendFastTrackDirect('${row.id}')"><i class="fas ${btnIcon} me-1"></i>${btnText}</button>`;
           }
 
           let displayDate = formatDateDisplay(row.trainingDate);
@@ -1163,12 +1189,24 @@
 
     function sendToFastTrackFromModal() {
         const id = document.getElementById('recordId').value;
+        if (!id) { 
+            Swal.fire({ title: 'คำเตือน', text: 'กรุณาบันทึกข้อมูลหลักก่อนส่งตรวจ Fast Track', icon: 'warning' }); 
+            return; 
+        }
         sendFastTrackDirect(id);
     }
     
     // 🚀 SUPABASE: ส่งตรวจ Fast Track
     function sendFastTrackDirect(id) {
-        Swal.fire({ title: 'ยืนยันส่งตรวจ?', icon: 'question', showCancelButton: true }).then(async r => {
+        Swal.fire({ 
+            title: 'ยืนยันส่งตรวจ?', 
+            text: 'ระบบจะนำข้อมูลส่งไปยังส่วนจัดการตรวจประวัติ',
+            icon: 'question', 
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            confirmButtonText: 'ส่งตรวจ',
+            cancelButtonText: 'ยกเลิก'
+        }).then(async r => {
             if(r.isConfirmed) {
                 showLoading();
                 try {
@@ -1182,7 +1220,7 @@
                         verify_id: masterId,
                         maid_code: obData.maid_code,
                         full_name: obData.full_name,
-                        id_card: obData.id_card,
+                        id_card: String(obData.id_card).replace(/\D/g, ''),
                         phone: obData.phone,
                         training_date: obData.training_date,
                         submit_date: new Date().toISOString().split('T')[0],
@@ -1196,19 +1234,23 @@
                     const { error: mErr } = await window.supabase.from('prs_verify_master').insert([masterPayload]);
                     if(mErr) throw mErr;
                     
-                    const { error: updErr } = await window.supabase.from('prs_onboard').update({ fast_track_status: "Sent" }).eq('onboard_id', id);
+                    const { error: updErr } = await window.supabase.from('prs_onboard').update({ fast_track_status: "Pending Result" }).eq('onboard_id', id);
                     if(updErr) throw updErr;
                     
                     if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('SEND_FAST_TRACK', 'Onboard', `Sent ${id} to Master Verify`, currentUser);
                     
-                    Swal.fire('สำเร็จ', 'ส่งข้อมูลแล้ว', 'success'); 
-                    loadData(); 
                     if(formModal) formModal.hide();
                 } catch(e) {
-                    showError(e.message);
-                } finally {
                     hideLoading();
+                    showError(e.message);
+                    return; // หยุดทำงานหากเกิด Error
                 }
+
+                // 🌟 รอให้โหลดข้อมูลเสร็จสิ้นก่อน (ใน loadData มี hideLoading ตัวมันเอง)
+                await loadData(); 
+                
+                // 🌟 แสดง Toast สำเร็จหลังจากโหลดจบ ป้องกันการกระพริบ
+                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'ส่งตรวจสำเร็จ', showConfirmButton: false, timer: 3000});
             }
         });
     }
@@ -1305,20 +1347,23 @@
                         const idCol = dbKeys.find(k => k.toLowerCase() === 'lead_id' || k.toLowerCase() === 'leadid') || 'lead_id';
                         const statCol = dbKeys.find(k => k.toLowerCase() === 'status') || 'status';
                         
-                        let tPayload = {}; tPayload[statCol] = 'เข้ารับการอบรมแล้ว';
+                        let tPayload = {}; tPayload[statCol] = 'อบรมแล้ว';
                         await window.supabase.from('db_training').update(tPayload).eq(idCol, sourceLeadId);
                     } catch(e) { console.warn("Failed to update db_training status:", e); }
                }
            }
            formModal.hide();
-           Swal.fire({ icon:'success', title:'บันทึกเรียบร้อย', timer: 1000, showConfirmButton:false }); 
-           loadData();
-           checkWaitingRoomBadge();
-       } catch(e) {
-           showError(e.message);
-       } finally {
+           
+        } catch(e) {
            hideLoading();
-       }
+           showError(e.message);
+           return;
+        }
+
+        // 🌟 ดึงข้อมูลและอัปเดตหน้าจอ
+        await loadData();
+        checkWaitingRoomBadge();
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'บันทึกเรียบร้อย', timer: 3000, showConfirmButton: false }); 
     }
 
     async function deleteItem(id) {
@@ -1329,13 +1374,14 @@
                     const { error } = await supabase.from('prs_onboard').delete().eq('onboard_id', id);
                     if(error) throw error;
                     if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('DELETE_ONBOARD', 'Onboard', `Deleted: ${id}`, currentUser);
-                    Swal.fire('Deleted!', '', 'success'); 
-                    loadData(); 
                 } catch(e) {
-                    showError(e.message);
-                } finally {
                     hideLoading();
+                    showError(e.message);
+                    return;
                 }
+                
+                await loadData(); 
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 3000, showConfirmButton: false });
             }
         });
     }
