@@ -181,7 +181,21 @@
           </div>
           <button type="button" class="btn-close mb-auto mt-2" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-header bg-white p-0 border-bottom">
+        
+        <!-- 🌟 เพิ่มแถบเครื่องมือค้นหาและฟิลเตอร์ภายใน Waiting Room 🌟 -->
+        <div class="bg-white p-3 border-bottom d-flex flex-wrap gap-3 align-items-center">
+            <div class="d-flex align-items-center gap-2 flex-grow-1" style="max-width: 600px;">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white text-muted border-end-0"><i class="fas fa-search"></i></span>
+                    <input type="text" id="wrSearchInput" class="form-control border-start-0 ps-0" placeholder="ค้นหาชื่อ, รหัสแม่บ้าน, เบอร์โทร..." onkeyup="renderWaitingRoomTabs()">
+                </div>
+                <select id="wrCenterFilter" class="form-select shadow-sm" style="width: 180px;" onchange="renderWaitingRoomTabs()">
+                    <option value="ALL">ทุกศูนย์</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="modal-header bg-light p-0 border-bottom">
             <ul class="nav nav-tabs waiting-room-tab w-100" role="tablist">
                 <li class="nav-item flex-fill text-center" role="presentation">
                     <button class="nav-link active w-100" data-bs-toggle="tab" data-bs-target="#wr-today" type="button">
@@ -249,6 +263,7 @@
             <input type="hidden" id="isReturningMaid" value="false">
             <!-- 🌟 Hidden Field เก็บ Source ID จาก Waiting Room 🌟 -->
             <input type="hidden" id="sourceLeadId" value="">
+            <input type="hidden" id="isRetrainCase" value="false">
             
             <div class="row g-4">
                <!-- Left Column: Basic Info -->
@@ -268,7 +283,9 @@
                          <label class="form-label small fw-bold text-muted">ประเภทผู้ให้บริการ</label>
                          <select class="form-select" id="masterType"><option value="" selected disabled>เลือกประเภท...</option></select>
                       </div>
-                      <div class="col-md-6">
+                      
+                      <!-- 🌟 ให้มี ID ที่ตรวจสอบได้เพื่อซ่อนสำหรับเคส Retrain 🌟 -->
+                      <div class="col-md-6" id="verificationContainer">
                         <label class="form-label small fw-bold text-muted">วิธีการตรวจประวัติ <span class="text-danger">*</span></label>
                         <select class="form-select fw-bold" id="verificationMethod" onchange="checkFastTrackBtnVisibility()">
                            <option value="BeNeat fast Track">BeNeat fast Track</option>
@@ -323,12 +340,22 @@
                         <input type="text" class="form-control bg-light" id="trainer" readonly>
                       </div>
 
+                      <!-- 🌟 ข้อมูลปัญหาจาก RMS (แสดงเฉพาะเคส Retrain) 🌟 -->
+                      <div class="col-12" id="rmsInfoSection" style="display:none;">
+                          <div class="p-3 mb-1 bg-danger bg-opacity-10 rounded border border-danger border-opacity-50">
+                              <h6 class="fw-bold text-danger mb-2"><i class="fas fa-exclamation-circle me-1"></i> รายละเอียดปัญหาจาก SM</h6>
+                              <p class="small text-dark mb-1"><strong>ปัญหาที่ต้อง Retrain:</strong> <br><span id="rmsDescText" class="text-muted">-</span></p>
+                              <p class="small text-dark mb-0 mt-2"><strong>ความคิดเห็น SM:</strong> <br><span id="rmsNoteText" class="text-muted">-</span></p>
+                          </div>
+                      </div>
+
                       <div class="col-12">
                          <label class="form-label small fw-bold text-muted">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
                          <input type="text" class="form-control fw-bold" id="name" required placeholder="ระบุชื่อ-นามสกุล">
                       </div>
                       
-                      <div class="col-md-6">
+                      <!-- 🌟 เพิ่ม Container ไว้สำหรับซ่อน 🌟 -->
+                      <div class="col-md-6" id="idCardContainer">
                         <label class="form-label small fw-bold text-muted">เลขบัตรประชาชน</label>
                         <input type="text" class="form-control" id="idCard" maxlength="17" placeholder="ระบุเลข 13 หลัก"
                                oninput="formatIdCard(this)" onblur="validateIdCard(this)">
@@ -370,7 +397,34 @@
                   </div>
                </div>
                
+               <!-- 🌟 ฝั่งขวา 🌟 -->
                <div class="col-lg-5">
+                  <!-- 🌟 ฟอร์มประเมินผลสำหรับเคส Retrain โดยเฉพาะ 🌟 -->
+                  <div id="retrainEvaluationSection" style="display:none;" class="mb-4 p-4 bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-4 shadow-sm">
+                      <h6 class="fw-bold text-dark mb-3"><i class="fas fa-clipboard-check text-warning me-2"></i>ประเมินผล Retrain</h6>
+                      <label class="form-label small fw-bold text-muted">ผลการประเมิน <span class="text-danger">*</span></label>
+                      <select class="form-select bg-white mb-3 shadow-none fw-bold text-primary border-warning" id="retrainResult">
+                          <option value="">-- ระบุผลการประเมิน --</option>
+                          <option value="ผ่านเกณฑ์ (ดีมาก)">ผ่านเกณฑ์ (ดีมาก)</option>
+                          <option value="ผ่านเกณฑ์ (พอใช้)">ผ่านเกณฑ์ (พอใช้)</option>
+                          <option value="ไม่ผ่านเกณฑ์ (ต้องปรับปรุง)">ไม่ผ่านเกณฑ์ (ต้องปรับปรุง)</option>
+                      </select>
+                      <label class="form-label small fw-bold text-muted">ความเห็นเทรนเนอร์ <span class="text-danger">*</span></label>
+                      <textarea class="form-control mb-3 bg-white shadow-none border-warning" id="retrainComment" rows="3" placeholder="ระบุสิ่งที่สอนไป หรือพฤติกรรม..."></textarea>
+                      
+                      <!-- 🌟 เพิ่มส่วนแนบไฟล์ 🌟 -->
+                      <label class="form-label small fw-bold text-muted">แนบเอกสารการเข้ารับการฝึกอบรมซ้ำ <span class="text-muted font-normal">(ถ้ามี)</span></label>
+                      
+                      <!-- ส่วนแสดงไฟล์แนบเดิม -->
+                      <div id="retrainAttachmentDisplay" class="mb-2 d-none">
+                          <a href="#" id="retrainAttachmentLink" target="_blank" class="badge bg-success-subtle text-success text-decoration-none border border-success-subtle p-2 px-3 shadow-sm rounded-pill">
+                              <i class="fas fa-paperclip me-1"></i> ดูเอกสารที่แนบไว้แล้ว
+                          </a>
+                      </div>
+                      
+                      <input type="file" id="retrainFile" class="form-control form-control-sm bg-white shadow-none border-warning">
+                  </div>
+
                   <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">ประวัติการติดตาม</h6>
                   <div class="bg-white p-3 rounded mb-3 shadow-sm border">
                       <textarea class="form-control mb-2 bg-light border-0" id="newFollowNote" rows="2" placeholder="เพิ่มบันทึกการติดตาม..."></textarea>
@@ -452,12 +506,17 @@
 
            const grpSel = document.getElementById('group');
            grpSel.innerHTML = '<option value="">เลือกกลุ่ม...</option>';
+           
+           // 🌟 เพิ่มหมวดหมู่ Retrain อัตโนมัติให้เลือก 🌟
            let finalGroups = groupOptions.length > 0 ? [...groupOptions] : ['กลุ่ม 0','A','B','C'];
            if (!finalGroups.includes('กลุ่ม 0')) finalGroups.unshift('กลุ่ม 0');
+           if (!finalGroups.includes('Retrain')) finalGroups.push('Retrain');
+           
            finalGroups.forEach(x => grpSel.add(new Option(x, x)));
 
            const coreStatuses = ['อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ', 'เปิดระบบ', 'ยุติการอบรม'];
            let allStatuses = [...new Set([...coreStatuses, ...onboardTypes])].filter(s => s.trim() !== "");
+           window.allOnboardStatuses = allStatuses; // เก็บใส่ Global สำหรับสลับไปมา
 
            const statusFilterSel = document.getElementById('statusFilter');
            const currentFilterStatus = statusFilterSel.value;
@@ -532,6 +591,16 @@
                    realStatus = row.fast_track_status; 
                }
 
+               let history = [];
+               if(typeof row.history === 'string') {
+                   try { history = JSON.parse(row.history); } catch(e) {}
+               } else if(Array.isArray(row.history)) history = row.history;
+
+               let tags = [];
+               if(typeof row.tags === 'string') {
+                   try { tags = JSON.parse(row.tags); } catch(e) { tags = [row.tags]; }
+               } else if(Array.isArray(row.tags)) tags = row.tags;
+
                acc.push({
                    id: row.onboard_id,
                    trainingDate: row.training_date,
@@ -547,22 +616,22 @@
                    firstJob: row.is_first_job,
                    jobId: row.job_id,
                    trainer: row.trainer,
-                   history: row.history || [], 
+                   history: history, 
                    fastTrackStatus: realStatus, 
                    center: row.center, 
                    skipFastTrack: row.skip_fast_track, 
                    masterType: row.master_type,
-                   tags: row.tags || []
+                   tags: tags
                });
                return acc;
            }, []);
 
            renderCenterTabs();
            filterTable();
-       } catch(e) {
-           showError(e.message);
-       } finally {
            hideLoading();
+       } catch(e) {
+           hideLoading();
+           showError(e.message);
        }
     }
 
@@ -570,7 +639,7 @@
     // 🌟 PHASE 2: WAITING ROOM (Pre-Registration) 🌟
     // ==========================================
     
-    // 🌟 ฟังก์ชันคำนวณ Effective Status 🌟
+    // 🌟 ฟังก์ชันคำนวณ Effective Status (ผู้สมัครใหม่)
     function getEffectiveTrainStatus(lead) {
         let status = lead.status || lead.Status || '';
 
@@ -591,12 +660,13 @@
 
     async function checkWaitingRoomBadge() {
         try {
-            const { data, error } = await supabase.from('db_training').select('*');
+            const { data, error } = await window.supabase.from('db_training').select('*');
             if (error) return;
             
             const todayStr = new Date().toISOString().split('T')[0];
             let todayCount = 0;
             
+            // 1. เช็คข้อมูลจาก db_training (ผู้สมัครใหม่)
             data.forEach(lead => {
                 const effStatus = getEffectiveTrainStatus(lead);
                 if (effStatus === 'อบรมแล้ว' || effStatus === 'ยกเลิกอบรม') return;
@@ -606,6 +676,17 @@
                 if (tDateRaw) {
                     let tDateObj = parseDateForDB(tDateRaw);
                     if (tDateObj === todayStr) todayCount++;
+                }
+            });
+
+            // 2. 🌟 เช็คคิว Retrain จาก prs_onboard โดยตรง (กรองเฉพาะที่รอเข้าอบรม) 🌟
+            globalData.forEach(row => {
+                if (row.group === 'Retrain' && row.type === 'รอเข้าอบรม') {
+                    if (currentCenterFilter !== 'ALL' && row.center !== currentCenterFilter) return;
+                    if (row.trainingDate) {
+                        let tDateObj = parseDateForDB(row.trainingDate);
+                        if (tDateObj === todayStr) todayCount++;
+                    }
                 }
             });
 
@@ -622,20 +703,54 @@
     async function openWaitingRoom() {
         showLoading();
         try {
-            const { data, error } = await supabase.from('db_training').select('*');
+            // เตรียม Dropdown กรองศูนย์เทรนใน Modal ให้พร้อม
+            const wrCenterSel = document.getElementById('wrCenterFilter');
+            if (wrCenterSel && wrCenterSel.options.length <= 1) {
+                [...new Set(centerOptions)].forEach(c => wrCenterSel.add(new Option(c, c)));
+            }
+            
+            // รีเซ็ตค่าการค้นหา
+            document.getElementById('wrSearchInput').value = '';
+            
+            const mainCenterFilter = currentCenterFilter; 
+            if (mainCenterFilter !== 'ALL') {
+                if (wrCenterSel) wrCenterSel.value = mainCenterFilter;
+            } else {
+                if (wrCenterSel) wrCenterSel.value = 'ALL';
+            }
+
+            const { data, error } = await window.supabase.from('db_training').select('*');
             if (error) throw error;
             
+            // 1. ดึงผู้สมัครใหม่
             waitingListData = data.filter(d => {
                 const effStatus = getEffectiveTrainStatus(d);
                 return effStatus !== 'อบรมแล้ว' && effStatus !== 'ยกเลิกอบรม';
             });
+
+            // 2. 🌟 ดึงข้อมูลจาก prs_onboard เฉพาะคิว Retrain ที่ยัง "รอเข้าอบรม" 🌟
+            const retrainPending = globalData.filter(r => r.group === 'Retrain' && r.type === 'รอเข้าอบรม');
+            retrainPending.forEach(r => {
+                waitingListData.push({
+                    lead_id: r.id,  // ผูก ID ของ prs_onboard
+                    full_name: r.name,
+                    phone: r.phone,
+                    id_card: r.idCard,
+                    center: r.center,
+                    train_date: r.trainingDate,
+                    status: 'รอเข้าอบรม',
+                    job_type: 'Retrain',
+                    maid_code: r.maidCode,
+                    is_retrain_from_onboard: true 
+                });
+            });
             
             renderWaitingRoomTabs();
+            hideLoading();
             waitingRoomModal.show();
         } catch (e) {
-            showError(e.message);
-        } finally {
             hideLoading();
+            showError(e.message || e.toString());
         }
     }
 
@@ -659,8 +774,17 @@
         let upcomingList = [];
         let pendingList = [];
 
+        // 🌟 ดึงค่าจากการค้นหาและการกรองศูนย์ในหน้าต่าง Waiting Room 🌟
+        const wrSearchText = (document.getElementById('wrSearchInput').value || '').toLowerCase();
+        const wrCenter = document.getElementById('wrCenterFilter').value || 'ALL';
+
         waitingListData.forEach(lead => {
-            if (currentCenterFilter !== 'ALL' && lead.center !== currentCenterFilter) return;
+            // Apply Center Filter
+            if (wrCenter !== 'ALL' && lead.center !== wrCenter) return;
+            
+            // Apply Search Filter (ค้นหาจาก ชื่อ, รหัสแม่บ้าน, เบอร์โทร, เลขบัตร)
+            const searchStr = (String(lead.full_name||'') + String(lead.phone||'') + String(lead.id_card||'') + String(lead.maid_code||'')).toLowerCase();
+            if (wrSearchText && !searchStr.includes(wrSearchText)) return;
 
             const tDateRaw = lead.train_date || lead.TrainDate;
             const effStatus = getEffectiveTrainStatus(lead);
@@ -723,14 +847,19 @@
             const reschedCount = parseInt(lead.reschedule_count || lead.reschedulecount || lead.RescheduleCount || 0);
             
             let nameHtml = name;
-            // 🌟 เพิ่ม Badge เลื่อนนัด 🌟
-            if (reschedCount > 0 && type !== 'pending') {
+            // 🌟 เพิ่มป้ายกำกับสำหรับเคส Retrain และเปลี่ยนเป็นสีแดง
+            if (lead.is_retrain_from_onboard) {
+                nameHtml = `<span class="fw-bold text-dark">${name}</span> <span class="badge bg-danger text-white border border-danger shadow-sm ms-2"><i class="fas fa-sync-alt me-1"></i>Retrain: ${lead.maid_code}</span>`;
+            } else {
+                nameHtml = `<span class="fw-bold text-dark">${name}</span>`;
+            }
+
+            if (reschedCount > 0 && type !== 'pending' && !lead.is_retrain_from_onboard) {
                 nameHtml += ' <span class="badge bg-warning text-dark border border-warning-subtle shadow-sm ms-2" style="font-size: 0.65rem;"><i class="fas fa-history me-1"></i>เลื่อนนัด</span>';
             }
             
             let dateDisplay = '-';
             if (type === 'pending') {
-                // 🌟 แสดงสถานะ Effective ถ้าอยู่ใน Pending 🌟
                 dateDisplay = `<span class="badge bg-warning text-dark">${effStatus}</span>`;
             } else {
                 const tDateRaw = lead.train_date || lead.TrainDate;
@@ -740,12 +869,18 @@
                 }
             }
 
-            const btnAccept = `<button class="btn btn-sm btn-primary rounded-pill fw-bold shadow-sm" onclick="acceptToOnboard('${leadId}')"><i class="fas fa-sign-in-alt me-1"></i> รับเข้าอบรม</button>`;
+            // 🌟 แยกฟังก์ชันการกดปุ่มรับเข้าเทรน
+            let btnAccept = '';
+            if (lead.is_retrain_from_onboard) {
+                btnAccept = `<button class="btn btn-sm btn-info text-white rounded-pill fw-bold shadow-sm" onclick="acceptRetrainToOnboard('${leadId}')"><i class="fas fa-chalkboard-teacher me-1"></i> รับเข้าอบรม</button>`;
+            } else {
+                btnAccept = `<button class="btn btn-sm btn-primary rounded-pill fw-bold shadow-sm" onclick="acceptToOnboard('${leadId}')"><i class="fas fa-sign-in-alt me-1"></i> รับเข้าอบรม</button>`;
+            }
 
             tbody.innerHTML += `
                 <tr>
                     <td>${dateDisplay}</td>
-                    <td class="text-dark"><span class="fw-bold">${nameHtml}</span></td>
+                    <td class="text-dark">${nameHtml}</td>
                     <td><i class="fas fa-phone text-success small"></i> ${phone}</td>
                     <td class="font-monospace">${idCardDisplay}</td>
                     <td><span class="badge bg-light text-dark border">${center}</span></td>
@@ -755,14 +890,82 @@
         });
     }
 
+    // 🌟 ฟังก์ชันพิเศษสำหรับอัพเดทหน้าจอ (ซ่อน/แสดงช่อง) เมื่อเป็นเคส Retrain 🌟
+    function updateRetrainUI() {
+        const isRetrain = document.getElementById('isRetrainCase').value === "true";
+        
+        // 1. ซ่อนฟิลด์ที่ไม่จำเป็นสำหรับ Retrain
+        document.getElementById('idCardContainer').style.display = isRetrain ? 'none' : 'block';
+        document.getElementById('verificationContainer').style.display = isRetrain ? 'none' : 'block';
+        if (isRetrain) {
+            document.getElementById('manualFtSection').style.display = 'none';
+            document.getElementById('modalFastTrackAction').style.display = 'none';
+        }
+
+        // 2. ล็อกช่อง "กลุ่ม" ให้เป็น Retrain อย่างเดียว
+        const groupEl = document.getElementById('group');
+        if (isRetrain) {
+            if (!Array.from(groupEl.options).some(opt => opt.value === 'Retrain')) {
+                groupEl.add(new Option('Retrain', 'Retrain'));
+            }
+            groupEl.value = 'Retrain';
+            groupEl.disabled = true; // ล็อกการแก้ไข
+        } else {
+            groupEl.disabled = false; // ปลดล็อกสำหรับคนทั่วไป
+        }
+
+        // 3. ปรับตัวเลือกสถานะ
+        const typeSel = document.getElementById('type');
+        const currentType = typeSel.value;
+        typeSel.innerHTML = '<option value="">เลือกสถานะ...</option>';
+        
+        if (isRetrain) {
+            ['รอเข้าอบรม', 'อยู่ระหว่างเข้า Retrain', 'Retrain เรียบร้อย', 'ยกเลิก'].forEach(s => typeSel.add(new Option(s, s)));
+        } else {
+            if (window.allOnboardStatuses) {
+                window.allOnboardStatuses.forEach(x => {
+                    let label = x === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' ? 'อยู่ระหว่างเตรียมความพร้อม' : x;
+                    typeSel.add(new Option(label, x));
+                });
+            }
+        }
+        
+        // เลือกรักษาค่าเดิมถ้ามีในลิสต์
+        if(Array.from(typeSel.options).some(o => o.value === currentType)) {
+            typeSel.value = currentType;
+        } else {
+            typeSel.value = isRetrain ? "อยู่ระหว่างเข้า Retrain" : "อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ";
+        }
+        
+        // ล้างฟอร์มประเมิน
+        document.getElementById('retrainResult').value = "";
+        document.getElementById('retrainComment').value = "";
+        const fileInput = document.getElementById('retrainFile');
+        if (fileInput) fileInput.value = "";
+        const attachmentDisplay = document.getElementById('retrainAttachmentDisplay');
+        if (attachmentDisplay) attachmentDisplay.classList.add('d-none');
+        const rmsInfoSec = document.getElementById('rmsInfoSection');
+        if (rmsInfoSec) rmsInfoSec.style.display = 'none';
+        
+        updateStatusUI();
+    }
+
+    // 🌟 ฟังก์ชันพิเศษสำหรับรับเคส Retrain (จาก Waiting Room) 🌟
+    function acceptRetrainToOnboard(leadId) {
+        waitingRoomModal.hide();
+        
+        // เนื่องจากมีอยู่ใน globalData แล้ว จึงสามารถใช้ openEditModalById ได้เลย
+        openEditModalById(leadId);
+        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'นี่คือเคส Retrain (บังคับลงประเมินตอนจบงาน)', showConfirmButton: false, timer: 4000 });
+    }
+
     function acceptToOnboard(leadId) {
-        const lead = waitingListData.find(l => (l.lead_id || l.Lead_ID || l.leadid) === leadId);
+        const lead = waitingListData.find(l => String(l.lead_id || l.Lead_ID || l.leadid) === String(leadId));
         if (!lead) return;
 
         waitingRoomModal.hide();
         openAddModal();
 
-        // 🌟 Auto-fill ข้อมูลพื้นฐาน 🌟
         document.getElementById('sourceLeadId').value = leadId; 
         document.getElementById('name').value = lead.full_name || lead.FullName || '';
         document.getElementById('phone').value = lead.phone || lead.Phone || '';
@@ -777,7 +980,6 @@
             if (exists) centerSelect.value = lead.center;
         }
 
-        // 🌟 Auto-fill ประเภทผู้ให้บริการ 🌟
         const jobType = lead.job_type || lead.JobType || lead.jobtype || '';
         if (jobType) {
             const masterTypeSelect = document.getElementById('masterType');
@@ -788,11 +990,9 @@
             }
         }
 
-        // 🌟 Auto-fill วิธีการตรวจประวัติ 🌟
         const bgCheck = lead.background_check || lead.BackgroundCheck || lead.backgroundcheck || '';
         if (bgCheck) {
             const vmSelect = document.getElementById('verificationMethod');
-            // เพิ่มการตรวจจับคำว่า "เอง" หรือ "ตนเอง"
             if (bgCheck.includes('ผ่าน') || bgCheck.includes('กำลังตรวจ') || bgCheck.includes('เอง') || bgCheck.includes('ตนเอง')) {
                 if (vmSelect) vmSelect.value = 'ตรวจประวัติด้วยตนเอง';
                 const ftStatusSelect = document.getElementById('manualFtStatus');
@@ -800,7 +1000,7 @@
                     if (bgCheck.includes('ไม่ผ่าน')) ftStatusSelect.value = 'Not Verified';
                     else if (bgCheck.includes('กำลังตรวจ')) ftStatusSelect.value = 'Pending Result';
                     else if (bgCheck.includes('ผ่าน')) ftStatusSelect.value = 'Verified';
-                    else ftStatusSelect.value = ''; // กรณีมาแค่ "ตรวจประวัติเอง" ให้เว้นว่างไว้รอเลือกผลตรวจ
+                    else ftStatusSelect.value = ''; 
                 }
             } else {
                 if (vmSelect) vmSelect.value = 'BeNeat fast Track';
@@ -1037,21 +1237,19 @@
        document.getElementById('initialStatus').value = "";
        document.getElementById('hasFastTrackStatus').value = "";
        document.getElementById('sourceLeadId').value = ""; 
+       document.getElementById('isRetrainCase').value = "false";
        document.getElementById('modalTitle').textContent = "เพิ่มคุณแม่บ้านใหม่";
        document.getElementById('trainer').value = currentUser; 
        document.getElementById('trainingDate')._flatpickr.setDate(new Date());
-
-       document.getElementById('type').value = "อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ";
-       document.getElementById('group').value = "กลุ่ม 0"; 
        
+       updateRetrainUI();
+
        if (currentCenterFilter !== "ALL") document.getElementById('center').value = currentCenterFilter;
        else document.getElementById('center').value = "";
        
        document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
        document.getElementById('verificationMethod').value = "BeNeat fast Track"; 
        document.getElementById('verificationMethod').dataset.original = "fasttrack"; 
-       document.getElementById('modalFastTrackAction').style.display = 'none';
-       document.getElementById('manualFtSection').style.display = 'none';
        
        document.getElementById('isReturningMaid').value = "false";
        document.getElementById('returningMaidBadge').classList.add('d-none');
@@ -1063,7 +1261,6 @@
 
        document.querySelectorAll('.dynamic-tag').forEach(cb => cb.checked = false);
 
-       updateStatusUI(); 
        currentHistory = []; renderTimeline();
        formModal.show();
     }
@@ -1077,16 +1274,28 @@
        document.getElementById('modalTitle').textContent = "แก้ไขข้อมูล";
        document.getElementById('recordId').value = item.id;
        document.getElementById('sourceLeadId').value = ""; 
+       document.getElementById('isRetrainCase').value = item.group === 'Retrain' ? "true" : "false";
+       
+       updateRetrainUI();
+
        if(item.trainingDate) document.getElementById('trainingDate')._flatpickr.setDate(item.trainingDate);
        document.getElementById('center').value = item.center || "";
        document.getElementById('masterType').value = item.masterType || "";
        document.getElementById('trainer').value = item.trainer;
        document.getElementById('maidCode').value = item.maidCode;
        document.getElementById('name').value = item.name;
-       document.getElementById('idCard').value = item.idCard || ""; formatIdCard(document.getElementById('idCard'));
+       
+       if (item.group !== 'Retrain') {
+           document.getElementById('idCard').value = item.idCard || ""; formatIdCard(document.getElementById('idCard'));
+       }
+       
        document.getElementById('phone').value = item.phone || "";
-       document.getElementById('group').value = item.group || "";
-       document.getElementById('type').value = item.type || "";
+       
+       // กรณีที่มีค่าใน options แล้ว จึงจะเลือกค่าเดิมได้
+       const typeSel = document.getElementById('type');
+       if(Array.from(typeSel.options).some(o => o.value === item.type)) {
+           typeSel.value = item.type;
+       }
        document.getElementById('initialStatus').value = item.type;
        
        if(item.openDate) document.getElementById('openDate')._flatpickr.setDate(item.openDate);
@@ -1102,7 +1311,7 @@
        }
        
        document.getElementById('hasFastTrackStatus').value = item.fastTrackStatus ? "1" : "";
-       checkFastTrackBtnVisibility();
+       if(item.group !== 'Retrain') checkFastTrackBtnVisibility();
 
        const tags = item.tags || [];
        document.querySelectorAll('.dynamic-tag').forEach(cb => {
@@ -1120,25 +1329,89 @@
 
        currentHistory = item.history || []; renderTimeline();
        updateStatusUI();
+       
+       // 🌟 เพิ่มการดึงค่าผลประเมิน Retrain และลิงก์ไฟล์เดิมมาแสดง 🌟
+       const attachmentDisplay = document.getElementById('retrainAttachmentDisplay');
+       const attachmentLink = document.getElementById('retrainAttachmentLink');
+       if (attachmentDisplay) attachmentDisplay.classList.add('d-none');
+       
+       if (item.group === 'Retrain' && item.type === 'Retrain เรียบร้อย') {
+           const evalLog = (item.history || []).find(h => h.note && h.note.includes('[ประเมิน Retrain]'));
+           if (evalLog) {
+               const resultMatch = evalLog.note.match(/ผล:\s*(.+?)(?=\n|$)/);
+               if (resultMatch && resultMatch[1]) {
+                   const resEl = document.getElementById('retrainResult');
+                   if (resEl) resEl.value = resultMatch[1].trim();
+               }
+               const commentMatch = evalLog.note.match(/ความเห็น:\s*([\s\S]+)$/);
+               if (commentMatch && commentMatch[1]) {
+                   const cmtEl = document.getElementById('retrainComment');
+                   if (cmtEl) cmtEl.value = commentMatch[1].trim();
+               }
+               // แสดงไฟล์แนบเดิม (ถ้ามี)
+               if (evalLog.attachment_url) {
+                   if (attachmentLink) attachmentLink.href = evalLog.attachment_url;
+                   if (attachmentDisplay) attachmentDisplay.classList.remove('d-none');
+               }
+           }
+       }
+
+       // 🌟 ดึงข้อมูลปัญหาจาก RMS มาแสดง 🌟
+       const rmsInfoSec = document.getElementById('rmsInfoSection');
+       if (rmsInfoSec) rmsInfoSec.style.display = 'none';
+
+       if (item.group === 'Retrain') {
+           document.getElementById('rmsDescText').innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
+           document.getElementById('rmsNoteText').innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
+           if (rmsInfoSec) rmsInfoSec.style.display = 'block';
+
+           window.supabase.from('rms_retrain_cases')
+               .select('description, staff_notes')
+               .eq('maid_id', item.maidCode)
+               .order('created_at', { ascending: false })
+               .limit(1)
+               .single()
+               .then(({ data, error }) => {
+                   if (data && !error) {
+                       document.getElementById('rmsDescText').textContent = data.description || '-';
+                       document.getElementById('rmsNoteText').textContent = data.staff_notes || '-';
+                   } else {
+                       document.getElementById('rmsDescText').textContent = 'ไม่พบข้อมูล';
+                       document.getElementById('rmsNoteText').textContent = 'ไม่พบข้อมูล';
+                   }
+               });
+       }
+
        document.getElementById('newFollowNote').value = "";
        formModal.show();
     }
 
     function updateStatusUI() {
         const status = document.getElementById('type').value || '';
-        const tagSection = document.getElementById('tagSection');
-        const openDateSection = document.getElementById('openDateSection');
+        const isRetrain = document.getElementById('isRetrainCase').value === "true";
         
-        tagSection.style.display = 'none'; 
-        openDateSection.style.display = 'none';
+        document.getElementById('tagSection').style.display = 'none'; 
+        document.getElementById('openDateSection').style.display = 'none';
         
-        if (status === 'เปิดระบบ') { 
-            document.getElementById('group').value = 'A'; 
-            openDateSection.style.display = 'block'; 
-        } 
-        else if (status === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || status.includes('เตรียมความพร้อม')) { 
-            document.getElementById('group').value = 'กลุ่ม 0'; 
-            tagSection.style.display = 'block'; 
+        const evalSec = document.getElementById('retrainEvaluationSection');
+        if (evalSec) evalSec.style.display = 'none';
+        
+        if (!isRetrain) {
+            if (status === 'เปิดระบบ') { 
+                document.getElementById('group').value = 'A'; 
+                document.getElementById('openDateSection').style.display = 'block'; 
+            } 
+            else if (status === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || status.includes('เตรียมความพร้อม')) { 
+                document.getElementById('group').value = 'กลุ่ม 0'; 
+                document.getElementById('tagSection').style.display = 'block'; 
+            } 
+        } else {
+            // ล็อกให้อยู่กลุ่ม Retrain เสมอ
+            document.getElementById('group').value = 'Retrain';
+            
+            if (status === 'Retrain เรียบร้อย' && evalSec) {
+                evalSec.style.display = 'block';
+            }
         } 
     }
     
@@ -1240,17 +1513,13 @@
                     if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('SEND_FAST_TRACK', 'Onboard', `Sent ${id} to Master Verify`, currentUser);
                     
                     if(formModal) formModal.hide();
+                    hideLoading();
+                    Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'ส่งตรวจสำเร็จ', showConfirmButton: false, timer: 3000});
+                    loadData(); 
                 } catch(e) {
                     hideLoading();
                     showError(e.message);
-                    return; // หยุดทำงานหากเกิด Error
                 }
-
-                // 🌟 รอให้โหลดข้อมูลเสร็จสิ้นก่อน (ใน loadData มี hideLoading ตัวมันเอง)
-                await loadData(); 
-                
-                // 🌟 แสดง Toast สำเร็จหลังจากโหลดจบ ป้องกันการกระพริบ
-                Swal.fire({toast: true, position: 'top-end', icon: 'success', title: 'ส่งตรวจสำเร็จ', showConfirmButton: false, timer: 3000});
             }
         });
     }
@@ -1258,12 +1527,44 @@
     // 🚀 SUPABASE: บันทึกข้อมูล
     async function saveData() {
        const idInput = document.getElementById('idCard');
-       if(idInput.value && !validateIdCard(idInput)) { Swal.fire('เลขบัตรไม่ถูกต้อง', '', 'warning'); return; }
+       const isRetrain = document.getElementById('isRetrainCase').value === "true";
+       
+       // ไม่บังคับตรวจบัตรประชาชนถ้าเป็นเคส Retrain
+       if(!isRetrain && idInput.value && !validateIdCard(idInput)) { 
+           Swal.fire('เลขบัตรไม่ถูกต้อง', '', 'warning'); 
+           return; 
+       }
+       
+       const groupVal = document.getElementById('group').value;
+       const actualGroup = isRetrain ? 'Retrain' : groupVal;
+       
+       const newFollowNote = document.getElementById('newFollowNote').value.trim();
+       let hasRecentNote = false;
+       if (currentHistory.length > 0) {
+           const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
+           if (currentHistory[0].date === todayStr) hasRecentNote = true;
+       }
+
+       const type = document.getElementById('type').value;
+       const newStatus = type;
+
+       // 🌟 ตรวจสอบความสมบูรณ์สำหรับเคส Retrain 🌟
+       let retrainResult = "";
+       let retrainComment = "";
+       
+       if (isRetrain && newStatus === 'Retrain เรียบร้อย') {
+           retrainResult = document.getElementById('retrainResult').value;
+           retrainComment = document.getElementById('retrainComment').value.trim();
+           
+           if (!retrainResult || !retrainComment) {
+               Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุ "ผลการประเมิน" และ "ความเห็นเทรนเนอร์" ให้ครบถ้วน', 'warning');
+               return;
+           }
+       } 
        
        const trainingDate = document.getElementById('trainingDate').value;
        const center = document.getElementById('center').value;
        const name = document.getElementById('name').value;
-       const type = document.getElementById('type').value;
        const openDate = document.getElementById('openDate').value;
        const verificationMethod = document.getElementById('verificationMethod').value;
        const manualFtStatus = document.getElementById('manualFtStatus').value;
@@ -1275,11 +1576,10 @@
        if (!name) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุชื่อ-นามสกุล', 'warning'); return; }
        if (!type) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาเลือกสถานะ (Status)', 'warning'); return; }
        
-       if (type === 'เปิดระบบ' && !openDate) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุวันเปิดระบบ', 'warning'); return; }
-       if (verificationMethod === 'ตรวจประวัติด้วยตนเอง' && !manualFtStatus) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุผลการตรวจประวัติ (Manual Status)', 'warning'); return; }
+       if (!isRetrain && type === 'เปิดระบบ' && !openDate) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุวันเปิดระบบ', 'warning'); return; }
+       if (!isRetrain && verificationMethod === 'ตรวจประวัติด้วยตนเอง' && !manualFtStatus) { Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุผลการตรวจประวัติ (Manual Status)', 'warning'); return; }
        
        const oldStatus = document.getElementById('initialStatus').value;
-       const newStatus = type;
        
        if (oldStatus !== newStatus && newStatus !== "") {
            const now = new Date();
@@ -1287,29 +1587,107 @@
            currentHistory.unshift({ date: dateStr, note: `เปลี่ยนสถานะ: "${oldStatus||'ว่าง'}" -> "${newStatus}"`, user: currentUser });
        }
 
+       // 🌟 จัดการอัปโหลดไฟล์แนบเอกสาร Retrain 🌟
+       let trainerAttachmentUrl = "";
+       if (isRetrain && newStatus === 'Retrain เรียบร้อย') {
+           const fileInput = document.getElementById('retrainFile');
+           if (fileInput && fileInput.files.length > 0) {
+               Swal.fire({ title: 'กำลังอัพโหลดไฟล์แนบ...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+               try {
+                   trainerAttachmentUrl = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const base64Content = e.target.result.split(',')[1];
+                            google.script.run
+                                .withSuccessHandler(res => {
+                                    if(res.status === 'success') resolve(res.url);
+                                    else reject(new Error(res.message));
+                                })
+                                .withFailureHandler(err => reject(err))
+                                .uploadFileNative({
+                                    fileName: fileInput.files[0].name,
+                                    mimeType: fileInput.files[0].type,
+                                    fileBase64: base64Content
+                                });
+                        };
+                        reader.onerror = err => reject(err);
+                        reader.readAsDataURL(fileInput.files[0]);
+                   });
+               } catch(e) {
+                   hideLoading();
+                   Swal.fire('อัพโหลดไฟล์ล้มเหลว', e.message, 'error');
+                   return;
+               }
+           }
+       }
+       
+       // เพิ่มประเมิน Retrain ลงในประวัติ
+       if (isRetrain && newStatus === 'Retrain เรียบร้อย') {
+           const retrainResult = document.getElementById('retrainResult').value;
+           const retrainComment = document.getElementById('retrainComment').value.trim();
+           const noteString = `[ประเมิน Retrain] ผล: ${retrainResult}\nความเห็น: ${retrainComment}`;
+           
+           // 🌟 เช็คก่อนว่าซ้ำกับประวัติเดิมอันล่าสุดไหม จะได้ไม่บันทึกลงไปซ้ำซ้อน 🌟
+           const isDuplicate = currentHistory.length > 0 && currentHistory.some(h => h.note === noteString);
+           
+           if (!isDuplicate || trainerAttachmentUrl !== "") {
+               const now = new Date();
+               const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+               
+               let logObj = { 
+                   date: dateStr, 
+                   note: noteString, 
+                   user: currentUser 
+               };
+
+               // บันทึกลิงก์ไฟล์ลงใน History เพื่อให้ตอนโหลดดึงมาโชว์ได้
+               if (trainerAttachmentUrl) {
+                   logObj.attachment_url = trainerAttachmentUrl;
+               } else {
+                   // ดึงของเก่ามาใส่คืน จะได้ไม่หาย
+                   const oldLog = currentHistory.find(h => h.note && h.note.includes('[ประเมิน Retrain]'));
+                   if (oldLog && oldLog.attachment_url) {
+                       logObj.attachment_url = oldLog.attachment_url;
+                   }
+               }
+               
+               if (isDuplicate) {
+                   // ถ้ากดเซฟซ้ำโดยที่ไม่ได้แก้ข้อความ แต่แนบรูปใหม่
+                   const existingLog = currentHistory.find(h => h.note === noteString);
+                   if (existingLog && trainerAttachmentUrl) existingLog.attachment_url = trainerAttachmentUrl;
+               } else {
+                   currentHistory.unshift(logObj);
+               }
+           }
+       } else if (newFollowNote) {
+           const now = new Date();
+           const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+           currentHistory.unshift({ date: dateStr, note: newFollowNote, user: currentUser });
+       }
+
        let tags = [];
-       if (newStatus === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || newStatus.includes('เตรียมความพร้อม')) {
+       if (!isRetrain && (newStatus === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || newStatus.includes('เตรียมความพร้อม'))) {
            document.querySelectorAll('.dynamic-tag:checked').forEach(cb => { tags.push(cb.value); });
        }
        
-       if (document.getElementById('isReturningMaid').value === "true") {
+       if (!isRetrain && document.getElementById('isReturningMaid').value === "true") {
            if (!tags.includes("คุณแม่บ้านเก่ากลับมา")) tags.push("คุณแม่บ้านเก่ากลับมา");
        }
        
-       const isSkip = (verificationMethod === "ตรวจประวัติด้วยตนเอง");
+       const isSkip = isRetrain ? false : (verificationMethod === "ตรวจประวัติด้วยตนเอง");
        let finalManualStatus = isSkip ? manualFtStatus : null;
 
        const originalMethod = document.getElementById('verificationMethod').dataset.original;
        const currentMethod = isSkip ? "manual" : "fasttrack";
-       const shouldResetFT = (originalMethod === "manual" && currentMethod === "fasttrack");
+       const shouldResetFT = (!isRetrain && originalMethod === "manual" && currentMethod === "fasttrack");
 
        let payload = {
             training_date: trainingDate || null,
             maid_code: document.getElementById('maidCode').value,
             full_name: name,
-            id_card: idInput.value.replace(/-/g, ''),
+            id_card: isRetrain ? '' : idInput.value.replace(/-/g, ''), // ข้ามบัตรปชชสำหรับ Retrain
             phone: document.getElementById('phone').value,
-            onboard_group: document.getElementById('group').value,
+            onboard_group: actualGroup,
             onboard_type: newStatus,
             center: center,
             master_type: document.getElementById('masterType').value,
@@ -1329,41 +1707,97 @@
        showLoading();
        try {
            if (recordId) {
-               const { error } = await supabase.from('prs_onboard').update(payload).eq('onboard_id', recordId);
+               const { error } = await window.supabase.from('prs_onboard').update(payload).eq('onboard_id', recordId);
                if(error) throw error;
                if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('UPDATE_ONBOARD', 'Onboard', `Updated: ${recordId}`, currentUser);
+               
+               // 🌟 ส่งผลกลับ RMS ถ้าเป็นเคส Retrain 🌟
+               if (isRetrain || (sourceLeadId && sourceLeadId.startsWith('RMS-'))) {
+                   try {
+                       let rmsId = null;
+                       if (sourceLeadId && sourceLeadId.startsWith('RMS-')) {
+                           rmsId = sourceLeadId.replace('RMS-', '');
+                       } else if (recordId && recordId.startsWith('RMS-')) {
+                           rmsId = recordId.replace('RMS-', '');
+                       }
+                       
+                       let query = window.supabase.from('rms_retrain_cases').select('id, action_logs, status');
+                       if (rmsId) {
+                           query = query.eq('id', rmsId);
+                       } else {
+                           const maidCodeVal = document.getElementById('maidCode').value;
+                           if (maidCodeVal) query = query.eq('maid_id', maidCodeVal).order('created_at', { ascending: false }).limit(1);
+                           else query = null;
+                       }
+                       
+                       if (query) {
+                           const { data: rmsData } = await query;
+                           if (rmsData && rmsData.length > 0) {
+                               const targetRmsId = rmsData[0].id;
+                               const existingLogs = rmsData[0].action_logs || [];
+                               
+                               let targetRmsStatus = 'waiting';
+                               if (newStatus === 'Retrain เรียบร้อย') targetRmsStatus = 'retrained';
+                               if (newStatus === 'ยกเลิก') targetRmsStatus = 'cancelled';
+                               
+                               let noteToSend = newFollowNote || (currentHistory.length > 0 ? currentHistory[0].note : "อัพเดทสถานะการเทรน");
+                               
+                               // ถ้าระบุว่า Retrain เรียบร้อย ให้ส่งความเห็นไปโชว์สวยๆ เลย
+                               if (newStatus === 'Retrain เรียบร้อย') {
+                                   const retrainResult = document.getElementById('retrainResult').value;
+                                   const retrainComment = document.getElementById('retrainComment').value.trim();
+                                   noteToSend = `ผลประเมิน: ${retrainResult}\nความเห็น: ${retrainComment}`;
+                               }
+                               
+                               const newLog = {
+                                   date: new Date().toISOString(),
+                                   user: currentUser.split('@')[0],
+                                   action: `เทรนเนอร์ประเมินผล (${newStatus})`,
+                                   note: noteToSend,
+                                   attachment_url: trainerAttachmentUrl
+                               };
+                               
+                               // ย้ายไปที่แถบเป้าหมาย (เช่น retrained)
+                               await window.supabase.from('rms_retrain_cases').update({
+                                   status: targetRmsStatus, 
+                                   tracking_status: `เทรนเนอร์อัพเดท: ${newStatus}`,
+                                   action_logs: [newLog, ...existingLogs]
+                               }).eq('id', targetRmsId);
+                           }
+                       }
+                   } catch(e) { console.warn("Failed to update RMS:", e); }
+               }
+
            } else {
                const newId = "OB-" + new Date().getTime().toString().substring(5);
                payload.onboard_id = newId;
-               const { error } = await supabase.from('prs_onboard').insert([payload]);
+               const { error } = await window.supabase.from('prs_onboard').insert([payload]);
                if(error) throw error;
                if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('CREATE_ONBOARD', 'Onboard', `Created: ${newId}`, currentUser);
                
-               // 🌟 อัปเดตสถานะกลับไปยัง DB_Training ถ้ามาจาก Waiting Room 🌟
-               if (sourceLeadId) {
+               // อัปเดตสถานะกลับไปยัง DB_Training ถ้ามาจาก Waiting Room
+               if (sourceLeadId && !sourceLeadId.startsWith('OB-') && !sourceLeadId.startsWith('RMS-')) {
                     try {
                         const { data: sample } = await window.supabase.from('db_training').select('*').limit(1);
                         const dbKeys = (sample && sample.length > 0) ? Object.keys(sample[0]) : [];
                         const idCol = dbKeys.find(k => k.toLowerCase() === 'lead_id' || k.toLowerCase() === 'leadid') || 'lead_id';
                         const statCol = dbKeys.find(k => k.toLowerCase() === 'status') || 'status';
                         
-                        let tPayload = {}; tPayload[statCol] = 'อบรมแล้ว';
+                        let tPayload = {}; tPayload[statCol] = 'เข้ารับการอบรมแล้ว';
                         await window.supabase.from('db_training').update(tPayload).eq(idCol, sourceLeadId);
                     } catch(e) { console.warn("Failed to update db_training status:", e); }
                }
            }
-           formModal.hide();
            
-        } catch(e) {
+           formModal.hide();
+           hideLoading();
+           Swal.fire({ icon:'success', title:'บันทึกเรียบร้อย', timer: 1000, showConfirmButton:false }); 
+           loadData();
+           checkWaitingRoomBadge();
+       } catch(e) {
            hideLoading();
            showError(e.message);
-           return;
-        }
-
-        // 🌟 ดึงข้อมูลและอัปเดตหน้าจอ
-        await loadData();
-        checkWaitingRoomBadge();
-        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'บันทึกเรียบร้อย', timer: 3000, showConfirmButton: false }); 
+       }
     }
 
     async function deleteItem(id) {
@@ -1371,17 +1805,16 @@
             if (r.isConfirmed) {
                 showLoading();
                 try {
-                    const { error } = await supabase.from('prs_onboard').delete().eq('onboard_id', id);
+                    const { error } = await window.supabase.from('prs_onboard').delete().eq('onboard_id', id);
                     if(error) throw error;
                     if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('DELETE_ONBOARD', 'Onboard', `Deleted: ${id}`, currentUser);
+                    hideLoading();
+                    Swal.fire('Deleted!', '', 'success'); 
+                    loadData(); 
                 } catch(e) {
                     hideLoading();
                     showError(e.message);
-                    return;
                 }
-                
-                await loadData(); 
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'ลบข้อมูลสำเร็จ', timer: 3000, showConfirmButton: false });
             }
         });
     }
@@ -1408,6 +1841,7 @@
             const exportData = window.currentFilteredData && window.currentFilteredData.length > 0 ? window.currentFilteredData : globalData;
             
             if (!exportData || exportData.length === 0) {
+                hideLoading();
                 Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลสำหรับเงื่อนไขที่เลือก', 'info');
                 return;
             }
@@ -1457,8 +1891,9 @@
                 document.body.removeChild(link);
             }
             
-            Swal.close();
+            hideLoading();
         } catch(e) {
+            hideLoading();
             showError("Export failed: " + e.message);
         }
     }
