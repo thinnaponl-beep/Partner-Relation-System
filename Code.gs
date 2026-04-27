@@ -2945,3 +2945,32 @@ function exportHoldReport() {
     filename: `Hold_Return_Report_${timestamp}.csv` 
   };
 }
+
+function uploadFileNative(data) {
+      try {
+        // ⚠️ โฟลเดอร์ ID ปลายทางใน Google Drive สำหรับเก็บเอกสารแนบการประเมิน (สามารถใช้โฟลเดอร์เดียวกับ RMS ได้เลย)
+        const FOLDER_ID = "1SvciPXYXUBVjr2rYNhiHS55cQgAH_3wb"; 
+        
+        const decodedFile = Utilities.base64Decode(data.fileBase64);
+        const blob = Utilities.newBlob(decodedFile, data.mimeType, data.fileName);
+        const folder = DriveApp.getFolderById(FOLDER_ID);
+        const file = folder.createFile(blob);
+        
+        try {
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        } catch (shareErr) {
+          console.log("ไม่สามารถเปิดแชร์สาธารณะได้ ติดสิทธิ์องค์กร");
+        }
+        
+        return {
+          status: "success",
+          url: file.getUrl(),
+          name: file.getName()
+        };
+      } catch (error) {
+        return {
+          status: "error",
+          message: error.toString()
+        };
+      }
+    }
