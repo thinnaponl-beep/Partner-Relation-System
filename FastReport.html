@@ -493,7 +493,7 @@
 
             // 1. ดึงข้อมูล Center ถ้ายังไม่มี
             if (document.getElementById('centerFilter').options.length <= 1) {
-                const { data: drops } = await supabase.from('config_dropdowns').select('value').eq('category', 'Onboard Centers');
+                const { data: drops } = await supabase.from('prs_config').select('value').eq('category', 'Onboard Centers');
                 if(drops) drops.forEach(d => document.getElementById('centerFilter').add(new Option(d.value, d.value)));
             }
 
