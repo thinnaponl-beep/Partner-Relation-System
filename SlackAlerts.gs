@@ -1,11 +1,15 @@
 // =========================================================================
-// 🌟 ฟังก์ชันแจ้งเตือน KPI (3-Tier Alert) ส่งเข้า Slack 🌟
+// 🌟 ฟังก์ชันแจ้งเตือน KPI (3-Tier Alert) ส่งเข้า Slack (ดึงข้อมูลจาก Supabase) 🌟
 // =========================================================================
-const SLACK_WEBHOOK_URL = ''
-const WEB_APP_URL = 'https://script.google.com/a/beneat.co/macros/s/AKfycbxswzmocLIBJ5JrCMuhOZQuiw4vo_PDq3weBU5OKcziJyuEJ21dTtqQOqisoi6Ab195/exec?page=hold'; // ⚠️ เปลี่ยนเป็น URL Web App ของคุณ (ลิงก์ที่ใช้เข้าหน้า Hold)
 
-// ใส่ชื่อชีตฐานข้อมูล Hold ให้ตรงกับของจริง (เช่น 'Database_Hold' หรือ 'Hold')
-const HOLD_SHEET_ACTUAL_NAME = 'Database_Hold'; // ⚠️ เปลี่ยนให้ตรงกับชื่อชีตของคุณถ้าไม่ใช่ชื่อนี้
+// ⚠️ ตรวจสอบ Webhook URL ว่ายังใช้งานได้หรือไม่
+var SLACK_WEBHOOK_URL = '';
+var WEB_APP_URL = 'https://script.google.com/a/beneat.co/macros/s/AKfycbxswzmocLIBJ5JrCMuhOZQuiw4vo_PDq3weBU5OKcziJyuEJ21dTtqQOqisoi6Ab195/exec?page=hold';
+
+// 🌟 ข้อมูลการเชื่อมต่อ Supabase (ใช้ var เพื่อป้องกัน Error is not defined ข้ามไฟล์)
+// อัปเดตฐานข้อมูลเป็นชุดล่าสุดให้ตรงกับฝั่งเว็บไซต์
+var SUPABASE_URL = ''; 
+var SUPABASE_KEY = '';
 
 function sendDailyKpiAlertToSlack() {
   if (!SLACK_WEBHOOK_URL || SLACK_WEBHOOK_URL === 'YOUR_SLACK_WEBHOOK_URL_HERE') {
@@ -13,9 +17,9 @@ function sendDailyKpiAlertToSlack() {
     return;
   }
 
-  const holdData = getHoldDataForSlack(); 
+  const holdData = getHoldDataFromSupabase(); 
   if (!holdData || holdData.length === 0) {
-    Logger.log('⚠️ ไม่พบข้อมูลในระบบ หรือดึงข้อมูลไม่สำเร็จ');
+    Logger.log('⚠️ ไม่พบข้อมูลในระบบ Supabase หรือดึงข้อมูลไม่สำเร็จ');
     return;
   }
 
@@ -43,7 +47,7 @@ function sendDailyKpiAlertToSlack() {
 
     let daysLeft = Math.ceil((d.getTime() - today.getTime()) / (1000 * 3600 * 24));
 
-    // นับจำนวนงานที่รับไปแล้ว
+    // นับจำนวนงานที่รับไปแล้ว (คอลัมน์ JSONB จาก Supabase จะถูกแปลงเป็น Array อัตโนมัติ)
     let jobsCount = 0;
     if (row.kpiJobs && Array.isArray(row.kpiJobs)) {
       jobsCount = row.kpiJobs.filter(j => j.booking && String(j.booking).trim() !== "").length;
@@ -52,14 +56,14 @@ function sendDailyKpiAlertToSlack() {
     let daysText = daysLeft < 0 ? `*เกินกำหนดมา ${Math.abs(daysLeft)} วัน*` : `เหลือ *${daysLeft} วัน*`;
     let detailMsg = `• รหัส ${row.maidCode || '-'} - ${row.name} (รับไปแล้ว ${jobsCount}/4 งาน) - ${daysText}`;
 
-    // จัดกลุ่มตามระยะเวลา 3 ระดับ
-    if (daysLeft <= 7) {
+    // จัดกลุ่มตามระยะเวลา 3 ระดับ (ให้ตรงกับตัวกรองบนหน้าเว็บ 5, 10, 20 วัน)
+    if (daysLeft <= 5) {
       criticalList.push(detailMsg);
       Logger.log(`- พบกลุ่มวิกฤต: ${row.name} (${daysLeft} วัน)`);
-    } else if (daysLeft > 8 && daysLeft <= 14) {
+    } else if (daysLeft > 5 && daysLeft <= 10) {
       urgentList.push(detailMsg);
       Logger.log(`- พบกลุ่มเร่งด่วน: ${row.name} (${daysLeft} วัน)`);
-    } else if (daysLeft > 15 && daysLeft <= 21) {
+    } else if (daysLeft > 10 && daysLeft <= 20) {
       warningList.push(detailMsg);
       Logger.log(`- พบกลุ่มแจ้งเตือน: ${row.name} (${daysLeft} วัน)`);
     }
@@ -72,28 +76,62 @@ function sendDailyKpiAlertToSlack() {
   }
 
   // ประกอบร่างข้อความ (Markdown สไตล์ Slack)
-  let finalMessage = "🔔 แจ้งเตือนติดตามรับงาน (คุณแม่บ้านกลุ่ม H Return)* 🔔\n\n";
+  let finalMessage = "🔔 *แจ้งเตือนติดตามรับงาน (คุณแม่บ้านกลุ่ม H Return)* 🔔\n\n";
 
   if (criticalList.length > 0) {
-    finalMessage += "🔴 คุณแม่บ้านที่ยังเข้าให้บริการไม่ครบ 2 งาน (เหลือไม่เกิน 7 วันจะถูกปิดระบบ):*\n";
+    finalMessage += "🔴 *กลุ่มวิกฤต (เหลือเวลาไม่เกิน 5 วัน หรือเกินกำหนด):*\n";
     finalMessage += criticalList.join("\n") + "\n\n";
   }
 
   if (urgentList.length > 0) {
-    finalMessage += "🟠 คุณแม่บ้านที่ยังเข้าให้บริการไม่ครบ 2 งาน (เหลือไม่เกิน 14 วันจะถูกปิดระบบ):*\n";
+    finalMessage += "🟠 *กลุ่มเร่งด่วน (เหลือเวลา 6-10 วัน):*\n";
     finalMessage += urgentList.join("\n") + "\n\n";
   }
 
   if (warningList.length > 0) {
-    finalMessage += "🟡 คุณแม่บ้านที่ยังเข้าให้บริการไม่ครบ 2 งาน (เหลือไม่เกิน 21 วันจะถูกปิดระบบ):*\n";
+    finalMessage += "🟡 *กลุ่มแจ้งเตือน (เหลือเวลา 11-20 วัน):*\n";
     finalMessage += warningList.join("\n") + "\n\n";
   }
 
   // ใช้รูปแบบแนบลิงก์ของ Slack <URL|ข้อความที่จะแสดง>
-  finalMessage += `_*👉 กรุณาตรวจสอบและติดตาม :*_ <${WEB_APP_URL}|ติดตามคุณแม่บ้านกลุ่ม H >`;
+  finalMessage += `_*👉 กรุณาตรวจสอบและติดตาม :*_ <${WEB_APP_URL}|คลิกที่นี่เพื่อเปิดหน้าระบบ PRS >`;
 
   // ฟังก์ชันยิง Webhook ไป Slack
   postToSlack(finalMessage);
+}
+
+// ฟังก์ชันยิง REST API เพื่อดึงข้อมูลจาก Supabase 
+function getHoldDataFromSupabase() {
+  const url = `${SUPABASE_URL}/rest/v1/prs_hold?select=maid_code,full_name,status,reactivation_date,kpi_jobs`;
+  
+  const options = {
+    method: 'get',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    if (response.getResponseCode() === 200 || response.getResponseCode() === 201) {
+      const data = JSON.parse(response.getContentText());
+      return data.map(row => ({
+        maidCode: row.maid_code,
+        name: row.full_name,
+        status: row.status,
+        reactivationDate: row.reactivation_date,
+        kpiJobs: row.kpi_jobs || [] 
+      }));
+    } else {
+      Logger.log(`❌ Supabase Error: ${response.getContentText()}`);
+    }
+  } catch (e) {
+    Logger.log(`❌ Fetch Exception: ${e.toString()}`);
+  }
+  return [];
 }
 
 // ฟังก์ชันสำหรับยิง API ไปยัง Slack
@@ -105,47 +143,23 @@ function postToSlack(message) {
   const options = {
     "method": "post",
     "contentType": "application/json",
-    "payload": JSON.stringify(payload)
+    "payload": JSON.stringify(payload),
+    "muteHttpExceptions": true 
   };
 
   try {
-    UrlFetchApp.fetch(SLACK_WEBHOOK_URL, options);
-    Logger.log("✅ ส่งข้อความแจ้งเตือนเข้า Slack สำเร็จ!");
+    const response = UrlFetchApp.fetch(SLACK_WEBHOOK_URL, options);
+    const responseCode = response.getResponseCode();
+    
+    if (responseCode === 200 || response.getContentText() === "ok") {
+      Logger.log("✅ ส่งข้อความแจ้งเตือนเข้า Slack สำเร็จ!");
+    } else {
+      Logger.log(`❌ ไม่สามารถส่งเข้า Slack ได้ (Code ${responseCode}) - สาเหตุจาก Slack: ${response.getContentText()}`);
+      Logger.log(`⚠️ กรุณาตรวจสอบลิงก์ Webhook ของคุณว่าถูกต้องหรือหมดอายุหรือไม่`);
+    }
   } catch (e) {
-    Logger.log("❌ Error sending to Slack: " + e.toString());
+    Logger.log("❌ Exception sending to Slack: " + e.toString());
   }
-}
-
-// ฟังก์ชัน Helper เพื่อดึงข้อมูล แบบ Safe Mode
-function getHoldDataForSlack() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  // พยายามใช้ชื่อชีตจากค่าคงที่ก่อน ถ้าไม่มีให้ใช้ชื่อที่ระบุเอง
-  let sheetName = typeof HOLD_SHEET_NAME !== 'undefined' ? HOLD_SHEET_NAME : HOLD_SHEET_ACTUAL_NAME;
-  let sheet = ss.getSheetByName(sheetName);
-  
-  if (!sheet) {
-    Logger.log(`❌ Error: ไม่พบชีตที่ชื่อ '${sheetName}' กรุณาตรวจสอบชื่อชีต`);
-    return [];
-  }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  // ดึงข้อมูล 19 คอลัมน์ (A ถึง S) เผื่อไว้
-  const values = sheet.getRange(2, 1, lastRow - 1, 19).getDisplayValues();
-  let data = values.map(row => {
-      let kpiJobs = [];
-      try { if (row[16]) kpiJobs = JSON.parse(row[16]); } catch(e) {}
-
-      return {
-          maidCode: row[1], // คอลัมน์ B
-          name: row[2],     // คอลัมน์ C
-          status: row[14],  // คอลัมน์ O (ตรวจสอบว่าชีตจริง สถานะอยู่คอลัมน์ O ใช่หรือไม่)
-          reactivationDate: row[15], // คอลัมน์ P (วันที่เปิดระบบใหม่)
-          kpiJobs: kpiJobs
-      };
-  });
-  return data;
 }
 
 // ฟังก์ชันแปลงวันที่
