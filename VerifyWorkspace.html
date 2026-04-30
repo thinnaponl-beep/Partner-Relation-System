@@ -1189,6 +1189,8 @@
     // 🚀 SUPABASE DATA MUTATIONS
     async function saveMasterData() {
         const id = document.getElementById('m_recordId').value;
+        const newFtStatus = document.getElementById('m_ftStatus').value;
+
         const payload = {
             maid_code: document.getElementById('m_code').value,
             full_name: document.getElementById('m_name').value,
@@ -1200,9 +1202,17 @@
             officer: document.getElementById('m_officer').value,
             result_date: document.getElementById('m_resultDate').value || null,
             result: document.getElementById('m_result').value,
-            ft_status: document.getElementById('m_ftStatus').value,
+            ft_status: newFtStatus,
             notes: document.getElementById('m_note').value
         };
+
+        // 🌟 เพิ่ม Logic: หากสถานะ FT มีการเปลี่ยนแปลง ให้ล้างค่า Export ออกเพื่อให้ Export ใหม่ได้ 🌟
+        if (id) {
+            const oldRecord = globalDataMaster.find(x => String(x.id) === String(id));
+            if (oldRecord && oldRecord.ftStatus !== newFtStatus) {
+                payload.export_status = null;
+            }
+        }
 
         showLoading();
         try {
@@ -1210,16 +1220,43 @@
                 const { error } = await supabase.from('prs_verify_master').update(payload).eq('verify_id', id);
                 if (error) throw error;
                 if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('UPDATE_MASTER', 'VerifyWorkspace', `Updated: ${id}`, currentUser);
+                
+                // 🌟 อัปเดตข้อมูลในหน้าจอทันที โดยไม่ต้องโหลดใหม่ทั้งหน้า ป้องกันแถวขยับ 🌟
+                const index = globalDataMaster.findIndex(x => String(x.id) === String(id));
+                if (index > -1) {
+                    globalDataMaster[index].code = payload.maid_code;
+                    globalDataMaster[index].name = payload.full_name;
+                    globalDataMaster[index].idCard = payload.id_card;
+                    globalDataMaster[index].phone = payload.phone;
+                    globalDataMaster[index].trainingDate = payload.training_date;
+                    globalDataMaster[index].submitDate = payload.submit_date;
+                    globalDataMaster[index].center = payload.center;
+                    globalDataMaster[index].officer = payload.officer;
+                    globalDataMaster[index].resultDate = payload.result_date;
+                    globalDataMaster[index].result = payload.result;
+                    globalDataMaster[index].ftStatus = payload.ft_status;
+                    globalDataMaster[index].note = payload.notes;
+                    if (payload.export_status === null) globalDataMaster[index].exportStatus = null;
+
+                    const filterIndex = currentFilteredData.findIndex(x => String(x.id) === String(id));
+                    if (filterIndex > -1) {
+                        currentFilteredData[filterIndex] = globalDataMaster[index];
+                    }
+                }
+                recentlyUpdatedMaster = [id]; // ไฮไลท์แถวสีเขียว
+                updateStats(); // อัปเดตตัวเลขการ์ดด้านบน
+                renderTablePage(); // วาดตารางใหม่โดยไม่รีเซ็ตหน้า
             } else {
                 const newId = "VM-" + new Date().getTime().toString().substring(5);
                 payload.verify_id = newId;
                 const { error } = await supabase.from('prs_verify_master').insert([payload]);
                 if (error) throw error;
                 if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('CREATE_MASTER', 'VerifyWorkspace', `Created: ${newId}`, currentUser);
+                
+                initVerifyPage(); // โหลดใหม่เฉพาะตอนเพิ่มรายการใหม่
             }
             formModalMaster.hide();
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false});
-            initVerifyPage();
         } catch(e) {
             showError(e.message);
         } finally {
@@ -1229,6 +1266,9 @@
 
     async function saveAnnualData() {
         const id = document.getElementById('a_recordId').value;
+        const newStatusProcess = document.getElementById('a_statusProcess').value;
+        const newResult = document.getElementById('a_result').value;
+
         const payload = {
             ref_code: document.getElementById('a_refCode').value,
             full_name: document.getElementById('a_name').value,
@@ -1241,12 +1281,20 @@
             outstanding: document.getElementById('a_outstanding').value ? parseFloat(document.getElementById('a_outstanding').value) : 0,
             deduction_status: document.getElementById('a_deductionStatus').value,
             channel: document.getElementById('a_channel').value,
-            status_process: document.getElementById('a_statusProcess').value,
+            status_process: newStatusProcess,
             result_date: document.getElementById('a_resultDate').value || null,
-            result: document.getElementById('a_result').value,
+            result: newResult,
             officer_email: currentUser,
             notes: document.getElementById('a_note').value
         };
+
+        // 🌟 เพิ่ม Logic: ล้างค่า Export ถ้าสถานะใน Annual มีการเปลี่ยนแปลง 🌟
+        if (id) {
+            const oldRecord = globalDataAnnual.find(x => String(x.id) === String(id));
+            if (oldRecord && (oldRecord.statusProcess !== newStatusProcess || oldRecord.result !== newResult)) {
+                payload.export_status = null;
+            }
+        }
 
         showLoading();
         try {
@@ -1254,16 +1302,47 @@
                 const { error } = await supabase.from('prs_verify_annual').update(payload).eq('annual_id', id);
                 if (error) throw error;
                 if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('UPDATE_ANNUAL', 'VerifyWorkspace', `Updated: ${id}`, currentUser);
+                
+                // 🌟 อัปเดตข้อมูลในหน้าจอทันที โดยไม่ต้องโหลดใหม่ทั้งหน้า ป้องกันแถวขยับ 🌟
+                const index = globalDataAnnual.findIndex(x => String(x.id) === String(id));
+                if (index > -1) {
+                    globalDataAnnual[index].refCode = payload.ref_code;
+                    globalDataAnnual[index].name = payload.full_name;
+                    globalDataAnnual[index].group = payload.provider_group;
+                    globalDataAnnual[index].idCard = payload.id_card;
+                    globalDataAnnual[index].birthDate = payload.birth_date;
+                    globalDataAnnual[index].phone = payload.phone;
+                    globalDataAnnual[index].consentStatus = payload.consent_status;
+                    globalDataAnnual[index].amount = payload.amount;
+                    globalDataAnnual[index].outstanding = payload.outstanding;
+                    globalDataAnnual[index].deductionStatus = payload.deduction_status;
+                    globalDataAnnual[index].channel = payload.channel;
+                    globalDataAnnual[index].statusProcess = payload.status_process;
+                    globalDataAnnual[index].resultDate = payload.result_date;
+                    globalDataAnnual[index].result = payload.result;
+                    globalDataAnnual[index].officerEmail = payload.officer_email;
+                    globalDataAnnual[index].note = payload.notes;
+                    if (payload.export_status === null) globalDataAnnual[index].exportStatus = null;
+
+                    const filterIndex = currentFilteredData.findIndex(x => String(x.id) === String(id));
+                    if (filterIndex > -1) {
+                        currentFilteredData[filterIndex] = globalDataAnnual[index];
+                    }
+                }
+                recentlyUpdatedAnnual = [id]; // ไฮไลท์แถวสีเขียว
+                updateStats(); // อัปเดตตัวเลขการ์ดด้านบน
+                renderTablePage(); // วาดตารางใหม่โดยไม่รีเซ็ตหน้า
             } else {
                 const newId = "AN-" + new Date().getTime().toString().substring(5);
                 payload.annual_id = newId;
                 const { error } = await supabase.from('prs_verify_annual').insert([payload]);
                 if (error) throw error;
                 if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('CREATE_ANNUAL', 'VerifyWorkspace', `Created: ${newId}`, currentUser);
+                
+                initVerifyPage(); // โหลดใหม่เฉพาะตอนเพิ่มรายการใหม่
             }
             formModalAnnual.hide();
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false});
-            initVerifyPage();
         } catch(e) {
             showError(e.message);
         } finally {
@@ -1449,6 +1528,12 @@
                         updateObj.status_process = 'ผลตรวจออกแล้ว';
                         updateObj.result_date = todayStr;
                     }
+                    
+                    // 🌟 เพิ่ม Logic: ล้างค่า Export เมื่อสถานะเปลี่ยน (จากการอัปโหลดไฟล์) 🌟
+                    if (foundAnnual.result !== rawStatus || (updateObj.status_process && foundAnnual.statusProcess !== updateObj.status_process)) {
+                        updateObj.export_status = null;
+                    }
+
                     annualUpdates.push({ id: foundAnnual.id, changes: updateObj });
                     updatedAnnualIds.push(foundAnnual.id);
                     updatedAnnualIdCards.push(cleanId); // 🌟 เก็บเลขบัตร
@@ -1463,6 +1548,12 @@
                     } else {
                         updateObj.ft_status = rawStatus;
                     }
+                    
+                    // 🌟 เพิ่ม Logic: ล้างค่า Export เมื่อสถานะเปลี่ยน (จากการอัปโหลดไฟล์) สำหรับฝั่ง Master 🌟
+                    if (updateObj.ft_status !== undefined && foundMaster.ftStatus !== updateObj.ft_status) {
+                        updateObj.export_status = null;
+                    }
+
                     masterUpdates.push({ id: foundMaster.id, changes: updateObj });
                     updatedMasterIds.push(foundMaster.id);
                 }
@@ -1476,8 +1567,18 @@
             annualUpdates.forEach(u => updatePromises.push(supabase.from('prs_verify_annual').update(u.changes).eq('annual_id', u.id)));
             await Promise.all(updatePromises);
 
-            const logDetails = JSON.stringify({ fileName: fileName, successCount: successItems.length, failedCount: failedItems.length, successItems: successItems, failedItems: failedItems });
-            if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('UNIFIED_BULK_UPLOAD', 'VerifyWorkspace', logDetails, currentUser);
+            // 🌟 บันทึกข้อมูลเข้าตารางใหม่ prs_uploadlogs 🌟
+            try {
+                await supabase.from('prs_uploadlogs').insert([{
+                    user_email: currentUser,
+                    module: 'VerifyWorkspace_AppMan',
+                    file_name: fileName,
+                    success_count: String(successItems.length),
+                    failed_count: String(failedItems.length),
+                    success_details: successItems,
+                    failed_details: failedItems
+                }]);
+            } catch (logErr) { console.error("Upload Log Error:", logErr); }
 
             recentlyUpdatedMaster = updatedMasterIds;
             recentlyUpdatedAnnual = updatedAnnualIds;
@@ -1675,8 +1776,18 @@
                 }
                 await Promise.all(promises);
 
-                const logDetails = JSON.stringify({ fileName: file.name, addedCount: addedIds.length, updatedCount: updatedIds.length });
-                if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('ANNUAL_IMPORT', 'VerifyWorkspace', logDetails, currentUser);
+                // 🌟 บันทึกข้อมูลเข้าตารางใหม่ prs_uploadlogs สำหรับแนบไฟล์รายปี 🌟
+                try {
+                    await supabase.from('prs_uploadlogs').insert([{
+                        user_email: currentUser,
+                        module: 'VerifyWorkspace_Annual',
+                        file_name: file.name,
+                        success_count: String(addedIds.length + updatedIds.length),
+                        failed_count: "0",
+                        success_details: { added: addedIds, updated: updatedIds },
+                        failed_details: []
+                    }]);
+                } catch (logErr) { console.error("Upload Log Error:", logErr); }
 
                 lastImportAdded = addedIds; 
                 lastImportUpdated = updatedIds; 
@@ -1881,40 +1992,40 @@
     async function viewHistory() {
         showLoading();
         try {
-            const { data: logs, error } = await supabase.from('db_logs')
+            // 🌟 อ่านข้อมูลจากตาราง prs_uploadlogs แทน db_logs 🌟
+            const { data: logs, error } = await supabase.from('prs_uploadlogs')
                 .select('*')
-                .in('action', ['UNIFIED_BULK_UPLOAD', 'ANNUAL_IMPORT'])
-                .order('created_at', { ascending: false })
+                .in('module', ['VerifyWorkspace_AppMan', 'VerifyWorkspace_Annual'])
+                .order('timestamp', { ascending: false }) 
                 .limit(20);
                 
             if(error) throw error;
-
             const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
             if(!logs || logs.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่มีประวัติ</td></tr>'; hideLoading(); historyModal.show(); return; }
             
-            window.uploadLogsData = logs.map(log => {
-                let parsed = {};
-                try { parsed = JSON.parse(log.details); } catch(e) {}
-                return {
-                    timestamp: new Date(log.created_at).toLocaleString('th-TH'),
-                    user: log.user_email,
-                    fileName: parsed.fileName || "-",
-                    successCount: parsed.successCount || parsed.addedCount || parsed.updatedCount || 0,
-                    failedCount: parsed.failedCount || 0,
-                    successItems: parsed.successItems || [],
-                    failedItems: parsed.failedItems || []
-                };
+            // Map ข้อมูลเข้าหน้าจอ
+            window.uploadLogsData = logs.map(log => { 
+                return { 
+                    timestamp: new Date(log.timestamp).toLocaleString('th-TH'), 
+                    user: log.user_email, 
+                    fileName: log.file_name || "-", 
+                    successCount: log.success_count || 0, 
+                    failedCount: log.failed_count || 0,
+                    successItems: log.success_details || [], 
+                    failedItems: log.failed_details || [],
+                    module: log.module
+                }; 
             });
-
-            window.uploadLogsData.forEach((log, idx) => {
+            
+            window.uploadLogsData.forEach((l, i) => {
                 let trHtml = '';
                 trHtml += '<tr>';
-                trHtml += '<td class="ps-4 fw-bold text-dark"><i class="far fa-clock me-2 text-muted"></i>' + log.timestamp + '</td>';
-                trHtml += '<td class="small text-muted"><i class="fas fa-file-excel me-1 text-success"></i>' + log.fileName + '</td>';
-                trHtml += '<td><span class="badge bg-light text-secondary border">' + log.user + '</span></td>';
-                trHtml += '<td class="text-center"><span class="badge bg-success rounded-pill px-2 py-1">' + log.successCount + '</span></td>';
-                trHtml += '<td class="text-center"><span class="badge bg-danger rounded-pill px-2 py-1">' + log.failedCount + '</span></td>';
-                trHtml += '<td class="text-center pe-4"><button class="btn btn-sm btn-outline-info rounded-pill px-3 me-1" onclick="viewLogDetails(' + idx + ')" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button></td>';
+                trHtml += '<td class="ps-4 fw-bold text-dark"><i class="far fa-clock me-2 text-muted"></i>' + l.timestamp + '</td>';
+                trHtml += '<td class="small text-muted"><i class="fas fa-file-excel me-1 text-success"></i>' + l.fileName + '</td>';
+                trHtml += '<td><span class="badge bg-light text-secondary border">' + l.user + '</span></td>';
+                trHtml += '<td class="text-center"><span class="badge bg-success rounded-pill px-2 py-1">' + l.successCount + '</span></td>';
+                trHtml += '<td class="text-center"><span class="badge bg-danger rounded-pill px-2 py-1">' + l.failedCount + '</span></td>';
+                trHtml += '<td class="text-center pe-4"><button class="btn btn-sm btn-outline-info rounded-pill px-3 me-1" onclick="viewLogDetails(' + i + ')" title="ดูรายละเอียด"><i class="fas fa-eye"></i></button></td>';
                 trHtml += '</tr>';
                 tbody.innerHTML += trHtml;
             });
@@ -1927,49 +2038,55 @@
     }
 
     function viewLogDetails(idx) {
-        const log = window.uploadLogsData[idx]; if(!log) return;
-        const tbody = document.getElementById('logDetailsTableBody');
-        tbody.innerHTML = '';
+        const l = window.uploadLogsData[idx]; if(!l) return;
+        const b = document.getElementById('logDetailsTableBody');
+        b.innerHTML = '';
         
-        (log.successItems||[]).forEach(item => {
-            const info = getProviderInfo(item.idCard);
-            let s = String(item.status).toLowerCase();
-            let badge = 'bg-secondary';
-            if(s.includes('ไม่ผ่าน')) badge = 'bg-danger';
-            else if(s.includes('ผ่าน')||s.includes('ได้รับผล')||s.includes('อนุมัติ')) badge = 'bg-success';
-            
-            let targets = [];
-            if(item.masterMatch) targets.push('<span class="badge bg-primary">Master</span>');
-            if(item.annualMatch) targets.push('<span class="badge bg-warning text-dark">Annual</span>');
+        // 🌟 ดักจับกรณีดูรายละเอียดของ Annual Import 🌟
+        if (l.module === 'VerifyWorkspace_Annual') {
+             const addedLen = l.successItems?.added?.length || 0;
+             const updatedLen = l.successItems?.updated?.length || 0;
+             b.innerHTML = `<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-check-circle fa-2x text-success mb-3"></i><br>แนบไฟล์รายปีสำเร็จทั้งหมด ${l.successCount} รายการ<br><small>(สร้างใหม่ ${addedLen} รายการ, อัปเดตข้อมูลเดิม ${updatedLen} รายการ)</small></td></tr>`;
+        } else {
+            (Array.isArray(l.successItems) ? l.successItems : []).forEach(it => {
+                const info = getProviderInfo(it.idCard);
+                let s = String(it.status).toLowerCase();
+                let badge = 'bg-secondary';
+                if(s.includes('ไม่ผ่าน')) badge = 'bg-danger';
+                else if(s.includes('ผ่าน')||s.includes('ได้รับผล')||s.includes('อนุมัติ')) badge = 'bg-success';
+                
+                let targets = [];
+                if(it.masterMatch) targets.push('<span class="badge bg-primary">Master</span>');
+                if(it.annualMatch) targets.push('<span class="badge bg-warning text-dark">Annual</span>');
 
-            let codeDisplay = info.code !== '-' ? '<span class="badge bg-light text-dark border">' + info.code + '</span>' : '<span class="text-muted">-</span>';
+                let codeDisplay = info.code !== '-' ? '<span class="badge bg-light text-dark border">' + info.code + '</span>' : '<span class="text-muted">-</span>';
 
-            let trHtml = '';
-            trHtml += '<tr>';
-            trHtml += '<td class="ps-4">' + codeDisplay + '</td>';
-            trHtml += '<td class="fw-bold">' + info.name + '</td>';
-            trHtml += '<td class="font-monospace">' + item.idCard + '</td>';
-            trHtml += '<td><span class="badge ' + badge + '">' + item.status + '</span></td>';
-            trHtml += '<td>' + targets.join(' ') + '</td>';
-            trHtml += '</tr>';
-            tbody.innerHTML += trHtml;
-        });
-        
-        (log.failedItems||[]).forEach(item => {
-            const info = getProviderInfo(item.idCard);
-            let codeDisplay = info.code !== '-' ? '<span class="badge bg-light text-dark border">' + info.code + '</span>' : '<span class="text-muted">-</span>';
+                let trHtml = '';
+                trHtml += '<tr>';
+                trHtml += '<td class="ps-4">' + codeDisplay + '</td>';
+                trHtml += '<td class="fw-bold">' + info.name + '</td>';
+                trHtml += '<td class="font-monospace">' + it.idCard + '</td>';
+                trHtml += '<td><span class="badge ' + badge + '">' + it.status + '</span></td>';
+                trHtml += '<td>' + targets.join(' ') + '</td>';
+                trHtml += '</tr>';
+                b.innerHTML += trHtml;
+            });
             
-            let trHtml = '';
-            trHtml += '<tr class="table-danger">';
-            trHtml += '<td class="ps-4">' + codeDisplay + '</td>';
-            trHtml += '<td class="fw-bold">' + info.name + '</td>';
-            trHtml += '<td class="font-monospace">' + item.idCard + '</td>';
-            trHtml += '<td><span class="badge bg-danger">' + item.status + '</span></td>';
-            trHtml += '<td class="text-danger fw-bold"><i class="fas fa-times me-1"></i>' + item.reason + '</td>';
-            trHtml += '</tr>';
-            tbody.innerHTML += trHtml;
-        });
-        
+            (Array.isArray(l.failedItems) ? l.failedItems : []).forEach(it => {
+                const info = getProviderInfo(it.idCard);
+                let codeDisplay = info.code !== '-' ? '<span class="badge bg-light text-dark border">' + info.code + '</span>' : '<span class="text-muted">-</span>';
+                
+                let trHtml = '';
+                trHtml += '<tr class="table-danger">';
+                trHtml += '<td class="ps-4">' + codeDisplay + '</td>';
+                trHtml += '<td class="fw-bold">' + info.name + '</td>';
+                trHtml += '<td class="font-monospace">' + it.idCard + '</td>';
+                trHtml += '<td><span class="badge bg-danger">' + it.status + '</span></td>';
+                trHtml += '<td class="text-danger fw-bold"><i class="fas fa-times me-1"></i>' + it.reason + '</td>';
+                trHtml += '</tr>';
+                b.innerHTML += trHtml;
+            });
+        }
         logDetailsModal.show();
     }
     
