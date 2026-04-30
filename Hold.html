@@ -508,8 +508,9 @@
                 document.getElementById('nav-config').classList.remove('d-none');
             }
 
-            // 2. Fetch Dropdowns
-            const { data: dropData } = await supabase.from('config_dropdowns').select('*');
+            // 2. Fetch Dropdowns 
+            const { data: dropData, error: cfgErr } = await supabase.from('prs_config').select('*').order('sort_order', {ascending: true});
+            if (cfgErr) console.warn("Load config error:", cfgErr);
             const drops = dropData || [];
             
             centerOptions = drops.filter(d => d.category === 'Onboard Centers' || d.category === 'Centers').map(d => d.value);
@@ -537,20 +538,24 @@
             });
             document.getElementById('dynamicTagsContainer').innerHTML = tagsHtml;
 
-            // 3. Fetch Master & Annual Data for VerifyMap
-            const { data: masterData } = await supabase.from('prs_verify_master').select('id_card, maid_code, ft_status, submit_date, result_date');
-            const { data: annualData } = await supabase.from('prs_verify_annual').select('id_card, ref_code, status_process, result, result_date');
+            // 🌟 3. Fetch Master, Annual & Hold Data (ใช้ fetchAllSupabaseData เพื่อทะลุลิมิต 1000) 🌟
+            const [masterData, annualData, holdData] = await Promise.all([
+                window.fetchAllSupabaseData('prs_verify_master', 'created_at', true),
+                window.fetchAllSupabaseData('prs_verify_annual', 'created_at', true),
+                window.fetchAllSupabaseData('prs_hold', 'created_at', false) // Descending
+            ]);
 
             let verifyMap = {};
             (masterData || []).forEach(m => {
                 let cleanId = String(m.id_card).replace(/\D/g, '').trim();
-                let sTime = m.submit_date ? new Date(m.submit_date).getTime() : 0;
+                let sTime = m.created_at ? new Date(m.created_at).getTime() : (m.submit_date ? new Date(m.submit_date).getTime() : 0);
                 
                 if (!verifyMap[cleanId]) {
-                    verifyMap[cleanId] = { code: m.maid_code, ftStatus: m.ft_status, lastSubmitTime: sTime, verifyTimestamp: 0 };
+                    verifyMap[cleanId] = { code: m.maid_code, name: m.full_name, ftStatus: m.ft_status, lastSubmitTime: sTime, verifyTimestamp: 0 };
                 } else {
                     if (sTime >= verifyMap[cleanId].lastSubmitTime) {
                         verifyMap[cleanId].ftStatus = m.ft_status;
+                        verifyMap[cleanId].name = m.full_name || verifyMap[cleanId].name; 
                         verifyMap[cleanId].lastSubmitTime = sTime;
                     }
                 }
@@ -567,8 +572,11 @@
             (annualData || []).forEach(a => {
                 let cleanId = String(a.id_card).replace(/\D/g, '').trim();
                 if (!verifyMap[cleanId]) {
-                    verifyMap[cleanId] = { code: a.ref_code, ftStatus: "", verifyTimestamp: 0 };
+                    verifyMap[cleanId] = { code: a.ref_code, name: a.full_name, ftStatus: "", verifyTimestamp: 0 };
+                } else {
+                    if (a.full_name) verifyMap[cleanId].name = a.full_name || verifyMap[cleanId].name; // Update name
                 }
+
                 let mappedStatus = verifyMap[cleanId].ftStatus;
                 let lowerResult = String(a.result).toLowerCase();
                 
@@ -592,10 +600,6 @@
             });
 
             providerMap = verifyMap;
-
-            // 4. Fetch Hold Data
-            const { data: holdData, error: holdErr } = await supabase.from('prs_hold').select('*').order('created_at', { ascending: false });
-            if (holdErr) throw holdErr;
 
             globalData = (holdData || []).map(row => {
                 let holdFtStatus = String(row.fast_track_status || "").trim();
@@ -758,9 +762,6 @@
               } else {
                   if (mapData && mapData.ftStatus) {
                       displayFtStatus = mapData.ftStatus; 
-                      if (displayFtStatus === 'รอตรวจสอบ') {
-                          displayFtStatus = 'Sent';
-                      }
                   }
               }
           }
@@ -776,8 +777,12 @@
               ftBadge = `<span class="badge ${colorClass}">${displayFtStatus}</span>`;
           } else if (row.verifyMethod === 'มีใบตรวจประวัติมาเอง') {
               ftBadge = `<span class="badge bg-light text-muted border">ตรวจเอง</span>`;
-          } else {
+          } else if (row.verifyMethod === 'ใช้ผลตรวจเดิม') {
+              ftBadge = `<span class="badge bg-success">Verified</span>`;
+          } else if (row.verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
               ftBadge = `<button class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 shadow-sm fw-bold" style="font-size:0.7rem;" onclick="sendFastTrackDirect('${row.id}')"><i class="fas fa-paper-plane me-1"></i>ส่งตรวจ</button>`;
+          } else {
+              ftBadge = `<span class="text-muted">-</span>`;
           }
 
           let statBadge = 'bg-secondary';
@@ -924,6 +929,51 @@
        renderTable(filtered);
     }
 
+    // 🌟 ฟังก์ชันเคลียร์ฟอร์มสำหรับกดสร้างใหม่ 🌟
+    function clearFormForNewRecord(code) {
+        document.getElementById('recordId').value = "";
+        document.getElementById('hasFastTrackStatus').value = "";
+        
+        document.getElementById('name').value = "";
+        document.getElementById('idCard').value = "";
+        document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
+        document.getElementById('phone').value = "";
+        
+        document.getElementById('contactChannel').value = "Line OA"; // default
+        const fpContact = document.getElementById('contactDate')._flatpickr;
+        if(fpContact) fpContact.setDate(new Date());
+        
+        const fpHold = document.getElementById('holdDate')._flatpickr;
+        if(fpHold) fpHold.clear();
+        
+        document.getElementById('needsRetrain').value = "ไม่ต้อง";
+        toggleRetrain();
+        
+        document.getElementById('masterType').value = "";
+        
+        const fpLastVerify = document.getElementById('lastVerifyDate')._flatpickr;
+        if(fpLastVerify) fpLastVerify.clear();
+        
+        document.getElementById('verifyMethod').value = "ใช้ผลตรวจเดิม";
+        document.getElementById('verifyValidityAlert').innerHTML = `<div class="alert alert-secondary py-2 mb-0 small">กรุณาระบุวันที่เพื่อคำนวณอายุผลตรวจ</div>`;
+        toggleVerifyAction();
+        
+        document.getElementById('status').value = "รอดำเนินการ";
+        const fpReactivate = document.getElementById('reactivationDate')._flatpickr;
+        if(fpReactivate) fpReactivate.clear();
+        
+        document.querySelectorAll('.dynamic-tag').forEach(cb => cb.checked = false);
+        
+        currentHistory = []; 
+        renderTimeline();
+        
+        toggleKpiSection();
+        renderKpiInputs([]);
+        
+        // คืนค่าที่ค้นหาลงไปในรหัสเพื่อให้พิมพ์ต่อได้ง่าย
+        document.getElementById('maidCode').value = code;
+    }
+
     function searchMaidAuto(val) {
         const listContainer = document.getElementById('autocomplete-list');
         const staticIcon = document.getElementById('staticSearchIcon');
@@ -952,7 +1002,7 @@
             const div = document.createElement('div');
             div.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-plus-circle me-1"></i> สร้างเป็นรายการใหม่ด้วยรหัส "${cleanVal}"</span>`;
             div.onclick = function() {
-                document.getElementById('maidCode').value = cleanVal;
+                clearFormForNewRecord(cleanVal);
                 listContainer.innerHTML = '';
             };
             listContainer.appendChild(div);
@@ -1051,9 +1101,9 @@
         const listContainer = document.getElementById('autocomplete-list');
         const divNew = document.createElement('div');
         divNew.className = "create-new-btn border-top";
-        divNew.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-plus-circle me-1"></i> ใช้ข้อมูลนี้เป็นรายการใหม่ "${query}"</span>`;
+        divNew.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-plus-circle me-1"></i> สร้างเป็นรายการใหม่ด้วยรหัส "${query}"</span>`;
         divNew.onclick = function() {
-            document.getElementById('maidCode').value = query;
+            clearFormForNewRecord(query);
             listContainer.innerHTML = '';
         };
         listContainer.appendChild(divNew);
@@ -1091,27 +1141,8 @@
     });
 
     function openAddModal() {
-       document.getElementById('dataForm').reset();
-       document.getElementById('recordId').value = "";
-       document.getElementById('hasFastTrackStatus').value = "";
+       clearFormForNewRecord("");
        document.getElementById('modalTitle').textContent = "บันทึกคุณแม่บ้านขอกลับมาทำใหม่ (กลุ่ม H)";
-       
-       document.getElementById('contactDate')._flatpickr.setDate(new Date());
-
-       document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
-       
-       document.querySelectorAll('.dynamic-tag').forEach(cb => cb.checked = false);
-       currentHistory = []; renderTimeline();
-       
-       toggleRetrain();
-       toggleVerifyAction();
-       document.getElementById('verifyValidityAlert').innerHTML = `<div class="alert alert-secondary py-2 mb-0 small">กรุณาระบุวันที่เพื่อคำนวณอายุผลตรวจ</div>`;
-       document.getElementById('status').value = "รอดำเนินการ";
-       document.getElementById('lastVerifyDate')._flatpickr.clear(); 
-
-       toggleKpiSection();
-       renderKpiInputs([]);
-
        formModal.show();
     }
 
@@ -1500,20 +1531,20 @@
                         verify_id: masterId,
                         maid_code: holdRow.maidCode,
                         full_name: holdRow.name,
-                        id_card: holdRow.idCard,
+                        id_card: String(holdRow.idCard).replace(/\D/g, ''),
                         phone: holdRow.phone,
                         submit_date: submitDate,
                         officer: currentUser,
                         center: holdRow.trainingCenter || holdRow.center, 
-                        ft_status: "รอตรวจสอบ",
+                        ft_status: "Pending Result",
                         notes: "ส่งตรวจจากกลุ่ม H (Return)",
                         master_type: holdRow.masterType
                     };
 
-                    const { error: mErr } = await supabase.from('prs_verify_master').insert([masterPayload]);
+                    const { error: mErr } = await window.supabase.from('prs_verify_master').insert([masterPayload]);
                     if (mErr) throw mErr;
                     
-                    const { error: hErr } = await supabase.from('prs_hold').update({ fast_track_status: "Sent" }).eq('hold_id', id);
+                    const { error: hErr } = await window.supabase.from('prs_hold').update({ fast_track_status: "Pending Result" }).eq('hold_id', id);
                     if (hErr) throw hErr;
                     
                     if(typeof writeLogToSupabase === 'function') {
@@ -1559,18 +1590,22 @@
 
        let finalFtStatus = document.getElementById('hasFastTrackStatus').value || "";
        let verifyMethod = document.getElementById('verifyMethod').value;
+       
+       // 🌟 แก้ไขบั๊ก: ย้ายการประกาศ recordId ขึ้นมาด้านบน เพื่อป้องกัน Error Cannot access before initialization 🌟
+       const recordId = document.getElementById('recordId').value;
 
        if (verifyMethod === 'มีใบตรวจประวัติมาเอง') {
           finalFtStatus = document.getElementById('manualFtStatus').value || finalFtStatus;
        } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
           finalFtStatus = 'Verified';
        } else if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
-          if (finalFtStatus === 'Verified') {
+          // 🌟 แก้ไข: ไม่ล้างค่า Verified ทิ้ง หากไม่ได้มีการเปลี่ยน Verify Method 🌟
+          const oldVerifyMethod = recordId ? (globalData.find(x => x.id === recordId)?.verifyMethod || "") : "";
+          if (oldVerifyMethod !== 'ต้องส่งตรวจใหม่ผ่านระบบ' && oldVerifyMethod !== "") {
               finalFtStatus = ''; 
           }
        }
 
-       const recordId = document.getElementById('recordId').value;
        const newStatus = document.getElementById('status').value;
        const oldStatus = recordId ? (globalData.find(x => x.id === recordId)?.status || "") : "";
 
