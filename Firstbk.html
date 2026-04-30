@@ -3,22 +3,13 @@
 <head>
   <base target="_top">
   <meta charset="UTF-8">
-  <title>First Job Tracking</title>
-  
-  <!-- Bootstrap 5 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Font Awesome -->
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <!-- Google Fonts (Sarabun) -->
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- SweetAlert2 -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- Flatpickr CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+  <title>Onboard System</title>
 
-  <?!= include('_Styles') ?>
+  <!-- SheetJS สำหรับ Export Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- ดึง CSS กลางมาใช้ (มี Bootstrap, FontAwesome, SweetAlert2, Flatpickr เรียบร้อยแล้ว) -->
+  <?!= include('_Styles'); ?>
 
   <style>
     /* Specific Styles for Star Rating */
@@ -196,7 +187,7 @@
             <div class="tab-pane fade" id="pane-post">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%" class="text-center">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">สถานะ</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
+                        <thead><tr><th width="5%" class="text-center">#</th><th width="10%" class="text-center">รหัส</th><th width="15%">ชื่อ-นามสกุล</th><th width="10%">ศูนย์</th><th width="10%">เบอร์โทร</th><th width="12%">Booking</th><th width="13%">วันทำความสะอาด</th><th width="10%" class="text-center">โทรเยี่ยมก่อนเริ่มงาน</th><th width="15%" class="text-center">จัดการ</th></tr></thead>
                         <tbody id="tablePost"></tbody>
                     </table>
                 </div>
@@ -844,14 +835,26 @@
                 ? (item.jobId ? `<a href="https://admin-test.beneat.co/order/${item.jobId}/edit" target="_blank" class="fw-bold text-primary text-decoration-none deeplink">${item.bookingCode}</a>` : item.bookingCode)
                 : '-';
             let maidLink = item.maidCode ? `<a href="https://admin-test.beneat.co/professional/${item.maidCode}/profile" target="_blank" class="badge badge-maid text-decoration-none deeplink">${item.maidCode}</a>` : '-';
+            
             let statusBadge = getStatusBadge(item.processStatus);
             
-            if (type === 'post' && !item.isPreCallDone) {
-                 statusBadge = '<span class="badge bg-danger rounded-pill">ไม่ได้โทรเยี่ยม</span>';
+            // 🌟 แก้ไข: ตรรกะแสดงสถานะสำหรับแถบ "หลังจบงาน" (Post-Start)
+            if (type === 'post') {
+                 if (!item.isPreCallDone) {
+                     statusBadge = '<span class="badge bg-danger rounded-pill">ไม่ได้โทรเยี่ยม</span>';
+                 } else {
+                     statusBadge = '<span class="badge bg-success rounded-pill">โทรเยี่ยมแล้ว</span>';
+                 }
             }
 
             let isReturned = item.history && Array.isArray(item.history) && item.history.some(h => h.note && h.note.includes('[Returned]'));
             let nameClass = isReturned ? "fw-bold text-danger" : "fw-bold text-dark";
+
+            // 🌟 บังคับเติม 0 ข้างหน้าเบอร์โทรเสมอ 🌟
+            let displayPhone = item.phone || '-';
+            if (displayPhone !== '-' && !String(displayPhone).startsWith('0')) {
+                displayPhone = '0' + String(displayPhone);
+            }
 
             let btnAction = '';
             if (type === 'pre') {
@@ -881,7 +884,7 @@
 
             if (type !== 'done') {
                 row += `<td>${item.center||'-'}</td>`;
-                row += `<td>${item.phone||'-'}</td>`;
+                row += `<td>${displayPhone}</td>`;
                 row += `<td>${bookingDisplay}</td>`;
                 row += `<td>${item.cleanDate||'-'}</td>`;
                 row += `<td class="text-center">${statusBadge}</td>`;
@@ -893,7 +896,7 @@
                 }
                 let problemDisplay = item.problemId ? `<a href="https://admin-test.beneat.co/report-problems/${item.problemId}/edit" target="_blank" class="text-danger fw-bold text-decoration-none deeplink">${item.problemId}</a>` : '-';
 
-                row += `<td>${item.phone||'-'}</td>`;
+                row += `<td>${displayPhone}</td>`;
                 row += `<td>${bookingDisplay}</td>`;
                 row += `<td>${item.cleanDate||'-'}</td>`;
                 row += `<td class="text-center">${stars}</td>`;
@@ -1176,12 +1179,12 @@
     
     function saveData() {
         const modeEl = document.getElementById('fj_mode');
-        const idEl = document.getElementById('fj_id');
+        const idEl = document.getElementById('fj_id'); // นี่คือ onboard_id
         
         if (!modeEl || !idEl) { console.error("Critical hidden fields missing"); return; }
 
         const mode = modeEl.value;
-        const id = idEl.value;
+        const id = idEl.value; // onboard_id
         const form = { id: id, officer: currentUser, type: mode };
         
         if (mode === 'assign') {
@@ -1288,14 +1291,21 @@
                 record_timestamp: new Date().toISOString()
             };
 
-            if (obRow.firstjob_id) {
-                const { error } = await supabase.from('prs_firstjob').update(payload).eq('firstjob_id', obRow.firstjob_id);
-                if(error) throw error;
+            // 🌟 แก้ปัญหา firstjob_id หาย: เช็ค/อัปเดต โดยอิงจาก onboard_id
+            const { data: existing } = await supabase.from('prs_firstjob').select('*').eq('onboard_id', onboardId);
+            
+            if (existing && existing.length > 0) {
+                // อัปเดตข้อมูลที่มีอยู่ และถ้า firstjob_id ว่าง ให้สร้างขึ้นใหม่
+                if (!existing[0].firstjob_id || existing[0].firstjob_id === 'EMPTY' || existing[0].firstjob_id === 'NULL') {
+                    payload.firstjob_id = "FJ-" + new Date().getTime().toString().substring(5);
+                }
+                const { error } = await supabase.from('prs_firstjob').update(payload).eq('onboard_id', onboardId);
+                if (error) throw error;
             } else {
-                const fjId = "FJ-" + new Date().getTime().toString().substring(5);
-                payload.firstjob_id = fjId;
+                // สร้างใหม่ (ถ้าไม่เคยมี)
+                payload.firstjob_id = "FJ-" + new Date().getTime().toString().substring(5);
                 const { error } = await supabase.from('prs_firstjob').insert([payload]);
-                if(error) throw error;
+                if (error) throw error;
             }
 
             await writeLogToSupabase('ASSIGN_FIRST_JOB', 'First Job', `Assigned ${form.bookingCode} to ${obRow.maidCode}`, currentUser);
@@ -1311,7 +1321,11 @@
     async function saveFirstJobChecklistSupabase(onboardId, form, mode) {
         try {
             const obRow = rawData.find(x => x.id === onboardId);
-            if (!obRow || !obRow.firstjob_id) throw new Error("ไม่พบข้อมูลงาน (ต้องจ่ายงานก่อน)");
+            if (!obRow) throw new Error("ไม่พบข้อมูล");
+
+            // 🌟 เช็คว่ามีงานใน DB หรือยัง โดยใช้ onboard_id เป็นหลัก
+            const { data: existing } = await supabase.from('prs_firstjob').select('*').eq('onboard_id', onboardId);
+            if (!existing || existing.length === 0) throw new Error("ไม่พบข้อมูลงานในระบบ (ต้องจ่ายงานก่อน)");
 
             let logTitle = "";
             let isComplete = false;
@@ -1360,7 +1374,15 @@
                 await supabase.from('prs_onboard').update({ is_first_job: "✓" }).eq('onboard_id', onboardId);
             }
 
-            await supabase.from('prs_firstjob').update(payload).eq('firstjob_id', obRow.firstjob_id);
+            // 🌟 Auto-Patch ถ้าใน DB ตัวเก่า firstjob_id ขาดหายไป
+            if (!existing[0].firstjob_id || existing[0].firstjob_id === 'EMPTY' || existing[0].firstjob_id === 'NULL') {
+                payload.firstjob_id = "FJ-" + new Date().getTime().toString().substring(5);
+            }
+
+            // อัปเดตทับโดยใช้ onboard_id เสมอเพื่อความชัวร์
+            const { error } = await supabase.from('prs_firstjob').update(payload).eq('onboard_id', onboardId);
+            if (error) throw error;
+            
             await writeLogToSupabase('UPDATE_FIRST_JOB_CHECKLIST', 'First Job', logTitle, currentUser);
             
             actionModal.hide(); 
@@ -1375,10 +1397,13 @@
         try {
             showLoading();
             const obRow = rawData.find(x => x.id === onboardId);
-            if (!obRow || !obRow.firstjob_id) throw new Error("ไม่พบข้อมูล");
+            if (!obRow) throw new Error("ไม่พบข้อมูล");
+
+            // 🌟 เช็คข้อมูลโดยใช้ onboard_id
+            const { data: existing } = await supabase.from('prs_firstjob').select('*').eq('onboard_id', onboardId);
+            if (!existing || existing.length === 0) throw new Error("ไม่พบข้อมูลงานในระบบ");
 
             const noteText = `[Returned] คืนงานเนื่องจาก: ${reason}` + (problemId ? `\nProblem ID: ${problemId}` : "");
-            
             currentHistory.unshift({ date: formatDateForDisplay(new Date()), note: noteText, user: currentUser });
 
             const payload = {
@@ -1397,7 +1422,12 @@
                 history: currentHistory
             };
 
-            const { error } = await supabase.from('prs_firstjob').update(payload).eq('firstjob_id', obRow.firstjob_id);
+            // 🌟 Auto-Patch
+            if (!existing[0].firstjob_id || existing[0].firstjob_id === 'EMPTY' || existing[0].firstjob_id === 'NULL') {
+                payload.firstjob_id = "FJ-" + new Date().getTime().toString().substring(5);
+            }
+
+            const { error } = await supabase.from('prs_firstjob').update(payload).eq('onboard_id', onboardId);
             if (error) throw error;
             
             await writeLogToSupabase('RETURN_FIRST_JOB', 'First Job', noteText, currentUser);
@@ -1410,15 +1440,17 @@
         }
     }
 
-    async function deleteFirstJobSupabase(id) {
+    async function deleteFirstJobSupabase(id) { // id = onboard_id
         if (!isUserAdmin) return Swal.fire('Error', 'เฉพาะ Admin เท่านั้นที่สามารถลบข้อมูลได้', 'error');
         Swal.fire({ title: 'ลบข้อมูล?', text: "ข้อมูลงานแรกทั้งหมดของคนนี้จะถูกลบทิ้ง และจะกลับไปอยู่ในสถานะรอรับงานแรกอีกครั้ง", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then(async (r) => {
             if (r.isConfirmed) {
                 showLoading();
                 try {
                     const obRow = rawData.find(x => x.id === id);
-                    if(obRow && obRow.firstjob_id) {
-                        await supabase.from('prs_firstjob').delete().eq('firstjob_id', obRow.firstjob_id);
+                    if(obRow) {
+                        // 🌟 ลบผ่าน onboard_id ให้ครอบคลุมการลบทุกกรณี
+                        const { error } = await supabase.from('prs_firstjob').delete().eq('onboard_id', id);
+                        if (error) throw error;
                         await writeLogToSupabase('DELETE_FIRST_JOB', 'First Job', `Deleted first job for ${obRow.maidCode}`, currentUser);
                     }
                     Swal.fire('Deleted!', 'ลบข้อมูลเรียบร้อยแล้ว', 'success'); 
@@ -1442,8 +1474,15 @@
             
             rawData.forEach(row => {
                 const q = row.checklist || {};
+                
+                // 🌟 บังคับเติม 0 ข้างหน้าเบอร์โทรตอน Export 🌟
+                let exportPhone = row.phone || "-";
+                if (exportPhone !== "-" && !String(exportPhone).startsWith('0')) {
+                    exportPhone = '0' + String(exportPhone);
+                }
+
                 let rowData = [
-                    row.maidCode, row.name, row.center, `"${row.phone}"`, row.bookingCode, row.jobId, row.cleanDate, row.workHours, row.processStatus
+                    row.maidCode, row.name, row.center, `"${exportPhone}"`, row.bookingCode, row.jobId, row.cleanDate, row.workHours, row.processStatus
                 ];
                 
                 checklistQuestions.forEach(question => {
@@ -1470,17 +1509,38 @@
     // Helpers
     function formatDateForDB(d) {
         if (!d) return null;
-        let parts = d.split('/');
+        let str = String(d).trim();
+        if (str.includes('-')) return str; 
+        const parts = str.split('/');
         if (parts.length === 3) return `${parseInt(parts[2]) > 2400 ? parts[2]-543 : parts[2]}-${parts[1]}-${parts[0]}`;
-        return d.substring(0, 10);
+        return str.substring(0, 10);
     }
 
     function formatDateForDisplay(d) {
         if (!d) return '-';
-        if (d.includes('/')) return d; 
-        const date = new Date(d);
-        if (isNaN(date.getTime())) return d;
-        return date.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
+        let parsedDate;
+        if (typeof d === 'string') {
+            if (d.match(/^\d{4}-\d{2}-\d{2}/)) {
+                const [y, m, day] = d.split('-');
+                let year = parseInt(y, 10);
+                if (year > 2400) year -= 543;
+                parsedDate = new Date(year, parseInt(m, 10) - 1, parseInt(day, 10));
+            } else if (d.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+                const parts = d.split(/[/\s:]/);
+                let day = parseInt(parts[0], 10);
+                let m = parseInt(parts[1], 10) - 1;
+                let year = parseInt(parts[2], 10);
+                if (year > 2400) year -= 543;
+                parsedDate = new Date(year, m, day);
+            } else {
+                parsedDate = new Date(d);
+            }
+        } else {
+            parsedDate = new Date(d);
+        }
+        
+        if (isNaN(parsedDate.getTime())) return String(d);
+        return parsedDate.toLocaleDateString('th-TH', {day:'2-digit', month:'short', year:'numeric'});
     }
 
     function showLoading() { Swal.fire({ title: 'กำลังประมวลผล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); }
