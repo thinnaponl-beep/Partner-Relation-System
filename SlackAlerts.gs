@@ -1,7 +1,7 @@
 // =========================================================================
 // 🌟 ฟังก์ชันแจ้งเตือน KPI (3-Tier Alert) ส่งเข้า Slack 🌟
 // =========================================================================
-const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'
+const SLACK_WEBHOOK_URL = ''
 const WEB_APP_URL = 'https://script.google.com/a/beneat.co/macros/s/AKfycbxswzmocLIBJ5JrCMuhOZQuiw4vo_PDq3weBU5OKcziJyuEJ21dTtqQOqisoi6Ab195/exec?page=hold'; // ⚠️ เปลี่ยนเป็น URL Web App ของคุณ (ลิงก์ที่ใช้เข้าหน้า Hold)
 
 // ใส่ชื่อชีตฐานข้อมูล Hold ให้ตรงกับของจริง (เช่น 'Database_Hold' หรือ 'Hold')
