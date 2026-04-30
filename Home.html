@@ -165,9 +165,9 @@
                 const userEmail = res.userEmail || "System";
                 
                 try {
-                    // 🚀 เช็คสิทธิ์จากตาราง config_dropdowns ใน Supabase โดยตรง
+                    // 🚀 เช็คสิทธิ์จากตาราง prs_config ใน Supabase โดยตรง
                     const { data, error } = await supabase
-                        .from('config_dropdowns')
+                        .from('prs_config')
                         .select('value')
                         .eq('category', 'Admins')
                         .ilike('value', userEmail); // ใช้ ilike เพื่อให้เช็คแบบไม่สนตัวพิมพ์เล็ก/ใหญ่
