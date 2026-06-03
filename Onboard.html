@@ -54,6 +54,7 @@
     /* Validation Style */
     .is-invalid { border-color: #dc3545 !important; background-image: none !important; }
     .invalid-feedback { display: none; width: 100%; margin-top: 0.25rem; font-size: 0.875em; color: #dc3545; }
+    .input-group:has(.is-invalid) + .invalid-feedback,
     .is-invalid ~ .invalid-feedback { display: block; }
     .is-valid { border-color: #198754 !important; }
 
@@ -363,12 +364,19 @@
                          <input type="text" class="form-control fw-bold" id="name" required placeholder="ระบุชื่อ-นามสกุล">
                       </div>
                       
+                      <!-- 🌟 อัปเดตช่องกรอกเลขบัตร ปชช. ให้มีปุ่มตาเปิดปิด 🌟 -->
                       <div class="col-md-6" id="idCardContainer">
                         <label class="form-label small fw-bold text-muted">เลขบัตรประชาชน</label>
-                        <input type="text" class="form-control" id="idCard" maxlength="17" placeholder="ระบุเลข 13 หลัก"
-                               oninput="formatIdCard(this)" onblur="validateIdCard(this)">
-                        <div class="invalid-feedback">เลขบัตรประชาชนไม่ถูกต้อง</div>
+                        <div class="input-group has-validation">
+                            <input type="text" class="form-control" id="idCard" maxlength="17" placeholder="ระบุเลข 13 หลัก"
+                                   oninput="formatIdCard(this)" onblur="validateIdCard(this)">
+                            <button class="btn btn-outline-secondary bg-light border-secondary-subtle" type="button" onclick="toggleIdCardVisibility()" title="แสดง/ซ่อนเลขบัตร" tabindex="-1">
+                                <i class="fas fa-eye" id="toggleIdCardIcon"></i>
+                            </button>
+                            <div class="invalid-feedback">เลขบัตรประชาชนไม่ถูกต้อง</div>
+                        </div>
                       </div>
+
                       <div class="col-md-6">
                         <label class="form-label small fw-bold text-muted">เบอร์โทรศัพท์</label>
                         <input type="text" class="form-control" id="phone">
@@ -446,6 +454,19 @@
     let searchTimeoutOB;
     let isMaidSelectedOB = false; 
     let waitingListData = []; 
+
+    // 🌟 ฟังก์ชันซ่อน/แสดง เลขบัตรประชาชน 🌟
+    function toggleIdCardVisibility() {
+        const idInput = document.getElementById('idCard');
+        const icon = document.getElementById('toggleIdCardIcon');
+        if (idInput.type === 'password') {
+            idInput.type = 'text';
+            icon.className = 'fas fa-eye';
+        } else {
+            idInput.type = 'password';
+            icon.className = 'fas fa-eye-slash';
+        }
+    }
 
     // 🌟 Vue App สำหรับประเมินผล Retrain 🌟
     const { createApp, ref, computed, watch } = Vue;
@@ -784,7 +805,29 @@
     }).mount('#vueRetrainEvalApp');
     // ==========================================
 
-    window.onload = function() {
+    // 🌟 ป้องกัน ReferenceError: showLoading is not defined 🌟
+    function showLoading() {
+        if (typeof Swal !== 'undefined') Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+    }
+    function hideLoading() {
+        if (typeof Swal !== 'undefined') Swal.close();
+    }
+    function showError(msg) {
+        if (typeof Swal !== 'undefined') Swal.fire('Error', msg, 'error');
+        else alert('Error: ' + msg);
+    }
+
+    function initializeApp() {
+       // ตรวจสอบว่าไลบรารีและฐานข้อมูลพร้อมทำงานหรือยัง ถ้ายังให้รอ 100ms แล้วเช็คใหม่
+       if (typeof bootstrap === 'undefined' || typeof Swal === 'undefined' || typeof flatpickr === 'undefined' || !window.supabase || typeof window.supabase.from !== 'function') {
+           console.warn('Libraries or Supabase not loaded yet, retrying in 100ms...');
+           setTimeout(initializeApp, 100);
+           return;
+       }
+
+       // ยกเลิก window.onload ตัวเก่าที่อาจจะหลงเหลืออยู่ด้านล่าง เพื่อป้องกันการทำงานซ้ำซ้อน
+       window.onload = null;
+
        formModal = new bootstrap.Modal(document.getElementById('formModal'));
        waitingRoomModal = new bootstrap.Modal(document.getElementById('waitingRoomModal'));
        window.currentFilteredData = []; // เก็บตัวแปรไว้ใช้ตอน Export
@@ -804,7 +847,9 @@
 
        loadData();
        checkWaitingRoomBadge(); // แอบทำงานตรวจสอบ Badge
-    };
+    }
+
+    window.addEventListener('load', initializeApp);
 
     // 🌟 ฟังก์ชันเช็คว่าวันที่อยู่ในช่วงที่ระบุหรือไม่ 🌟
     function isDateInRange(dateStr, rangeVal) {
@@ -838,7 +883,7 @@
            const { data: drops, error: cfgErr } = await window.supabase.from('prs_config').select('*').order('sort_order', {ascending: true});
            if(cfgErr) throw cfgErr;
 
-           centerOptions = (drops||[]).filter(d => d.category === 'Onboard Centers').map(d => d.value);
+           centerOptions = (drops||[]).filter(d => d.category === 'Onboard Centers' || d.category === 'Centers').map(d => d.value);
            groupOptions = (drops||[]).filter(d => d.category === 'Onboard Groups').map(d => d.value);
            masterTypeOptions = (drops||[]).filter(d => d.category === 'Master Types').map(d => d.value);
            const onboardTypes = (drops||[]).filter(d => d.category === 'Onboard Types').map(d => d.value);
@@ -1261,12 +1306,6 @@
                 const notes = data.staff_notes || '';
                 document.getElementById('rmsDescText').textContent = desc || '-';
                 if (noteEl) noteEl.textContent = notes || '-';
-                
-                // ไม่ต้อง parseหัวข้อแล้ว เพราะ V2 เป็นหัวข้อตายตัว
-                // const formData = vueRetrainApp.getFormData();
-                // if (formData.part1_topics.length <= 1 && formData.part1_topics[0].text === '') {
-                //    vueRetrainApp.parseTopicsFromText(desc);
-                // }
 
                 if (data.attachment_url) {
                     const linkEl = document.getElementById('rmsAttachmentLink');
@@ -1388,7 +1427,12 @@
         
         const idCardRaw = lead.id_card || lead.ID_Card || lead.idcard || '';
         document.getElementById('idCard').value = idCardRaw;
-        if (idCardRaw) formatIdCard(document.getElementById('idCard'));
+        if (idCardRaw) {
+            formatIdCard(document.getElementById('idCard'));
+            document.getElementById('idCard').type = 'password';
+            const toggleIcon = document.getElementById('toggleIdCardIcon');
+            if(toggleIcon) toggleIcon.className = 'fas fa-eye-slash';
+        }
 
         if (lead.center) {
             const centerSelect = document.getElementById('center');
@@ -1510,6 +1554,11 @@
         document.getElementById('name').value = item.name || "";
         document.getElementById('idCard').value = item.idCard || "";
         formatIdCard(document.getElementById('idCard'));
+        
+        // 🌟 ให้ตั้งค่าเลขบัตร ปชช เป็นแบบซ่อนอัตโนมัติ
+        document.getElementById('idCard').type = 'password';
+        const icon = document.getElementById('toggleIdCardIcon');
+        if (icon) icon.className = 'fas fa-eye-slash';
 
         const listContainer = document.getElementById('autocomplete-list-ob');
         listContainer.innerHTML = '';
@@ -1664,6 +1713,11 @@
        else document.getElementById('center').value = "";
        
        document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
+       
+       // 🌟 เปิดแบบ Add ใหม่ให้แสดงเลขบัตรเป็น text ธรรมดาเพื่อความง่ายในการกรอก 🌟
+       document.getElementById('idCard').type = 'text';
+       document.getElementById('toggleIdCardIcon').className = 'fas fa-eye';
+
        document.getElementById('verificationMethod').value = "BeNeat fast Track"; 
        document.getElementById('verificationMethod').dataset.original = "fasttrack"; 
        
@@ -1702,7 +1756,13 @@
        document.getElementById('name').value = item.name;
        
        if (item.group !== 'Retrain') {
-           document.getElementById('idCard').value = item.idCard || ""; formatIdCard(document.getElementById('idCard'));
+           document.getElementById('idCard').value = item.idCard || ""; 
+           formatIdCard(document.getElementById('idCard'));
+           
+           // 🌟 กรณีเปิดดูข้อมูลเดิม ซ่อนเลขบัตรประชาชนก่อน 🌟
+           document.getElementById('idCard').type = 'password';
+           const icon = document.getElementById('toggleIdCardIcon');
+           if(icon) icon.className = 'fas fa-eye-slash';
        }
        
        document.getElementById('phone').value = item.phone || "";
