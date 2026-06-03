@@ -203,13 +203,13 @@
         <div class="my-3 border-top mx-3 opacity-50"></div>
         
         <!-- เมนูตรวจประวัติ (Master + Annual) -->
-        <li>
+        <li id="nav-verify" class="d-none">
             <a href="<?= ScriptApp.getService().getUrl() ?>?page=verify_workspace" class="nav-link-custom" data-page="verify_workspace">
                 <i class="fas fa-user-shield"></i> <span>จัดการตรวจประวัติ (Verify)</span>
             </a>
         </li>
         
-        <li>
+        <li id="nav-account" class="d-none">
             <a href="<?= ScriptApp.getService().getUrl() ?>?page=account_verify" class="nav-link-custom" data-page="account_verify">
                 <i class="fas fa-search-dollar"></i> <span>กระทบยอดบัญชี (Account)</span>
             </a>
