@@ -27,12 +27,14 @@
     .status-card.active.border-start-warning { border-left: 4px solid #ffc107 !important; }
     .status-card.active.border-start-danger { border-left: 4px solid #dc3545 !important; }
     .status-card.active.border-start-info { border-left: 4px solid #0dcaf0 !important; }
+    .status-card.active.border-start-secondary { border-left: 4px solid #6c757d !important; } /* สีเทาสำหรับตรวจเอง */
 
     .border-start-primary { border-left: 4px solid #0d6efd !important; }
     .border-start-success { border-left: 4px solid #198754 !important; }
     .border-start-warning { border-left: 4px solid #ffc107 !important; }
     .border-start-danger { border-left: 4px solid #dc3545 !important; }
     .border-start-info { border-left: 4px solid #0dcaf0 !important; }
+    .border-start-secondary { border-left: 4px solid #6c757d !important; }
 
     .nav-pills .nav-link { background-color: white; color: #6c757d; border: 1px solid #eef2f5; font-weight: 600; transition: all 0.2s; }
     .nav-pills .nav-link:hover { background-color: #f8f9fa; transform: translateY(-2px); }
@@ -47,6 +49,16 @@
     .note-input.is-valid { border-color: #198754; background-color: #e8f5e9; }
     
     .hover-bg-primary:hover { background-color: #e9ecef !important; color: #0d6efd !important; }
+
+    /* Timeline Styles สำหรับ Annual */
+    .timeline { border-left: 2px solid #e9ecef; padding-left: 20px; margin-left: 10px; position: relative; }
+    .timeline-item { margin-bottom: 20px; position: relative; }
+    .timeline-item::before { 
+       content: ''; position: absolute; left: -26.5px; top: 5px; width: 13px; height: 13px; 
+       background: var(--ci-primary); border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 2px #e9ecef;
+    }
+    .timeline-date { font-size: 0.8rem; font-weight: 700; color: #495057; margin-bottom: 4px; display: block;}
+    .timeline-content { background: #f8f9fa; padding: 12px 15px; border-radius: 12px; font-size: 0.85rem; margin-top: 2px; border: 1px solid #eef2f5; }
   </style>
 </head>
 <body>
@@ -154,6 +166,7 @@
                         <option value="">ทั้งหมด</option>
                         <option value="ผลตรวจออกแล้ว">ผลตรวจออกแล้ว</option>
                         <option value="pending">ส่งลิงค์/รอผล</option>
+                        <option value="self_verify">ช่องทาง: ตรวจเอง</option>
                      </select>
                   </div>
                   <div class="col-md-2 filter-annual-only d-none">
@@ -293,7 +306,7 @@
           </form>
         </div>
         <div class="modal-footer border-top-0">
-          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal"></button>
           <button type="button" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" onclick="saveMasterData()">บันทึก</button>
         </div>
       </div>
@@ -331,18 +344,38 @@
             </div>
 
             <div class="row g-3">
-               <div class="col-md-4"><label class="form-label small fw-bold text-muted">ช่องทาง</label><select class="form-select" id="a_channel"><option value="App Man">App Man</option><option value="ตรวจเอง">ตรวจเอง</option></select></div>
-               <div class="col-md-4"><label class="form-label small fw-bold text-muted">สถานะส่งตรวจ</label><select class="form-select" id="a_statusProcess"><option value="ส่งลิ้งค์แล้วรอกรอกข้อมูล">ส่งลิงค์แล้วรอกรอกข้อมูล</option><option value="รอผลตรวจ">รอผลตรวจ</option><option value="ผลตรวจออกแล้ว">ผลตรวจออกแล้ว</option></select></div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">ช่องทาง</label>
+                  <select class="form-select fw-bold" id="a_channel" onchange="handleAnnualChannelChange()">
+                      <option value="App Man">App Man</option>
+                      <option value="ตรวจเอง">ตรวจเอง</option>
+                  </select>
+               </div>
+               <div class="col-md-4">
+                  <label class="form-label small fw-bold text-muted">สถานะส่งตรวจ</label>
+                  <select class="form-select" id="a_statusProcess">
+                      <option value="ส่งลิ้งค์แล้วรอกรอกข้อมูล">ส่งลิงค์แล้วรอกรอกข้อมูล</option>
+                      <option value="รอผลตรวจ">รอผลตรวจ</option>
+                      <option value="ผลตรวจออกแล้ว">ผลตรวจออกแล้ว</option>
+                  </select>
+               </div>
                <div class="col-md-4"><label class="form-label small fw-bold text-muted">วันที่รับผล</label><input type="text" class="form-control datepicker-input" id="a_resultDate"></div>
-               <div class="col-md-4"><label class="form-label small fw-bold text-muted">ผลตรวจ (จาก App Man)</label><input type="text" class="form-control bg-light" id="a_result" onchange="autoUpdateAnnualStatus()" placeholder="เช่น ได้รับผลแล้ว"></div>
-               <div class="col-md-8"><label class="form-label small fw-bold text-muted">หมายเหตุ</label><input type="text" class="form-control" id="a_note"></div>
+               <div class="col-md-4"><label class="form-label small fw-bold text-muted">ผลตรวจ (จาก App Man / ระบุเอง)</label><input type="text" class="form-control bg-light" id="a_result" onchange="autoUpdateAnnualStatus()" placeholder="เช่น ได้รับผลแล้ว หรือ ผ่าน"></div>
+               <div class="col-md-8"><label class="form-label small fw-bold text-muted">หมายเหตุย่อ (Note)</label><input type="text" class="form-control" id="a_note"></div>
                <div class="d-none"><input type="text" id="a_officerEmail"><input type="text" class="form-control datepicker" id="a_submitDate"></div>
+               
+               <!-- 🌟 History Log Section in Annual 🌟 -->
+               <div class="col-12 mt-4 pt-3 border-top">
+                  <h6 class="text-secondary pb-2 mb-3 fw-bold"><i class="fas fa-history me-2"></i>ประวัติ (History Log)</h6>
+                  <div id="annualTimelineContainer" style="max-height: 250px; overflow-y: auto; padding-right:5px;"></div>
+               </div>
+
             </div>
           </form>
         </div>
         <div class="modal-footer border-top-0 bg-white">
           <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
-          <button type="button" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm" onclick="saveAnnualData()">บันทึก</button>
+          <button type="button" class="btn btn-warning text-dark rounded-pill px-4 fw-bold shadow-sm" onclick="saveAnnualData()">บันทึกข้อมูล</button>
         </div>
       </div>
     </div>
@@ -479,6 +512,7 @@
     let currentTab = 'MASTER'; 
     let recentlyUpdatedMaster = [];
     let recentlyUpdatedAnnual = [];
+    let currentAnnualHistory = []; // 🌟 เก็บประวัติเฉพาะของ Annual
     
     let lastImportAdded = [];
     let lastImportUpdated = [];
@@ -538,6 +572,40 @@
             isClearingMonth = false;
         }
         initVerifyPage();
+    }
+
+    // 🌟 ฟังก์ชันจัดการ Dropdown เมื่อเลือกช่องทาง "ตรวจเอง" ในหน้า Annual
+    function handleAnnualChannelChange() {
+        const channel = document.getElementById('a_channel').value;
+        const statusProcessEl = document.getElementById('a_statusProcess');
+        const outstandingEl = document.getElementById('a_outstanding');
+        const deductionStatusEl = document.getElementById('a_deductionStatus');
+        const currentStatus = statusProcessEl.value;
+
+        if (channel === 'ตรวจเอง') {
+            // Set ยอดค้างชำระเป็น 0 ทันที
+            if(outstandingEl) outstandingEl.value = 0;
+            // 🌟 Set สถานะการหักเงิน เป็น ชำระครบ ทันที
+            if(deductionStatusEl) deductionStatusEl.value = 'ชำระครบ';
+            
+            statusProcessEl.innerHTML = `
+                <option value="แจ้งความประสงค์ตรวจเอง">แจ้งความประสงค์ตรวจเอง</option>
+                <option value="รอเอกสารตัวจริง">รอเอกสารตัวจริง</option>
+                <option value="ได้รับเอกสาร/รอตรวจสอบ">ได้รับเอกสาร/รอตรวจสอบ</option>
+                <option value="ผลตรวจออกแล้ว (ผ่าน)">ผลตรวจออกแล้ว (ผ่าน)</option>
+            `;
+        } else {
+            statusProcessEl.innerHTML = `
+                <option value="ส่งลิ้งค์แล้วรอกรอกข้อมูล">ส่งลิ้งค์แล้วรอกรอกข้อมูล</option>
+                <option value="รอผลตรวจ">รอผลตรวจ</option>
+                <option value="ผลตรวจออกแล้ว">ผลตรวจออกแล้ว</option>
+            `;
+        }
+        
+        // พยายามเก็บค่าเดิมไว้ถ้ามีในตัวเลือกใหม่
+        if (Array.from(statusProcessEl.options).some(o => o.value === currentStatus)) {
+            statusProcessEl.value = currentStatus;
+        }
     }
 
     function showFullText(tab, id, field) {
@@ -614,7 +682,7 @@
                 .from(tableName)
                 .select('*')
                 .order(orderByField, { ascending: false, nullsFirst: false })
-                .order('created_at', { ascending: false }) // ป้องกันข้อมูลข้ามหน้า
+                .order('created_at', { ascending: false }) 
                 .range(from, from + limit - 1);
 
             if (error) throw error;
@@ -623,7 +691,7 @@
                 allData = allData.concat(data);
                 from += limit;
                 if (data.length < limit) {
-                    hasMore = false; // ข้อมูลหมดแล้ว
+                    hasMore = false; 
                 }
             } else {
                 hasMore = false;
@@ -643,7 +711,7 @@
             currentUser = configRes.userEmail || "System";
             isUserAdmin = configRes.isAdmin;
 
-            const { data: drops } = await supabase.from('config_dropdowns').select('*');
+            const { data: drops } = await supabase.from('prs_config').select('*');
             centersList = (drops||[]).filter(d => d.category === 'Onboard Centers' || d.category === 'Centers').map(d => d.value);
 
             // 🌟 เรียกใช้ฟังก์ชันดึงข้อมูลทั้งหมด
@@ -659,7 +727,6 @@
             };
 
             globalDataMaster = (masterData || []).reduce((acc, r) => {
-                // กรองแถวว่าง (Ghost Rows) ทิ้ง
                 const hasData = (r.full_name && r.full_name.trim() !== '') || (r.id_card && r.id_card.trim() !== '') || (r.maid_code && r.maid_code.trim() !== '');
                 if (!hasData) return acc;
 
@@ -674,18 +741,27 @@
             }, []);
 
             globalDataAnnual = (annualData || []).reduce((acc, r) => {
-                // กรองแถวว่าง (Ghost Rows) ทิ้ง
                 const hasData = (r.full_name && r.full_name.trim() !== '') || (r.id_card && r.id_card.trim() !== '') || (r.ref_code && r.ref_code.trim() !== '');
                 if (!hasData) return acc;
 
                 if (filterVal && !isDateMatch(r.submit_date)) return acc;
+                
+                // 🌟 ดึงข้อมูล History ของ Annual มาใช้งาน
+                let historyData = [];
+                try {
+                    if (r.history) {
+                        historyData = typeof r.history === 'string' ? JSON.parse(r.history) : r.history;
+                    }
+                } catch(e) { console.error("Parse Annual history error:", e); }
+
                 acc.push({
                     id: r.annual_id, refCode: r.ref_code, name: r.full_name || '-', group: r.provider_group,
                     idCard: r.id_card, birthDate: r.birth_date, phone: r.phone, consentStatus: r.consent_status,
                     amount: r.amount, outstanding: r.outstanding, deductionStatus: r.deduction_status,
                     channel: r.channel, statusProcess: r.status_process, resultDate: r.result_date,
                     result: r.result, lastFollowup: r.last_followup, officerEmail: r.officer_email,
-                    submitDate: r.submit_date, note: r.notes, exportStatus: r.export_status
+                    submitDate: r.submit_date, note: r.notes, exportStatus: r.export_status,
+                    history: historyData // เก็บลง state
                 });
                 return acc;
             }, []);
@@ -710,14 +786,6 @@
         }
     }
 
-    function clearDateFilter() {
-        isClearingMonth = true;
-        if(monthPickerInstance) monthPickerInstance.clear();
-        isClearingMonth = false;
-        document.getElementById('yearFilter').value = "";
-        initVerifyPage();
-    }
-
     function updateStats() {
         const container = document.getElementById('statsContainer');
         document.getElementById('badge-master-count').textContent = globalDataMaster.length;
@@ -738,21 +806,30 @@
             container.innerHTML = htmlStr;
         } else {
             const tot = globalDataAnnual.length;
-            const ver = globalDataAnnual.filter(x => x.statusProcess === 'ผลตรวจออกแล้ว').length;
+            const ver = globalDataAnnual.filter(x => x.statusProcess === 'ผลตรวจออกแล้ว' || x.statusProcess === 'ผลตรวจออกแล้ว (ผ่าน)').length;
             const pen = globalDataAnnual.filter(x => {
                 const sp = String(x.statusProcess).trim();
                 return sp === 'ส่งลิ้งค์แล้วรอกรอกข้อมูล' || sp === 'ส่งลิงค์แล้วรอกรอกข้อมูล' || sp === 'รอผลตรวจ';
             }).length;
             const paid = globalDataAnnual.filter(x => x.deductionStatus === 'ชำระครบ' || x.deductionStatus === 'หักสำเร็จ').length;
             const unpaid = globalDataAnnual.filter(x => x.deductionStatus === 'ค้างชำระ' || x.deductionStatus === 'รอหัก' || x.deductionStatus === 'หักไม่สำเร็จ').length;
-            container.className = 'row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-xl-5 g-3 mb-4';
+            
+            // 🌟 เพิ่มคำนวณการ์ด ตรวจเอง
+            const selfVerify = globalDataAnnual.filter(x => x.channel === 'ตรวจเอง').length;
+
+            container.className = 'row row-cols-2 row-cols-md-3 row-cols-xl-6 g-2 mb-4';
             
             let htmlStr = '';
-            htmlStr += '<div class="col"><div class="card status-card border-start-primary p-3 active" onclick="filterByCard(this, \'ANNUAL\', \'\', \'\')"><small class="text-muted fw-bold">ทั้งหมดรายปี</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-primary">' + tot + '</h3><i class="fas fa-users fs-4 opacity-25"></i></div></div></div>';
+            htmlStr += '<div class="col"><div class="card status-card border-start-primary p-3 active" onclick="filterByCard(this, \'ANNUAL\', \'\', \'\')"><small class="text-muted fw-bold">ทั้งหมด</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-primary">' + tot + '</h3><i class="fas fa-users fs-4 opacity-25"></i></div></div></div>';
             htmlStr += '<div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard(this, \'ANNUAL\', \'ผลตรวจออกแล้ว\', \'\')"><small class="text-muted fw-bold">ผลออกแล้ว</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">' + ver + '</h3><i class="fas fa-check-circle fs-4 opacity-25"></i></div></div></div>';
-            htmlStr += '<div class="col"><div class="card status-card border-start-info p-3" onclick="filterByCard(this, \'ANNUAL\', \'pending\', \'\')"><small class="text-muted fw-bold">ส่งลิงค์/รอผล</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-info">' + pen + '</h3><i class="fas fa-paper-plane fs-4 opacity-25"></i></div></div></div>';
+            htmlStr += '<div class="col"><div class="card status-card border-start-info p-3" onclick="filterByCard(this, \'ANNUAL\', \'pending\', \'\')"><small class="text-muted fw-bold">รอผล/ลิงก์</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-info">' + pen + '</h3><i class="fas fa-paper-plane fs-4 opacity-25"></i></div></div></div>';
+            
+            // 🌟 เพิ่มการ์ด ตรวจเอง
+            htmlStr += `<div class="col"><div class="card status-card border-start-secondary p-3" onclick="filterByCard(this, 'ANNUAL', 'self_verify', '')"><small class="text-muted fw-bold">ตรวจเอง</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-secondary">${selfVerify}</h3><i class="fas fa-file-signature fs-4 opacity-25"></i></div></div></div>`;
+
             htmlStr += '<div class="col"><div class="card status-card border-start-success p-3" onclick="filterByCard(this, \'ANNUAL\', \'\', \'paid\')"><small class="text-muted fw-bold">ชำระครบ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-success">' + paid + '</h3><i class="fas fa-check-double fs-4 opacity-25"></i></div></div></div>';
             htmlStr += '<div class="col"><div class="card status-card border-start-danger p-3" onclick="filterByCard(this, \'ANNUAL\', \'\', \'unpaid\')"><small class="text-muted fw-bold">ค้างชำระ</small><div class="d-flex justify-content-between align-items-center mt-1"><h3 class="text-danger">' + unpaid + '</h3><i class="fas fa-wallet fs-4 opacity-25"></i></div></div></div>';
+            
             container.innerHTML = htmlStr;
         }
     }
@@ -884,6 +961,8 @@
                 } else if (spStatus === "pending") {
                     const sp = String(x.statusProcess).trim();
                     matchSp = (sp === 'ส่งลิ้งค์แล้วรอกรอกข้อมูล' || sp === 'ส่งลิงค์แล้วรอกรอกข้อมูล' || sp === 'รอผลตรวจ');
+                } else if (spStatus === "self_verify") {
+                    matchSp = (x.channel === 'ตรวจเอง');
                 } else {
                     matchSp = (x.statusProcess === spStatus);
                 }
@@ -1089,6 +1168,13 @@
             document.getElementById('dataFormAnnual').reset();
             document.getElementById('a_recordId').value = "";
             document.getElementById('a_officerEmail').value = currentUser;
+            
+            // เคลียร์ History ทิ้งสำหรับเคสใหม่
+            currentAnnualHistory = [];
+            renderAnnualTimeline();
+            
+            handleAnnualChannelChange(); // ตั้งค่า Dropdown เป็นค่าเริ่มต้น
+
             formModalAnnual.show();
         }
     }
@@ -1129,12 +1215,42 @@
             document.getElementById('a_amount').value = item.amount;
             document.getElementById('a_outstanding').value = item.outstanding;
             document.getElementById('a_deductionStatus').value = item.deductionStatus;
-            document.getElementById('a_channel').value = item.channel;
+            
+            const channelEl = document.getElementById('a_channel');
+            channelEl.value = item.channel || "App Man";
+            
+            // 🌟 ตั้งค่า Status Process Dropdown ให้สอดคล้องกับ Channel
+            const statusProcessEl = document.getElementById('a_statusProcess');
+            if (channelEl.value === 'ตรวจเอง') {
+                statusProcessEl.innerHTML = `
+                    <option value="แจ้งความประสงค์ตรวจเอง">แจ้งความประสงค์ตรวจเอง</option>
+                    <option value="รอเอกสารตัวจริง">รอเอกสารตัวจริง</option>
+                    <option value="ได้รับเอกสาร/รอตรวจสอบ">ได้รับเอกสาร/รอตรวจสอบ</option>
+                    <option value="ผลตรวจออกแล้ว (ผ่าน)">ผลตรวจออกแล้ว (ผ่าน)</option>
+                `;
+            } else {
+                statusProcessEl.innerHTML = `
+                    <option value="ส่งลิ้งค์แล้วรอกรอกข้อมูล">ส่งลิ้งค์แล้วรอกรอกข้อมูล</option>
+                    <option value="รอผลตรวจ">รอผลตรวจ</option>
+                    <option value="ผลตรวจออกแล้ว">ผลตรวจออกแล้ว</option>
+                `;
+            }
+            // ถัดไป ค่อยเซ็ตค่ากลับเข้าไป
+            let targetStatus = item.statusProcess || "";
+            // เพิ่มเข้าไปในตัวเลือกหากไม่มี เพื่อป้องกันการที่เลือกไม่ได้
+            if (targetStatus && !Array.from(statusProcessEl.options).some(o => o.value === targetStatus)) {
+                statusProcessEl.add(new Option(targetStatus, targetStatus));
+            }
+            statusProcessEl.value = targetStatus;
 
-            document.getElementById('a_statusProcess').value = item.statusProcess;
             setFlatpickrValue('a_resultDate', item.resultDate);
             document.getElementById('a_result').value = item.result || "";
-            document.getElementById('a_note').value = item.note;
+            document.getElementById('a_note').value = item.note || "";
+            
+            // โหลด History Log ของ Annual
+            currentAnnualHistory = item.history || [];
+            renderAnnualTimeline();
+
             formModalAnnual.show();
         }
     }
@@ -1184,6 +1300,23 @@
             setFlatpickrValue('a_resultDate', new Date().toISOString().split('T')[0]);
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'อัปเดตสถานะและวันที่รับผลแล้ว', showConfirmButton:false, timer:2000});
         }
+    }
+
+    function renderAnnualTimeline() {
+        const c = document.getElementById('annualTimelineContainer'); 
+        c.innerHTML = "";
+        if (!currentAnnualHistory || !currentAnnualHistory.length) { 
+            c.innerHTML = '<div class="text-center text-muted small py-3">ยังไม่มีประวัติกิจกรรม</div>'; 
+            return; 
+        }
+        let html = '<div class="timeline">';
+        currentAnnualHistory.forEach((h, i) => {
+             const u = h.user ? ` <small class="text-muted">(${h.user})</small>` : '';
+             html += `<div class="timeline-item"><div class="timeline-date">${h.date}${u}</div>
+                      <div class="timeline-content d-flex justify-content-between"><div>${h.note}</div></div></div>`;
+        });
+        html += '</div>'; 
+        c.innerHTML = html;
     }
 
     // 🚀 SUPABASE DATA MUTATIONS
@@ -1268,6 +1401,50 @@
         const id = document.getElementById('a_recordId').value;
         const newStatusProcess = document.getElementById('a_statusProcess').value;
         const newResult = document.getElementById('a_result').value;
+        
+        // 🌟 ดึงค่าใหม่มาไว้เทียบ 🌟
+        const newDeductionStatus = document.getElementById('a_deductionStatus').value;
+        const newChannel = document.getElementById('a_channel').value;
+        const newNoteShort = document.getElementById('a_note').value;
+
+        // 🌟 Auto-Log Status Changes 🌟
+        let autoLogMsg = "";
+        const oldRecord = id ? globalDataAnnual.find(x => String(x.id) === String(id)) : null;
+
+        if (oldRecord) {
+            let changes = [];
+            if (oldRecord.statusProcess !== newStatusProcess) changes.push(`สถานะส่ง: ${oldRecord.statusProcess || '-'} -> ${newStatusProcess}`);
+            if (oldRecord.deductionStatus !== newDeductionStatus) changes.push(`สถานะหักเงิน: ${oldRecord.deductionStatus || '-'} -> ${newDeductionStatus}`);
+            if (oldRecord.channel !== newChannel) changes.push(`ช่องทาง: ${oldRecord.channel || '-'} -> ${newChannel}`);
+            if (oldRecord.result !== newResult) changes.push(`ผลตรวจ: ${oldRecord.result || '-'} -> ${newResult}`);
+
+            let isNoteChanged = (oldRecord.note !== newNoteShort);
+
+            // บันทึก Log เมื่อมีการเปลี่ยนสถานะ หรือ มีการแก้หมายเหตุย่อ
+            if (changes.length > 0 || isNoteChanged) {
+                if (changes.length > 0) {
+                    autoLogMsg = "[อัปเดต] " + changes.join(' | ');
+                } else if (isNoteChanged) {
+                    autoLogMsg = "[อัปเดต] ข้อมูลหมายเหตุ";
+                }
+                
+                // 🌟 นำข้อความใน 'หมายเหตุย่อ' มาบันทึกลง Log ทุกครั้งที่มีการอัปเดต 🌟
+                if (isNoteChanged && newNoteShort) {
+                    autoLogMsg += `\nหมายเหตุ: ${newNoteShort}`;
+                }
+            }
+        } else {
+            autoLogMsg = `[สร้างใหม่] สถานะส่ง: ${newStatusProcess} | หักเงิน: ${newDeductionStatus} | ช่องทาง: ${newChannel}`;
+            if (newNoteShort) {
+                autoLogMsg += `\nหมายเหตุ: ${newNoteShort}`;
+            }
+        }
+        
+        if (autoLogMsg) {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            currentAnnualHistory.unshift({ date: dateStr, note: autoLogMsg, user: currentUser });
+        }
 
         const payload = {
             ref_code: document.getElementById('a_refCode').value,
@@ -1279,18 +1456,17 @@
             consent_status: document.getElementById('a_consentStatus').value,
             amount: document.getElementById('a_amount').value ? parseFloat(document.getElementById('a_amount').value) : 0,
             outstanding: document.getElementById('a_outstanding').value ? parseFloat(document.getElementById('a_outstanding').value) : 0,
-            deduction_status: document.getElementById('a_deductionStatus').value,
-            channel: document.getElementById('a_channel').value,
+            deduction_status: newDeductionStatus,
+            channel: newChannel,
             status_process: newStatusProcess,
             result_date: document.getElementById('a_resultDate').value || null,
             result: newResult,
             officer_email: currentUser,
-            notes: document.getElementById('a_note').value
+            notes: newNoteShort,
+            history: currentAnnualHistory // 🌟 ส่งข้อมูล History เข้าไปด้วย 🌟
         };
 
-        // 🌟 เพิ่ม Logic: ล้างค่า Export ถ้าสถานะใน Annual มีการเปลี่ยนแปลง 🌟
         if (id) {
-            const oldRecord = globalDataAnnual.find(x => String(x.id) === String(id));
             if (oldRecord && (oldRecord.statusProcess !== newStatusProcess || oldRecord.result !== newResult)) {
                 payload.export_status = null;
             }
@@ -1303,7 +1479,6 @@
                 if (error) throw error;
                 if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('UPDATE_ANNUAL', 'VerifyWorkspace', `Updated: ${id}`, currentUser);
                 
-                // 🌟 อัปเดตข้อมูลในหน้าจอทันที โดยไม่ต้องโหลดใหม่ทั้งหน้า ป้องกันแถวขยับ 🌟
                 const index = globalDataAnnual.findIndex(x => String(x.id) === String(id));
                 if (index > -1) {
                     globalDataAnnual[index].refCode = payload.ref_code;
@@ -1322,6 +1497,7 @@
                     globalDataAnnual[index].result = payload.result;
                     globalDataAnnual[index].officerEmail = payload.officer_email;
                     globalDataAnnual[index].note = payload.notes;
+                    globalDataAnnual[index].history = payload.history; // Update UI state
                     if (payload.export_status === null) globalDataAnnual[index].exportStatus = null;
 
                     const filterIndex = currentFilteredData.findIndex(x => String(x.id) === String(id));
@@ -1329,9 +1505,9 @@
                         currentFilteredData[filterIndex] = globalDataAnnual[index];
                     }
                 }
-                recentlyUpdatedAnnual = [id]; // ไฮไลท์แถวสีเขียว
-                updateStats(); // อัปเดตตัวเลขการ์ดด้านบน
-                renderTablePage(); // วาดตารางใหม่โดยไม่รีเซ็ตหน้า
+                recentlyUpdatedAnnual = [id]; 
+                updateStats(); 
+                renderTablePage(); 
             } else {
                 const newId = "AN-" + new Date().getTime().toString().substring(5);
                 payload.annual_id = newId;
@@ -1339,7 +1515,7 @@
                 if (error) throw error;
                 if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('CREATE_ANNUAL', 'VerifyWorkspace', `Created: ${newId}`, currentUser);
                 
-                initVerifyPage(); // โหลดใหม่เฉพาะตอนเพิ่มรายการใหม่
+                initVerifyPage(); 
             }
             formModalAnnual.hide();
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกสำเร็จ', timer:2000, showConfirmButton:false});
@@ -1384,12 +1560,7 @@
 
     async function saveInlineNoteSupabase(id, newNote) {
         let finalNote = newNote.trim(); 
-        if (finalNote) { 
-            const now = new Date(); 
-            const timeStr = '(' + now.getDate() + '/' + (now.getMonth()+1) + '/' + now.getFullYear() + ' ' + now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0') + ')'; 
-            if (!finalNote.includes('(')) finalNote = timeStr + ' ' + finalNote; 
-        }
-        
+
         const inputEl = document.getElementById('note-' + id);
         if(inputEl) {
             inputEl.classList.add('bg-warning');
@@ -1397,7 +1568,17 @@
         }
 
         try {
-            const { error } = await supabase.from('prs_verify_annual').update({ notes: finalNote }).eq('annual_id', id);
+            const row = globalDataAnnual.find(r => String(r.id) === String(id)); 
+            let currentHist = [];
+            if (row && row.history) currentHist = [...row.history];
+
+            if (finalNote && (!row || row.note !== finalNote)) { 
+                const now = new Date(); 
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                currentHist.unshift({ date: dateStr, note: `[อัปเดต] หมายเหตุ: ${finalNote}`, user: currentUser });
+            }
+
+            const { error } = await supabase.from('prs_verify_annual').update({ notes: finalNote, history: currentHist }).eq('annual_id', id);
             if (error) throw error;
 
             if(inputEl) {
@@ -1407,8 +1588,10 @@
                 setTimeout(function() { inputEl.classList.remove('is-valid'); }, 2000);
                 inputEl.value = finalNote; 
             }
-            const row = globalDataAnnual.find(r => String(r.id) === String(id)); 
-            if(row) row.note = finalNote; 
+            if(row) {
+                row.note = finalNote; 
+                row.history = currentHist;
+            }
             
             Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกหมายเหตุแล้ว', showConfirmButton:false, timer:1500});
         } catch(e) {
