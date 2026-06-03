@@ -70,6 +70,12 @@
     /* Waiting Room Styles */
     .waiting-room-tab .nav-link { border-radius: 0; border: none; border-bottom: 3px solid transparent; color: #6c757d; font-weight: 600; padding: 12px 20px; }
     .waiting-room-tab .nav-link.active { background: transparent; color: var(--ci-primary); border-bottom: 3px solid var(--ci-primary); box-shadow: none !important; }
+
+    /* Star Rating */
+    .star-btn { transition: transform 0.1s ease; cursor: pointer; }
+    .star-btn:hover { transform: scale(1.2); }
+    .star-active { color: #f59e0b; }
+    .star-inactive { color: #e5e7eb; }
   </style>
 </head>
 <body>
@@ -252,7 +258,7 @@
   <!-- Modal ฟอร์มจัดการ Onboard -->
   <div class="modal fade" id="formModal" tabindex="-1">
     <div class="modal-dialog modal-xl">
-      <div class="modal-content border-0 shadow-lg">
+      <div class="modal-content border-0 shadow-lg" id="vueAppForEval">
         <div class="modal-header bg-white border-bottom-0">
           <h5 class="modal-title fw-bold text-primary" id="modalTitle">เพิ่มคุณแม่บ้านใหม่</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -261,13 +267,12 @@
           <form id="dataForm">
             <input type="hidden" id="recordId"><input type="hidden" id="initialStatus"><input type="hidden" id="hasFastTrackStatus">
             <input type="hidden" id="isReturningMaid" value="false">
-            <!-- 🌟 Hidden Field เก็บ Source ID จาก Waiting Room 🌟 -->
             <input type="hidden" id="sourceLeadId" value="">
             <input type="hidden" id="isRetrainCase" value="false">
             
             <div class="row g-4">
                <!-- Left Column: Basic Info -->
-               <div class="col-lg-7 border-end">
+               <div class="col-lg-6 border-end" id="leftColumnOB">
                   
                   <div class="row g-3">
                       <div class="col-md-6">
@@ -284,7 +289,6 @@
                          <select class="form-select" id="masterType"><option value="" selected disabled>เลือกประเภท...</option></select>
                       </div>
                       
-                      <!-- 🌟 ให้มี ID ที่ตรวจสอบได้เพื่อซ่อนสำหรับเคส Retrain 🌟 -->
                       <div class="col-md-6" id="verificationContainer">
                         <label class="form-label small fw-bold text-muted">วิธีการตรวจประวัติ <span class="text-danger">*</span></label>
                         <select class="form-select fw-bold" id="verificationMethod" onchange="checkFastTrackBtnVisibility()">
@@ -293,7 +297,6 @@
                         </select>
                       </div>
                       
-                      <!-- Manual FT Status Dropdown -->
                       <div class="col-md-6" id="manualFtSection" style="display:none;">
                           <label class="form-label small fw-bold text-muted">ผลการตรวจ (Manual Status) <span class="text-danger">*</span></label>
                           <select class="form-select" id="manualFtStatus">
@@ -305,7 +308,6 @@
                          </select>
                       </div>
                       
-                      <!-- Fast Track Alert Box -->
                       <div class="col-12" id="modalFastTrackAction" style="display:none;">
                           <div class="alert alert-warning border-warning d-flex align-items-center justify-content-between p-2 mb-0">
                               <div class="small fw-bold text-dark">
@@ -317,7 +319,6 @@
                           </div>
                       </div>
 
-                      <!-- 🌟 Auto-complete แม่บ้านเก่า 🌟 -->
                       <div class="col-md-5 position-relative">
                         <label class="form-label small fw-bold text-muted">รหัสแม่บ้าน (ค้นหาประวัติเก่า)</label>
                         <div class="input-group">
@@ -342,10 +343,18 @@
 
                       <!-- 🌟 ข้อมูลปัญหาจาก RMS (แสดงเฉพาะเคส Retrain) 🌟 -->
                       <div class="col-12" id="rmsInfoSection" style="display:none;">
-                          <div class="p-3 mb-1 bg-danger bg-opacity-10 rounded border border-danger border-opacity-50">
-                              <h6 class="fw-bold text-danger mb-2"><i class="fas fa-exclamation-circle me-1"></i> รายละเอียดปัญหาจาก SM</h6>
-                              <p class="small text-dark mb-1"><strong>ปัญหาที่ต้อง Retrain:</strong> <br><span id="rmsDescText" class="text-muted">-</span></p>
-                              <p class="small text-dark mb-0 mt-2"><strong>ความคิดเห็น SM:</strong> <br><span id="rmsNoteText" class="text-muted">-</span></p>
+                          <div class="p-3 mb-1 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-50 relative">
+                              <h6 class="fw-bold text-danger mb-2"><i class="fas fa-exclamation-circle me-1"></i> รายละเอียดปัญหาที่ SM แจ้งมา</h6>
+                              <p class="small text-dark mb-3 font-monospace" style="white-space: pre-wrap;"><span id="rmsDescText" class="text-muted">-</span></p>
+                              
+                              <h6 class="fw-bold text-warning mb-2 border-top border-danger border-opacity-25 pt-3"><i class="fas fa-comment-dots me-1"></i> ความคิดเห็นเจ้าหน้าที่ SM</h6>
+                              <p class="small text-dark mb-1 font-monospace" style="white-space: pre-wrap;"><span id="rmsNoteText" class="text-muted">-</span></p>
+
+                              <div id="rmsAttachmentContainer" class="d-none mt-2 pt-2 border-top border-danger border-opacity-25">
+                                  <a href="#" id="rmsAttachmentLink" target="_blank" class="badge bg-danger text-white text-decoration-none shadow-sm p-2 rounded-pill">
+                                      <i class="fas fa-paperclip me-1"></i> ดาวน์โหลดเอกสารจาก SM
+                                  </a>
+                              </div>
                           </div>
                       </div>
 
@@ -354,7 +363,6 @@
                          <input type="text" class="form-control fw-bold" id="name" required placeholder="ระบุชื่อ-นามสกุล">
                       </div>
                       
-                      <!-- 🌟 เพิ่ม Container ไว้สำหรับซ่อน 🌟 -->
                       <div class="col-md-6" id="idCardContainer">
                         <label class="form-label small fw-bold text-muted">เลขบัตรประชาชน</label>
                         <input type="text" class="form-control" id="idCard" maxlength="17" placeholder="ระบุเลข 13 หลัก"
@@ -366,7 +374,6 @@
                         <input type="text" class="form-control" id="phone">
                       </div>
 
-                      <!-- Status and Group -->
                       <div class="col-md-6">
                         <label class="form-label small fw-bold text-muted">สถานะ (Status) <span class="text-danger">*</span></label> 
                         <select class="form-select fw-bold text-primary" id="type" onchange="updateStatusUI()">
@@ -380,13 +387,10 @@
                         </select>
                       </div>
                       
-                      <!-- 🌟 ไดนามิก Tag Section 🌟 -->
                       <div class="col-12" id="tagSection" style="display:none;">
                           <div class="p-3 bg-light rounded border border-warning border-opacity-25">
                               <label class="form-label small fw-bold text-muted mb-2">สิ่งที่ต้องติดตาม (Tags):</label>
-                              <div id="dynamicTagsContainer" class="d-flex flex-wrap gap-1">
-                                  <!-- Tags จะถูกสร้างขึ้นมาตรงนี้ด้วย JavaScript -->
-                              </div>
+                              <div id="dynamicTagsContainer" class="d-flex flex-wrap gap-1"></div>
                           </div>
                       </div>
 
@@ -397,47 +401,31 @@
                   </div>
                </div>
                
-               <!-- 🌟 ฝั่งขวา 🌟 -->
-               <div class="col-lg-5">
-                  <!-- 🌟 ฟอร์มประเมินผลสำหรับเคส Retrain โดยเฉพาะ 🌟 -->
-                  <div id="retrainEvaluationSection" style="display:none;" class="mb-4 p-4 bg-warning bg-opacity-10 border border-warning border-opacity-50 rounded-4 shadow-sm">
-                      <h6 class="fw-bold text-dark mb-3"><i class="fas fa-clipboard-check text-warning me-2"></i>ประเมินผล Retrain</h6>
-                      <label class="form-label small fw-bold text-muted">ผลการประเมิน <span class="text-danger">*</span></label>
-                      <select class="form-select bg-white mb-3 shadow-none fw-bold text-primary border-warning" id="retrainResult">
-                          <option value="">-- ระบุผลการประเมิน --</option>
-                          <option value="ผ่านเกณฑ์ (ดีมาก)">ผ่านเกณฑ์ (ดีมาก)</option>
-                          <option value="ผ่านเกณฑ์ (พอใช้)">ผ่านเกณฑ์ (พอใช้)</option>
-                          <option value="ไม่ผ่านเกณฑ์ (ต้องปรับปรุง)">ไม่ผ่านเกณฑ์ (ต้องปรับปรุง)</option>
-                      </select>
-                      <label class="form-label small fw-bold text-muted">ความเห็นเทรนเนอร์ <span class="text-danger">*</span></label>
-                      <textarea class="form-control mb-3 bg-white shadow-none border-warning" id="retrainComment" rows="3" placeholder="ระบุสิ่งที่สอนไป หรือพฤติกรรม..."></textarea>
-                      
-                      <!-- 🌟 เพิ่มส่วนแนบไฟล์ 🌟 -->
-                      <label class="form-label small fw-bold text-muted">แนบเอกสารการเข้ารับการฝึกอบรมซ้ำ <span class="text-muted font-normal">(ถ้ามี)</span></label>
-                      
-                      <!-- ส่วนแสดงไฟล์แนบเดิม -->
-                      <div id="retrainAttachmentDisplay" class="mb-2 d-none">
-                          <a href="#" id="retrainAttachmentLink" target="_blank" class="badge bg-success-subtle text-success text-decoration-none border border-success-subtle p-2 px-3 shadow-sm rounded-pill">
-                              <i class="fas fa-paperclip me-1"></i> ดูเอกสารที่แนบไว้แล้ว
-                          </a>
-                      </div>
-                      
-                      <input type="file" id="retrainFile" class="form-control form-control-sm bg-white shadow-none border-warning">
+               <!-- 🌟 ฝั่งขวา (แบ่งเป็น 2 เคส: ปกติ กับ Retrain) 🌟 -->
+               <div class="col-lg-6" id="rightColumnOB">
+                  
+                  <!-- 🌟 ฟอร์มประเมินผลสำหรับเคส Retrain โดยเฉพาะ (VUE COMPONENT) 🌟 -->
+                  <div id="vueRetrainEvalApp" style="display:none;">
+                      <!-- UI ถูกกำหนดผ่าน Vue App ด้านล่าง -->
                   </div>
 
-                  <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">ประวัติการติดตาม</h6>
-                  <div class="bg-white p-3 rounded mb-3 shadow-sm border">
-                      <textarea class="form-control mb-2 bg-light border-0" id="newFollowNote" rows="2" placeholder="เพิ่มบันทึกการติดตาม..."></textarea>
-                      <button type="button" class="btn btn-sm btn-outline-primary w-100 rounded-pill" onclick="addManualLog()"><i class="fas fa-plus me-1"></i> เพิ่มบันทึก</button>
+                  <!-- ส่วนประวัติการติดตาม (กรณีปกติ) -->
+                  <div id="normalHistorySection">
+                      <h6 class="text-primary border-bottom pb-2 mb-3 fw-bold">ประวัติการติดตาม</h6>
+                      <div class="bg-white p-3 rounded mb-3 shadow-sm border">
+                          <textarea class="form-control mb-2 bg-light border-0" id="newFollowNote" rows="2" placeholder="เพิ่มบันทึกการติดตาม..."></textarea>
+                          <button type="button" class="btn btn-sm btn-outline-primary w-100 rounded-pill" onclick="addManualLog()"><i class="fas fa-plus me-1"></i> เพิ่มบันทึก</button>
+                      </div>
+                      <div id="timelineContainer" style="max-height: 450px; overflow-y: auto; padding-right:5px;"></div>
                   </div>
-                  <div id="timelineContainer" style="max-height: 450px; overflow-y: auto; padding-right:5px;"></div>
+
                </div>
             </div>
           </form>
         </div>
         <div class="modal-footer border-top-0">
           <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
-          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึกทั้งหมด</button>
+          <button type="button" class="btn btn-primary-theme rounded-pill px-4 fw-bold shadow-sm" onclick="saveData()">บันทึกอัปเดตฟอร์ม</button>
         </div>
       </div>
     </div>
@@ -445,6 +433,9 @@
     
   <!-- รวมสคริปต์กลางมาใช้ -->
   <?!= include('_Scripts'); ?>
+  
+  <!-- Vue 3 สำหรับทำฟอร์มประเมิน Retrain (Auto Calculate) -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
   <script>
     let globalData = [], currentUser = "", isUserAdmin = false; 
@@ -454,7 +445,344 @@
     let currentCenterFilter = "ALL";
     let searchTimeoutOB;
     let isMaidSelectedOB = false; 
-    let waitingListData = []; // 🌟 เก็บข้อมูล Waiting Room
+    let waitingListData = []; 
+
+    // 🌟 Vue App สำหรับประเมินผล Retrain 🌟
+    const { createApp, ref, computed, watch } = Vue;
+    const vueRetrainApp = createApp({
+        setup() {
+            const evalForm = ref({
+                version: 'v2', // 🌟 กำหนดให้เป็น Version 2 (สำหรับเคสใหม่)
+                p1_1: 0, p1_2: 0, p1_3: 0, p1_4: 0,
+                p2_1: 0, p2_2: 0, p2_3: 0, p2_4: 0,
+                p3_1: 0, p3_2: 0, p3_3: 0,
+                // ตัวแปรเก่าสำหรับ v1
+                part1_topics: [{ text: '', rating: 0 }],
+                part2_1: 0, part2_2: 0, part3_1: 0, part3_2: 0, part3_3: 0,
+                comment: ''
+            });
+
+            const pendingFiles = ref([]);
+            const existingUrls = ref([]);
+            const isReadOnly = ref(false);
+
+            const resetForm = () => {
+                evalForm.value = {
+                    version: 'v2',
+                    p1_1: 0, p1_2: 0, p1_3: 0, p1_4: 0,
+                    p2_1: 0, p2_2: 0, p2_3: 0, p2_4: 0,
+                    p3_1: 0, p3_2: 0, p3_3: 0,
+                    part1_topics: [{ text: '', rating: 0 }],
+                    part2_1: 0, part2_2: 0, part3_1: 0, part3_2: 0, part3_3: 0,
+                    comment: ''
+                };
+                pendingFiles.value = [];
+                existingUrls.value = [];
+                isReadOnly.value = false;
+            };
+
+            const setFormData = (data) => {
+                let parsed = JSON.parse(JSON.stringify(data));
+                if (!parsed.version) parsed.version = 'v1'; // ถ้าเคสเก่า ไม่มี version ให้ถือว่าเป็น v1
+                evalForm.value = parsed;
+            };
+
+            const getFormData = () => evalForm.value;
+
+            const setReadOnly = (val) => { isReadOnly.value = val; };
+            const setExistingUrls = (urls) => { existingUrls.value = urls; };
+
+            const handleFileChange = (e) => {
+                const files = e.target.files;
+                if (!files) return;
+                for (let i = 0; i < files.length; i++) {
+                    pendingFiles.value.push(files[i]);
+                }
+                e.target.value = ''; 
+            };
+
+            const removePendingFile = (idx) => {
+                pendingFiles.value.splice(idx, 1);
+            };
+
+            // ฟังก์ชันของ V1 เดิม
+            const addPart1Topic = () => { evalForm.value.part1_topics.push({ text: '', rating: 0 }); };
+            const removePart1Topic = (idx) => { evalForm.value.part1_topics.splice(idx, 1); if (evalForm.value.part1_topics.length === 0) addPart1Topic(); };
+            const parseTopicsFromText = (text) => { /* v1 parser */ };
+
+            // 🌟 คำนวณคะแนน V2 🌟
+            const p1ScoreV2 = computed(() => {
+                const sum = evalForm.value.p1_1 + evalForm.value.p1_2 + evalForm.value.p1_3 + evalForm.value.p1_4;
+                return (sum / 20) * 40;
+            });
+            const p2ScoreV2 = computed(() => {
+                const sum = evalForm.value.p2_1 + evalForm.value.p2_2 + evalForm.value.p2_3 + evalForm.value.p2_4;
+                return (sum / 20) * 40;
+            });
+            const p3ScoreV2 = computed(() => {
+                const s1 = (evalForm.value.p3_1 / 5) * 10;
+                const s2 = (evalForm.value.p3_2 / 5) * 5;
+                const s3 = (evalForm.value.p3_3 / 5) * 5;
+                return s1 + s2 + s3;
+            });
+
+            // 🌟 คำนวณคะแนน V1 🌟
+            const part1Score = computed(() => {
+                if (evalForm.value.part1_topics.length === 0) return 0;
+                let sumStars = 0;
+                let maxStars = evalForm.value.part1_topics.length * 5;
+                evalForm.value.part1_topics.forEach(t => sumStars += t.rating);
+                return maxStars === 0 ? 0 : (sumStars / maxStars) * 80;
+            });
+            const part2Score = computed(() => evalForm.value.part2_1 + evalForm.value.part2_2);
+            const part3Score = computed(() => {
+                return ((evalForm.value.part3_1 / 5) * 3) + ((evalForm.value.part3_2 / 5) * 4) + ((evalForm.value.part3_3 / 5) * 3);
+            });
+
+            // 🌟 รวมคะแนน Total แยกตาม Version
+            const totalScore = computed(() => {
+                if (evalForm.value.version === 'v2') {
+                    return p1ScoreV2.value + p2ScoreV2.value + p3ScoreV2.value;
+                }
+                return part1Score.value + part2Score.value + part3Score.value;
+            });
+
+            // 🌟 สรุปผลการประเมินแยกตาม Version
+            const finalGrade = computed(() => {
+                if (evalForm.value.version === 'v2') {
+                    const t = totalScore.value;
+                    if (t >= 80) return { text: 'ผ่าน (เปิดระบบรับงานได้ตามปกติ)', color: 'text-success bg-success-subtle border-success-subtle', status: 'PASS' };
+                    if (t >= 50) return { text: 'ผ่านแบบมีเงื่อนไข (ติดตามปัญหาด้านคุณภาพ 10 งานหลังเปิดระบบ)', color: 'text-warning bg-warning-subtle border-warning-subtle', status: 'PASS_COND' };
+                    return { text: 'ไม่ผ่าน (ส่ง C-Level พิจารณา)', color: 'text-danger bg-danger-subtle border-danger-subtle', status: 'FAIL' };
+                } else {
+                    if (part1Score.value < 60) return { text: 'ควรปรับปรุง (ไม่ผ่านเงื่อนไขพิเศษ)', color: 'text-danger bg-danger-subtle border-danger-subtle', status: 'FAIL_CRITICAL' };
+                    if (totalScore.value >= 90) return { text: 'ดีเยี่ยม (กลับไปรับงานได้ทันที)', color: 'text-success bg-success-subtle border-success-subtle', status: 'PASS_EXCELLENT' };
+                    if (totalScore.value >= 80) return { text: 'ผ่าน (ควรมีการสุ่มตรวจ 5 งานแรก)', color: 'text-primary bg-primary-subtle border-primary-subtle', status: 'PASS' };
+                    return { text: 'ควรปรับปรุง (นำเข้าที่ประชุม)', color: 'text-danger bg-danger-subtle border-danger-subtle', status: 'FAIL' };
+                }
+            });
+
+            return {
+                evalForm, pendingFiles, existingUrls, isReadOnly,
+                handleFileChange, removePendingFile, addPart1Topic, removePart1Topic, parseTopicsFromText,
+                part1Score, part2Score, part3Score, p1ScoreV2, p2ScoreV2, p3ScoreV2, totalScore, finalGrade,
+                resetForm, setFormData, getFormData, setReadOnly, setExistingUrls
+            };
+        },
+        template: `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full max-h-[85vh]">
+            <div class="bg-beneat-primary px-4 py-3 flex items-center justify-between shrink-0">
+                <h6 class="fw-bold text-white mb-0 flex items-center gap-2 m-0 text-base">
+                    <i class="fas fa-clipboard-check"></i> ประเมินผล Retrain
+                </h6>
+            </div>
+            
+            <div class="p-4 overflow-y-auto flex-1 bg-slate-50" style="font-size: 0.9rem;">
+                
+                <div v-if="isReadOnly" class="alert alert-warning py-2 px-3 mb-4 text-sm font-bold flex items-center gap-2 shadow-sm border-warning">
+                    <i class="fas fa-lock"></i> ประเมินผลเรียบร้อยแล้ว (ไม่สามารถแก้ไขได้)
+                </div>
+
+                <div v-if="evalForm.version === 'v2'" class="mb-4 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <h6 class="text-sm font-bold text-blue-800 mb-2"><i class="fas fa-info-circle"></i> เกณฑ์การให้คะแนน (1-5 ดาว)</h6>
+                    <ul class="text-xs text-blue-700 mb-0 ps-3 space-y-1">
+                        <li><strong>5 (ดีเยี่ยม):</strong> ทำได้เกินกว่ามาตรฐานที่กำหนด ไม่มีข้อผิดพลาดเลย</li>
+                        <li><strong>4 (ดี):</strong> ทำได้ตามมาตรฐานอย่างครบถ้วน อาจมีข้อติเล็กน้อยมาก 1-2 จุด</li>
+                        <li><strong>3 (พอใช้):</strong> ทำได้ตามเกณฑ์ขั้นต่ำที่รับได้ มีจุดต้องปรับปรุงบ้าง 3-4 จุด</li>
+                        <li><strong>2 (ต้องปรับปรุง):</strong> ทำต่ำกว่ามาตรฐาน มีข้อผิดพลาดที่ส่งผลต่อความพึงพอใจลูกค้า ต้องได้รับการเตือน มีจุดต้องปรับปรุง 5-6 จุด</li>
+                        <li><strong>1 (ต้องปรับปรุงเร่งด่วน):</strong> ไม่ปฏิบัติตามขั้นตอนเลย ฝ่าฝืนกฎ สร้างความเสียหาย มีจุดต้องปรับปรุง > 6 จุดขึ้นไป</li>
+                    </ul>
+                </div>
+
+                <!-- 🌟🌟 FOR VERSION 2 (NEW) 🌟🌟 -->
+                <div v-if="evalForm.version === 'v2'">
+                    <!-- Part 1 (V2) -->
+                    <div class="mb-4 bg-white p-4 rounded-lg border shadow-sm">
+                        <h6 class="font-bold text-dark mb-3 border-b pb-2 text-sm">1. ความรู้และความเข้าใจหลังเข้ารับการ Retrain <span class="text-xs fw-normal text-muted">(เต็ม 40 คะแนน)</span></h6>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">1.1 ความเข้าใจในประเด็นที่ได้รับการ Retrain</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p1_1 = n)" :class="n <= evalForm.p1_1 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">1.2 การปฏิบัติงานตามขั้นตอนที่ได้รับการอบรม</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p1_2 = n)" :class="n <= evalForm.p1_2 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">1.3 การแก้ไขข้อผิดพลาดที่เคยพบได้อย่างถูกต้อง</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p1_3 = n)" :class="n <= evalForm.p1_3 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">1.4 การปฏิบัติงานได้ตามมาตรฐานที่กำหนด</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p1_4 = n)" :class="n <= evalForm.p1_4 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Part 2 (V2) -->
+                    <div class="mb-4 bg-white p-4 rounded-lg border shadow-sm">
+                        <h6 class="font-bold text-dark mb-3 border-b pb-2 text-sm">2. ทักษะการปฏิบัติงาน <span class="text-xs fw-normal text-muted">(เต็ม 40 คะแนน)</span></h6>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">2.1 การเตรียมอุปกรณ์และน้ำยาทำความสะอาดให้เหมาะสม</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p2_1 = n)" :class="n <= evalForm.p2_1 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">2.2 การปฏิบัติงานและการเก็บรายละเอียดงาน</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p2_2 = n)" :class="n <= evalForm.p2_2 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">2.3 การตรวจสอบความเรียบร้อยของงานก่อนส่งมอบ</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p2_3 = n)" :class="n <= evalForm.p2_3 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">2.4 การบริหารเวลาและการทำงานได้ครบตามขอบเขตงาน</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p2_4 = n)" :class="n <= evalForm.p2_4 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Part 3 (V2) -->
+                    <div class="mb-4 bg-white p-4 rounded-lg border shadow-sm">
+                        <h6 class="font-bold text-dark mb-3 border-b pb-2 text-sm">3. ทัศนคติและพฤติกรรมการตอบรับการพัฒนา <span class="text-xs fw-normal text-muted">(เต็ม 20 คะแนน)</span></h6>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">3.1 พฤติกรรมการให้บริการ/ความตั้งใจในการปรับปรุง <span class="text-xs text-muted">(น้ำหนัก 10 คะแนน)</span></span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p3_1 = n)" :class="n <= evalForm.p3_1 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">3.2 การรับฟังคำแนะนำและข้อเสนอแนะ <span class="text-xs text-muted">(น้ำหนัก 5 คะแนน)</span></span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p3_2 = n)" :class="n <= evalForm.p3_2 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center p-2 bg-light rounded border border-slate-100">
+                            <span class="text-dark fw-medium text-sm">3.3 การรับทราบข้อตกลงการเป็นผู้ให้บริการ <span class="text-xs text-muted">(น้ำหนัก 5 คะแนน)</span></span>
+                            <div class="flex gap-1 mt-2 sm:mt-0" :class="isReadOnly ? 'opacity-70 pointer-events-none' : ''">
+                                <i v-for="n in 5" :key="n" @click="!isReadOnly && (evalForm.p3_3 = n)" :class="n <= evalForm.p3_3 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 🌟🌟 FOR VERSION 1 (OLD RECORDS / READ ONLY) 🌟🌟 -->
+                <div v-else>
+                    <!-- Part 1 (V1) -->
+                    <div class="mb-4 bg-white p-4 rounded-lg border shadow-sm">
+                        <div class="flex justify-between items-center mb-3 border-b pb-2">
+                            <h6 class="font-bold text-dark m-0 text-sm">ส่วนที่ 1: การแก้ไขปัญหาเฉพาะบุคคล <span class="text-xs fw-normal text-muted">(สัดส่วน 80 คะแนน)</span></h6>
+                        </div>
+                        <div v-for="(topic, idx) in evalForm.part1_topics" :key="idx" class="mb-3 p-3 bg-light rounded-lg border relative group">
+                            <div class="flex gap-2 mb-2">
+                                <span class="font-bold text-muted mt-1">1.{{idx+1}}</span>
+                                <textarea v-model="topic.text" disabled rows="2" class="form-control form-control-sm shadow-sm disabled:bg-light disabled:text-muted"></textarea>
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pr-8">
+                                <span class="text-xs text-muted fw-bold">ให้คะแนน:</span>
+                                <div class="flex gap-1 opacity-70 pointer-events-none">
+                                    <i v-for="n in 5" :key="n" :class="n <= topic.rating ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Part 2 & 3 (V1) -->
+                    <div class="mb-4 bg-white p-4 rounded-lg border shadow-sm">
+                        <h6 class="font-bold text-dark mb-3 border-b pb-2 text-sm">ส่วนที่ 2: ทัศนคติและพฤติกรรม <span class="text-xs fw-normal text-muted">(สัดส่วน 10 คะแนน)</span></h6>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded">
+                            <span class="text-dark fw-medium">2.1 ทัศนคติและพฤติกรรมที่แสดงออก ต่อเทรนเนอร์</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0 opacity-70 pointer-events-none">
+                                <i v-for="n in 5" :key="n" :class="n <= evalForm.part2_1 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center p-2 bg-light rounded">
+                            <span class="text-dark fw-medium">2.2 ทัศนคติและพฤติกรรมด้านการเป็นผู้ให้บริการ</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0 opacity-70 pointer-events-none">
+                                <i v-for="n in 5" :key="n" :class="n <= evalForm.part2_2 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-4 bg-white p-4 rounded-lg border shadow-sm">
+                        <h6 class="font-bold text-dark mb-3 border-b pb-2 text-sm">ส่วนที่ 3: ความเข้าใจปัญหา และความพร้อมพัฒนาฯ <span class="text-xs fw-normal text-muted">(สัดส่วน 10 คะแนน)</span></h6>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded">
+                            <span class="text-dark fw-medium">3.1 การวิเคราะห์และยอมรับปัญหา</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0 opacity-70 pointer-events-none">
+                                <i v-for="n in 5" :key="n" :class="n <= evalForm.part3_1 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center mb-3 p-2 bg-light rounded">
+                            <span class="text-dark fw-medium">3.2 การสาธิตวิธีปฏิบัติที่ถูกต้อง</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0 opacity-70 pointer-events-none">
+                                <i v-for="n in 5" :key="n" :class="n <= evalForm.part3_2 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                        <div class="flex flex-col sm:flex-row justify-between items-center p-2 bg-light rounded">
+                            <span class="text-dark fw-medium">3.3 ทัศนคติในการรับฟังและการปรับปรุง</span>
+                            <div class="flex gap-1 mt-2 sm:mt-0 opacity-70 pointer-events-none">
+                                <i v-for="n in 5" :key="n" :class="n <= evalForm.part3_3 ? 'fas fa-star text-warning' : 'far fa-star text-secondary'" class="star-btn fs-5"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comment & File -->
+                <div class="bg-white p-4 rounded-lg border shadow-sm mb-4">
+                    <label class="form-label small fw-bold text-dark mb-2">ความเห็นเทรนเนอร์ (สรุปภาพรวม)</label>
+                    <textarea v-model="evalForm.comment" :disabled="isReadOnly" class="form-control text-sm mb-3 shadow-sm disabled:bg-light disabled:text-muted" rows="3" placeholder="ระบุสิ่งที่สอนไป หรือพฤติกรรม..."></textarea>
+                    
+                    <label class="form-label small fw-bold text-dark mb-2">แนบเอกสาร (ถ้ามี)</label>
+                    
+                    <!-- แสดงไฟล์แนบเดิม -->
+                    <div v-if="existingUrls.length > 0" class="mb-2">
+                        <span class="text-xs text-muted d-block mb-1">เอกสารเดิม:</span>
+                        <a v-for="(u, idx) in existingUrls" :key="idx" :href="u" target="_blank" class="badge bg-success text-white text-decoration-none me-1 mb-1 p-2 fw-normal"><i class="fas fa-paperclip"></i> เอกสาร {{idx+1}}</a>
+                    </div>
+                    
+                    <!-- แสดงไฟล์ใหม่ที่เตรียมอัพโหลด -->
+                    <div v-if="!isReadOnly && pendingFiles.length > 0" class="mb-2">
+                        <span class="text-xs text-muted d-block mb-1">ไฟล์ใหม่รออัปโหลด:</span>
+                        <div v-for="(file, idx) in pendingFiles" :key="idx" class="badge bg-light text-dark border border-secondary p-2 me-1 mb-1 d-inline-flex align-items-center fw-normal">
+                            <i class="fas fa-file me-2 text-muted"></i>
+                            <span class="text-truncate d-inline-block" style="max-width: 120px;">{{file.name}}</span>
+                            <button type="button" class="btn-close ms-2" style="font-size: 0.5rem;" @click="removePendingFile(idx)"></button>
+                        </div>
+                    </div>
+                    
+                    <input v-if="!isReadOnly" type="file" multiple class="form-control form-control-sm text-xs" @change="handleFileChange">
+                </div>
+
+            </div>
+
+            <!-- Summary Footer (Auto-Grade) -->
+            <div class="bg-light p-4 border-top shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-bold text-muted">คะแนนรวมทั้งหมด:</span>
+                    <span class="text-2xl font-black" :class="(evalForm.version === 'v2' && totalScore >= 80) || (evalForm.version !== 'v2' && totalScore >= 80 && part1Score >= 60) ? 'text-success' : (evalForm.version === 'v2' && totalScore >= 50 ? 'text-warning' : 'text-danger')">{{ totalScore.toFixed(2) }} <span class="text-sm font-bold text-muted">/ 100</span></span>
+                </div>
+                
+                <div class="p-3 rounded-lg border flex flex-col sm:flex-row items-center justify-between gap-2 shadow-sm" :class="finalGrade.color">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-sm">ผลประเมิน: {{ finalGrade.text }}</span>
+                        <span v-if="evalForm.version !== 'v2' && part1Score < 60" class="text-xs font-bold mt-1"><i class="fas fa-exclamation-triangle"></i> ตกเงื่อนไข: ส่วนที่ 1 ได้คะแนน {{part1Score.toFixed(1)}} (ต่ำกว่า 60)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        `
+    }).mount('#vueRetrainEvalApp');
+    // ==========================================
 
     window.onload = function() {
        formModal = new bootstrap.Modal(document.getElementById('formModal'));
@@ -477,6 +805,26 @@
        loadData();
        checkWaitingRoomBadge(); // แอบทำงานตรวจสอบ Badge
     };
+
+    // 🌟 ฟังก์ชันเช็คว่าวันที่อยู่ในช่วงที่ระบุหรือไม่ 🌟
+    function isDateInRange(dateStr, rangeVal) {
+        if (!rangeVal) return true;
+        if (!dateStr) return false;
+        
+        let separator = rangeVal.includes(' ถึง ') ? ' ถึง ' : (rangeVal.includes(' to ') ? ' to ' : null);
+        const rowTime = new Date(dateStr).getTime();
+        
+        if (separator) {
+            const [startStr, endStr] = rangeVal.split(separator);
+            const startTime = new Date(startStr).getTime();
+            const endTime = new Date(endStr).getTime() + (24*60*60*1000) - 1;
+            return rowTime >= startTime && rowTime <= endTime;
+        } else {
+            const startTime = new Date(rangeVal).getTime();
+            const endTime = startTime + (24*60*60*1000) - 1;
+            return rowTime >= startTime && rowTime <= endTime;
+        }
+    }
 
     // 🚀 SUPABASE DATA FETCHING
     async function loadData() {
@@ -507,7 +855,6 @@
            const grpSel = document.getElementById('group');
            grpSel.innerHTML = '<option value="">เลือกกลุ่ม...</option>';
            
-           // 🌟 เพิ่มหมวดหมู่ Retrain อัตโนมัติให้เลือก 🌟
            let finalGroups = groupOptions.length > 0 ? [...groupOptions] : ['กลุ่ม 0','A','B','C'];
            if (!finalGroups.includes('กลุ่ม 0')) finalGroups.unshift('กลุ่ม 0');
            if (!finalGroups.includes('Retrain')) finalGroups.push('Retrain');
@@ -516,7 +863,7 @@
 
            const coreStatuses = ['อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ', 'เปิดระบบ', 'ยุติการอบรม'];
            let allStatuses = [...new Set([...coreStatuses, ...onboardTypes])].filter(s => s.trim() !== "");
-           window.allOnboardStatuses = allStatuses; // เก็บใส่ Global สำหรับสลับไปมา
+           window.allOnboardStatuses = allStatuses; 
 
            const statusFilterSel = document.getElementById('statusFilter');
            const currentFilterStatus = statusFilterSel.value;
@@ -559,16 +906,8 @@
            const obData = await window.fetchAllSupabaseData('prs_onboard', 'training_date');
 
            globalData = (obData || []).reduce((acc, row) => {
-               let separator = rangeVal.includes(' ถึง ') ? ' ถึง ' : (rangeVal.includes(' to ') ? ' to ' : null);
-               if (rangeVal && separator) {
-                   const [startStr, endStr] = rangeVal.split(separator);
-                   const rowTime = new Date(row.training_date).getTime();
-                   const startTime = new Date(startStr).getTime();
-                   const endTime = new Date(endStr).getTime() + (24*60*60*1000) - 1;
-                   if (rowTime < startTime || rowTime > endTime) return acc;
-               } else if (rangeVal) {
-                   if (row.training_date !== rangeVal) return acc;
-               }
+               const cleanRowDate = parseDateForDB(row.training_date);
+               if (rangeVal && (!cleanRowDate || !isDateInRange(cleanRowDate, rangeVal))) return acc;
 
                let cleanObId = String(row.id_card).replace(/'/g, "").trim(); 
                let lookup = masterStatusMap.get(cleanObId); 
@@ -639,13 +978,10 @@
     // 🌟 PHASE 2: WAITING ROOM (Pre-Registration) 🌟
     // ==========================================
     
-    // 🌟 ฟังก์ชันคำนวณ Effective Status (ผู้สมัครใหม่)
     function getEffectiveTrainStatus(lead) {
         let status = lead.status || lead.Status || '';
-
         if (status.includes('อบรมแล้ว') || status.includes('ผ่าน') || status.includes('เข้ารับการอบรมแล้ว')) return 'อบรมแล้ว';
         if (status.includes('ยกเลิก') || status.includes('สละสิทธิ์') || status === 'ยกเลิกอบรม') return 'ยกเลิกอบรม';
-
         const tDateStr = lead.train_date || lead.TrainDate;
         const reschedCount = parseInt(lead.reschedule_count || lead.reschedulecount || lead.RescheduleCount || 0);
 
@@ -660,13 +996,13 @@
 
     async function checkWaitingRoomBadge() {
         try {
+            const rangeVal = document.getElementById('dateRangeFilter').value; 
             const { data, error } = await window.supabase.from('db_training').select('*');
             if (error) return;
             
             const todayStr = new Date().toISOString().split('T')[0];
             let todayCount = 0;
             
-            // 1. เช็คข้อมูลจาก db_training (ผู้สมัครใหม่)
             data.forEach(lead => {
                 const effStatus = getEffectiveTrainStatus(lead);
                 if (effStatus === 'อบรมแล้ว' || effStatus === 'ยกเลิกอบรม') return;
@@ -675,20 +1011,22 @@
                 const tDateRaw = lead.train_date || lead.TrainDate;
                 if (tDateRaw) {
                     let tDateObj = parseDateForDB(tDateRaw);
+                    if (rangeVal && !isDateInRange(tDateObj, rangeVal)) return;
                     if (tDateObj === todayStr) todayCount++;
                 }
             });
 
-            // 2. 🌟 เช็คคิว Retrain จาก prs_onboard โดยตรง (กรองเฉพาะที่รอเข้าอบรม) 🌟
-            globalData.forEach(row => {
-                if (row.group === 'Retrain' && row.type === 'รอเข้าอบรม') {
-                    if (currentCenterFilter !== 'ALL' && row.center !== currentCenterFilter) return;
-                    if (row.trainingDate) {
-                        let tDateObj = parseDateForDB(row.trainingDate);
+            const { data: rmsData, error: rmsErr } = await window.supabase.from('rms_retrain_cases').select('*').eq('status', 'waiting');
+            if (!rmsErr && rmsData) {
+                rmsData.forEach(r => {
+                    if (currentCenterFilter !== 'ALL' && r.training_center !== currentCenterFilter) return;
+                    if (r.appointment_date) {
+                        let tDateObj = parseDateForDB(r.appointment_date);
+                        if (rangeVal && !isDateInRange(tDateObj, rangeVal)) return;
                         if (tDateObj === todayStr) todayCount++;
                     }
-                }
-            });
+                });
+            }
 
             const badge = document.getElementById('waitingBadge');
             if (todayCount > 0) {
@@ -703,13 +1041,11 @@
     async function openWaitingRoom() {
         showLoading();
         try {
-            // เตรียม Dropdown กรองศูนย์เทรนใน Modal ให้พร้อม
             const wrCenterSel = document.getElementById('wrCenterFilter');
             if (wrCenterSel && wrCenterSel.options.length <= 1) {
                 [...new Set(centerOptions)].forEach(c => wrCenterSel.add(new Option(c, c)));
             }
             
-            // รีเซ็ตค่าการค้นหา
             document.getElementById('wrSearchInput').value = '';
             
             const mainCenterFilter = currentCenterFilter; 
@@ -719,31 +1055,46 @@
                 if (wrCenterSel) wrCenterSel.value = 'ALL';
             }
 
+            const rangeVal = document.getElementById('dateRangeFilter').value; 
+
             const { data, error } = await window.supabase.from('db_training').select('*');
             if (error) throw error;
             
-            // 1. ดึงผู้สมัครใหม่
             waitingListData = data.filter(d => {
                 const effStatus = getEffectiveTrainStatus(d);
-                return effStatus !== 'อบรมแล้ว' && effStatus !== 'ยกเลิกอบรม';
+                if (effStatus === 'อบรมแล้ว' || effStatus === 'ยกเลิกอบรม') return false;
+                if (rangeVal) {
+                    const tDateRaw = d.train_date || d.TrainDate;
+                    if (!tDateRaw) return false; 
+                    const cleanDate = parseDateForDB(tDateRaw);
+                    if (!cleanDate || !isDateInRange(cleanDate, rangeVal)) return false;
+                }
+                return true;
             });
 
-            // 2. 🌟 ดึงข้อมูลจาก prs_onboard เฉพาะคิว Retrain ที่ยัง "รอเข้าอบรม" 🌟
-            const retrainPending = globalData.filter(r => r.group === 'Retrain' && r.type === 'รอเข้าอบรม');
-            retrainPending.forEach(r => {
-                waitingListData.push({
-                    lead_id: r.id,  // ผูก ID ของ prs_onboard
-                    full_name: r.name,
-                    phone: r.phone,
-                    id_card: r.idCard,
-                    center: r.center,
-                    train_date: r.trainingDate,
-                    status: 'รอเข้าอบรม',
-                    job_type: 'Retrain',
-                    maid_code: r.maidCode,
-                    is_retrain_from_onboard: true 
+            const { data: rmsData, error: rmsErr } = await window.supabase.from('rms_retrain_cases').select('*').eq('status', 'waiting');
+            if (!rmsErr && rmsData) {
+                rmsData.forEach(r => {
+                    if (rangeVal) {
+                        if (!r.appointment_date) return;
+                        const cleanDate = parseDateForDB(r.appointment_date);
+                        if (!cleanDate || !isDateInRange(cleanDate, rangeVal)) return;
+                    }
+
+                    waitingListData.push({
+                        lead_id: 'RMS-' + r.id,  
+                        full_name: r.maid_name,
+                        phone: '-', 
+                        id_card: '', 
+                        center: r.training_center,
+                        train_date: r.appointment_date,
+                        status: 'รอเข้าอบรม',
+                        job_type: 'Retrain',
+                        maid_code: r.maid_id,
+                        is_retrain_from_onboard: true 
+                    });
                 });
-            });
+            }
             
             renderWaitingRoomTabs();
             hideLoading();
@@ -769,20 +1120,15 @@
 
     function renderWaitingRoomTabs() {
         const todayStr = new Date().toISOString().split('T')[0];
-        
         let todayList = [];
         let upcomingList = [];
         let pendingList = [];
 
-        // 🌟 ดึงค่าจากการค้นหาและการกรองศูนย์ในหน้าต่าง Waiting Room 🌟
         const wrSearchText = (document.getElementById('wrSearchInput').value || '').toLowerCase();
         const wrCenter = document.getElementById('wrCenterFilter').value || 'ALL';
 
         waitingListData.forEach(lead => {
-            // Apply Center Filter
             if (wrCenter !== 'ALL' && lead.center !== wrCenter) return;
-            
-            // Apply Search Filter (ค้นหาจาก ชื่อ, รหัสแม่บ้าน, เบอร์โทร, เลขบัตร)
             const searchStr = (String(lead.full_name||'') + String(lead.phone||'') + String(lead.id_card||'') + String(lead.maid_code||'')).toLowerCase();
             if (wrSearchText && !searchStr.includes(wrSearchText)) return;
 
@@ -843,11 +1189,9 @@
             const idCardDisplay = idCardRaw ? idCardRaw.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, "$1-$2-$3-$4-$5") : '<span class="text-muted fst-italic">ไม่ระบุ</span>';
             const center = lead.center || '-';
             const effStatus = getEffectiveTrainStatus(lead);
-            
             const reschedCount = parseInt(lead.reschedule_count || lead.reschedulecount || lead.RescheduleCount || 0);
             
             let nameHtml = name;
-            // 🌟 เพิ่มป้ายกำกับสำหรับเคส Retrain และเปลี่ยนเป็นสีแดง
             if (lead.is_retrain_from_onboard) {
                 nameHtml = `<span class="fw-bold text-dark">${name}</span> <span class="badge bg-danger text-white border border-danger shadow-sm ms-2"><i class="fas fa-sync-alt me-1"></i>Retrain: ${lead.maid_code}</span>`;
             } else {
@@ -869,7 +1213,6 @@
                 }
             }
 
-            // 🌟 แยกฟังก์ชันการกดปุ่มรับเข้าเทรน
             let btnAccept = '';
             if (lead.is_retrain_from_onboard) {
                 btnAccept = `<button class="btn btn-sm btn-info text-white rounded-pill fw-bold shadow-sm" onclick="acceptRetrainToOnboard('${leadId}')"><i class="fas fa-chalkboard-teacher me-1"></i> รับเข้าอบรม</button>`;
@@ -890,31 +1233,82 @@
         });
     }
 
-    // 🌟 ฟังก์ชันพิเศษสำหรับอัพเดทหน้าจอ (ซ่อน/แสดงช่อง) เมื่อเป็นเคส Retrain 🌟
+    // 🌟 ดึงข้อมูล RMS 🌟
+    function fetchAndDisplayRmsInfo(identifier) {
+        const rmsInfoSec = document.getElementById('rmsInfoSection');
+        if (!rmsInfoSec) return;
+        
+        rmsInfoSec.style.display = 'block';
+        document.getElementById('rmsDescText').innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
+        const noteEl = document.getElementById('rmsNoteText');
+        if (noteEl) noteEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
+        
+        const attachContainer = document.getElementById('rmsAttachmentContainer');
+        if(attachContainer) attachContainer.classList.add('d-none');
+
+        let query = window.supabase.from('rms_retrain_cases').select('description, staff_notes, attachment_url');
+        if (identifier && identifier.startsWith('RMS-')) {
+            query = query.eq('id', identifier.replace('RMS-', '')).single();
+        } else if (identifier) {
+            query = query.eq('maid_id', identifier).order('created_at', { ascending: false }).limit(1).single();
+        } else {
+            return;
+        }
+
+        query.then(({ data, error }) => {
+            if (data && !error) {
+                const desc = data.description || '';
+                const notes = data.staff_notes || '';
+                document.getElementById('rmsDescText').textContent = desc || '-';
+                if (noteEl) noteEl.textContent = notes || '-';
+                
+                // ไม่ต้อง parseหัวข้อแล้ว เพราะ V2 เป็นหัวข้อตายตัว
+                // const formData = vueRetrainApp.getFormData();
+                // if (formData.part1_topics.length <= 1 && formData.part1_topics[0].text === '') {
+                //    vueRetrainApp.parseTopicsFromText(desc);
+                // }
+
+                if (data.attachment_url) {
+                    const linkEl = document.getElementById('rmsAttachmentLink');
+                    if(linkEl) linkEl.href = String(data.attachment_url).split(',')[0];
+                    if(attachContainer) attachContainer.classList.remove('d-none');
+                }
+            } else {
+                document.getElementById('rmsDescText').textContent = 'ไม่พบข้อมูล';
+                if (noteEl) noteEl.textContent = 'ไม่พบข้อมูล';
+            }
+        });
+    }
+
     function updateRetrainUI() {
         const isRetrain = document.getElementById('isRetrainCase').value === "true";
         
-        // 1. ซ่อนฟิลด์ที่ไม่จำเป็นสำหรับ Retrain
         document.getElementById('idCardContainer').style.display = isRetrain ? 'none' : 'block';
         document.getElementById('verificationContainer').style.display = isRetrain ? 'none' : 'block';
+        
         if (isRetrain) {
             document.getElementById('manualFtSection').style.display = 'none';
             document.getElementById('modalFastTrackAction').style.display = 'none';
+            document.getElementById('leftColumnOB').classList.remove('col-lg-7');
+            document.getElementById('leftColumnOB').classList.add('col-lg-6');
+            document.getElementById('rightColumnOB').classList.remove('col-lg-5');
+            document.getElementById('rightColumnOB').classList.add('col-lg-6');
+        } else {
+            document.getElementById('leftColumnOB').classList.remove('col-lg-6');
+            document.getElementById('leftColumnOB').classList.add('col-lg-7');
+            document.getElementById('rightColumnOB').classList.remove('col-lg-6');
+            document.getElementById('rightColumnOB').classList.add('col-lg-5');
         }
 
-        // 2. ล็อกช่อง "กลุ่ม" ให้เป็น Retrain อย่างเดียว
         const groupEl = document.getElementById('group');
         if (isRetrain) {
-            if (!Array.from(groupEl.options).some(opt => opt.value === 'Retrain')) {
-                groupEl.add(new Option('Retrain', 'Retrain'));
-            }
+            if (!Array.from(groupEl.options).some(opt => opt.value === 'Retrain')) groupEl.add(new Option('Retrain', 'Retrain'));
             groupEl.value = 'Retrain';
-            groupEl.disabled = true; // ล็อกการแก้ไข
+            groupEl.disabled = true; 
         } else {
-            groupEl.disabled = false; // ปลดล็อกสำหรับคนทั่วไป
+            groupEl.disabled = false; 
         }
 
-        // 3. ปรับตัวเลือกสถานะ
         const typeSel = document.getElementById('type');
         const currentType = typeSel.value;
         typeSel.innerHTML = '<option value="">เลือกสถานะ...</option>';
@@ -930,33 +1324,55 @@
             }
         }
         
-        // เลือกรักษาค่าเดิมถ้ามีในลิสต์
         if(Array.from(typeSel.options).some(o => o.value === currentType)) {
             typeSel.value = currentType;
         } else {
             typeSel.value = isRetrain ? "อยู่ระหว่างเข้า Retrain" : "อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ";
         }
         
-        // ล้างฟอร์มประเมิน
-        document.getElementById('retrainResult').value = "";
-        document.getElementById('retrainComment').value = "";
-        const fileInput = document.getElementById('retrainFile');
-        if (fileInput) fileInput.value = "";
-        const attachmentDisplay = document.getElementById('retrainAttachmentDisplay');
-        if (attachmentDisplay) attachmentDisplay.classList.add('d-none');
+        // Reset Vue Form
+        vueRetrainApp.resetForm();
+        
         const rmsInfoSec = document.getElementById('rmsInfoSection');
         if (rmsInfoSec) rmsInfoSec.style.display = 'none';
         
         updateStatusUI();
     }
 
-    // 🌟 ฟังก์ชันพิเศษสำหรับรับเคส Retrain (จาก Waiting Room) 🌟
     function acceptRetrainToOnboard(leadId) {
+        const lead = waitingListData.find(l => String(l.lead_id || l.Lead_ID || l.leadid) === String(leadId));
+        if (!lead) return;
+
         waitingRoomModal.hide();
+        openAddModal(); 
+
+        document.getElementById('sourceLeadId').value = leadId; 
+        document.getElementById('isRetrainCase').value = "true";
         
-        // เนื่องจากมีอยู่ใน globalData แล้ว จึงสามารถใช้ openEditModalById ได้เลย
-        openEditModalById(leadId);
-        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'นี่คือเคส Retrain (บังคับลงประเมินตอนจบงาน)', showConfirmButton: false, timer: 4000 });
+        const typeSel = document.getElementById('type');
+        if(!Array.from(typeSel.options).some(o => o.value === 'อยู่ระหว่างเข้า Retrain')) {
+            typeSel.add(new Option('อยู่ระหว่างเข้า Retrain', 'อยู่ระหว่างเข้า Retrain'));
+        }
+        typeSel.value = "อยู่ระหว่างเข้า Retrain";
+        
+        document.getElementById('maidCode').value = lead.maid_code || '';
+        document.getElementById('name').value = lead.full_name || '';
+
+        if (lead.center) {
+            const centerSelect = document.getElementById('center');
+            const exists = Array.from(centerSelect.options).some(opt => opt.value === lead.center);
+            if (exists) centerSelect.value = lead.center;
+        }
+
+        if (lead.train_date) {
+            const cleanDate = parseDateForDB(lead.train_date);
+            if (cleanDate) document.getElementById('trainingDate')._flatpickr.setDate(cleanDate);
+        }
+
+        updateRetrainUI();
+        fetchAndDisplayRmsInfo(leadId); 
+
+        Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'เปิดฟอร์มเคส Retrain แล้ว', showConfirmButton: false, timer: 3000 });
     }
 
     function acceptToOnboard(leadId) {
@@ -1113,7 +1529,6 @@
         }
     });
 
-    // 🌟 แถบศูนย์เทรน (Center Tabs)
     function renderCenterTabs() {
         const ul = document.getElementById('centerTabs');
         let html = '';
@@ -1222,12 +1637,13 @@
        const txt = document.getElementById('searchInput').value.toLowerCase();
        const status = document.getElementById('statusFilter').value;
        const filtered = globalData.filter(x => {
+          if (x.type === 'รอเข้าอบรม') return false; 
           const matchText = (String(x.name)+String(x.maidCode)+String(x.phone)+String(x.idCard)).toLowerCase().includes(txt);
           const matchCenter = currentCenterFilter === "ALL" || String(x.center) === String(currentCenterFilter);
           const matchStatus = status === "" || String(x.type) === status;
           return matchText && matchStatus && matchCenter;
        });
-       window.currentFilteredData = filtered; // บันทึกไว้ใช้กับ Export
+       window.currentFilteredData = filtered; 
        renderTable(filtered);
     }
 
@@ -1291,7 +1707,6 @@
        
        document.getElementById('phone').value = item.phone || "";
        
-       // กรณีที่มีค่าใน options แล้ว จึงจะเลือกค่าเดิมได้
        const typeSel = document.getElementById('type');
        if(Array.from(typeSel.options).some(o => o.value === item.type)) {
            typeSel.value = item.type;
@@ -1330,56 +1745,36 @@
        currentHistory = item.history || []; renderTimeline();
        updateStatusUI();
        
-       // 🌟 เพิ่มการดึงค่าผลประเมิน Retrain และลิงก์ไฟล์เดิมมาแสดง 🌟
-       const attachmentDisplay = document.getElementById('retrainAttachmentDisplay');
-       const attachmentLink = document.getElementById('retrainAttachmentLink');
-       if (attachmentDisplay) attachmentDisplay.classList.add('d-none');
-       
+       // 🌟 ดึงข้อมูลและเซ็ตค่า Vue 🌟
        if (item.group === 'Retrain' && item.type === 'Retrain เรียบร้อย') {
            const evalLog = (item.history || []).find(h => h.note && h.note.includes('[ประเมิน Retrain]'));
            if (evalLog) {
-               const resultMatch = evalLog.note.match(/ผล:\s*(.+?)(?=\n|$)/);
-               if (resultMatch && resultMatch[1]) {
-                   const resEl = document.getElementById('retrainResult');
-                   if (resEl) resEl.value = resultMatch[1].trim();
+               // 🌟 ล็อคหน้าจอทันทีถ้าเคยประเมินแล้ว 🌟
+               if (evalLog.raw_eval) {
+                   vueRetrainApp.setFormData(evalLog.raw_eval);
+                   vueRetrainApp.setReadOnly(true); 
+               } else {
+                    // Fallback สำหรับเคสเก่าที่ไม่มี raw_eval (ดึงคอมเมนต์มาโชว์ แล้วล็อกเลย)
+                    try {
+                        const commentMatch = evalLog.note.match(/ความเห็น:\s*([\s\S]+)$/);
+                        if (commentMatch && commentMatch[1]) {
+                            const oldComment = commentMatch[1].replace(/\n\(แนบไฟล์มารวม.*/g, '').trim();
+                            const currentData = vueRetrainApp.getFormData();
+                            currentData.comment = oldComment;
+                            vueRetrainApp.setFormData(currentData);
+                        }
+                    } catch(e){}
+                    vueRetrainApp.setReadOnly(true); 
                }
-               const commentMatch = evalLog.note.match(/ความเห็น:\s*([\s\S]+)$/);
-               if (commentMatch && commentMatch[1]) {
-                   const cmtEl = document.getElementById('retrainComment');
-                   if (cmtEl) cmtEl.value = commentMatch[1].trim();
-               }
-               // แสดงไฟล์แนบเดิม (ถ้ามี)
+               
                if (evalLog.attachment_url) {
-                   if (attachmentLink) attachmentLink.href = evalLog.attachment_url;
-                   if (attachmentDisplay) attachmentDisplay.classList.remove('d-none');
+                   vueRetrainApp.setExistingUrls(String(evalLog.attachment_url).split(',').filter(u => u.trim()));
                }
            }
        }
 
-       // 🌟 ดึงข้อมูลปัญหาจาก RMS มาแสดง 🌟
-       const rmsInfoSec = document.getElementById('rmsInfoSection');
-       if (rmsInfoSec) rmsInfoSec.style.display = 'none';
-
        if (item.group === 'Retrain') {
-           document.getElementById('rmsDescText').innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
-           document.getElementById('rmsNoteText').innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...';
-           if (rmsInfoSec) rmsInfoSec.style.display = 'block';
-
-           window.supabase.from('rms_retrain_cases')
-               .select('description, staff_notes')
-               .eq('maid_id', item.maidCode)
-               .order('created_at', { ascending: false })
-               .limit(1)
-               .single()
-               .then(({ data, error }) => {
-                   if (data && !error) {
-                       document.getElementById('rmsDescText').textContent = data.description || '-';
-                       document.getElementById('rmsNoteText').textContent = data.staff_notes || '-';
-                   } else {
-                       document.getElementById('rmsDescText').textContent = 'ไม่พบข้อมูล';
-                       document.getElementById('rmsNoteText').textContent = 'ไม่พบข้อมูล';
-                   }
-               });
+           fetchAndDisplayRmsInfo(item.maidCode || item.id);
        }
 
        document.getElementById('newFollowNote').value = "";
@@ -1393,8 +1788,9 @@
         document.getElementById('tagSection').style.display = 'none'; 
         document.getElementById('openDateSection').style.display = 'none';
         
-        const evalSec = document.getElementById('retrainEvaluationSection');
-        if (evalSec) evalSec.style.display = 'none';
+        // 🌟 สลับการแสดงผล Vue App / Normal History 🌟
+        document.getElementById('vueRetrainEvalApp').style.display = 'none';
+        document.getElementById('normalHistorySection').style.display = 'block';
         
         if (!isRetrain) {
             if (status === 'เปิดระบบ') { 
@@ -1406,11 +1802,11 @@
                 document.getElementById('tagSection').style.display = 'block'; 
             } 
         } else {
-            // ล็อกให้อยู่กลุ่ม Retrain เสมอ
             document.getElementById('group').value = 'Retrain';
             
-            if (status === 'Retrain เรียบร้อย' && evalSec) {
-                evalSec.style.display = 'block';
+            if (status === 'Retrain เรียบร้อย') {
+                document.getElementById('vueRetrainEvalApp').style.display = 'block';
+                document.getElementById('normalHistorySection').style.display = 'none';
             }
         } 
     }
@@ -1453,7 +1849,7 @@
         currentHistory.forEach((h, i) => {
              const u = h.user ? ` <small class="text-muted">(${h.user})</small>` : '';
              html += `<div class="timeline-item"><div class="timeline-date">${formatDateDisplay(h.date)}${u}</div>
-                      <div class="timeline-content d-flex justify-content-between"><div>${h.note}</div><button type="button" class="btn btn-sm text-danger p-0 ms-2 border-0 bg-transparent" onclick="removeLog(${i})">&times;</button></div></div>`;
+                      <div class="timeline-content d-flex justify-content-between"><div>${h.note}</div></div></div>`;
         });
         html += '</div>'; c.innerHTML = html;
     }
@@ -1469,7 +1865,6 @@
         sendFastTrackDirect(id);
     }
     
-    // 🚀 SUPABASE: ส่งตรวจ Fast Track
     function sendFastTrackDirect(id) {
         Swal.fire({ 
             title: 'ยืนยันส่งตรวจ?', 
@@ -1485,7 +1880,6 @@
                 try {
                     const { data: obData, error: obErr } = await window.supabase.from('prs_onboard').select('*').eq('onboard_id', id).single();
                     if(obErr || !obData) throw new Error("ไม่พบข้อมูลผู้สมัครในระบบ");
-                    
                     if (!obData.full_name || !obData.id_card) throw new Error("กรุณาระบุ ชื่อ และ เลขบัตรประชาชน ก่อนส่งตรวจ");
 
                     const masterId = "VM-" + new Date().getTime().toString().substring(5);
@@ -1529,7 +1923,6 @@
        const idInput = document.getElementById('idCard');
        const isRetrain = document.getElementById('isRetrainCase').value === "true";
        
-       // ไม่บังคับตรวจบัตรประชาชนถ้าเป็นเคส Retrain
        if(!isRetrain && idInput.value && !validateIdCard(idInput)) { 
            Swal.fire('เลขบัตรไม่ถูกต้อง', '', 'warning'); 
            return; 
@@ -1539,27 +1932,54 @@
        const actualGroup = isRetrain ? 'Retrain' : groupVal;
        
        const newFollowNote = document.getElementById('newFollowNote').value.trim();
-       let hasRecentNote = false;
-       if (currentHistory.length > 0) {
-           const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}-${String(new Date().getDate()).padStart(2,'0')}`;
-           if (currentHistory[0].date === todayStr) hasRecentNote = true;
-       }
-
        const type = document.getElementById('type').value;
        const newStatus = type;
 
-       // 🌟 ตรวจสอบความสมบูรณ์สำหรับเคส Retrain 🌟
-       let retrainResult = "";
-       let retrainComment = "";
-       
-       if (isRetrain && newStatus === 'Retrain เรียบร้อย') {
-           retrainResult = document.getElementById('retrainResult').value;
-           retrainComment = document.getElementById('retrainComment').value.trim();
+       // 🌟 ตรวจสอบความสมบูรณ์ของ VUE APP (Retrain) และ แจ้งเตือนยืนยัน 🌟
+       if (isRetrain && newStatus === 'Retrain เรียบร้อย' && !vueRetrainApp.isReadOnly) {
+           const form = vueRetrainApp.getFormData();
            
-           if (!retrainResult || !retrainComment) {
-               Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุ "ผลการประเมิน" และ "ความเห็นเทรนเนอร์" ให้ครบถ้วน', 'warning');
+           if (form.version === 'v2') {
+               const hasZero = [form.p1_1, form.p1_2, form.p1_3, form.p1_4,
+                                form.p2_1, form.p2_2, form.p2_3, form.p2_4,
+                                form.p3_1, form.p3_2, form.p3_3].includes(0);
+               if (hasZero) {
+                   Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาให้คะแนน(ดาว)ให้ครบทุกหัวข้อ', 'warning');
+                   return;
+               }
+           } else {
+               if (form.part1_topics.length === 0 || (form.part1_topics.length === 1 && !form.part1_topics[0].text)) {
+                   Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุหัวข้อปัญหาใน "ส่วนที่ 1" อย่างน้อย 1 ข้อ', 'warning');
+                   return;
+               }
+               const hasZero1 = form.part1_topics.some(t => t.rating === 0);
+               const hasZero2 = form.part2_1 === 0 || form.part2_2 === 0;
+               const hasZero3 = form.part3_1 === 0 || form.part3_2 === 0 || form.part3_3 === 0;
+               
+               if (hasZero1 || hasZero2 || hasZero3) {
+                   Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาให้คะแนน(ดาว)ให้ครบทุกหัวข้อ', 'warning');
+                   return;
+               }
+           }
+           
+           if (!form.comment.trim()) {
+               Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณาระบุความเห็นสรุปภาพรวมด้านล่าง', 'warning');
                return;
            }
+           
+           // 🌟 แจ้งเตือน Pop-up ขอยืนยันการประเมิน
+           const confirmRes = await Swal.fire({
+               title: 'ยืนยันผลการประเมิน?',
+               text: 'เมื่อบันทึกแล้ว จะไม่สามารถกลับมาแก้ไขผลการประเมินได้อีก',
+               icon: 'warning',
+               showCancelButton: true,
+               confirmButtonColor: '#f59e0b',
+               cancelButtonColor: '#cbd5e1',
+               confirmButtonText: 'ยืนยันและบันทึก',
+               cancelButtonText: 'ยกเลิก'
+           });
+           
+           if (!confirmRes.isConfirmed) return; // หากกดยกเลิก ให้หยุดการทำงาน
        } 
        
        const trainingDate = document.getElementById('trainingDate').value;
@@ -1587,32 +2007,39 @@
            currentHistory.unshift({ date: dateStr, note: `เปลี่ยนสถานะ: "${oldStatus||'ว่าง'}" -> "${newStatus}"`, user: currentUser });
        }
 
-       // 🌟 จัดการอัปโหลดไฟล์แนบเอกสาร Retrain 🌟
-       let trainerAttachmentUrl = "";
-       if (isRetrain && newStatus === 'Retrain เรียบร้อย') {
-           const fileInput = document.getElementById('retrainFile');
-           if (fileInput && fileInput.files.length > 0) {
-               Swal.fire({ title: 'กำลังอัพโหลดไฟล์แนบ...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+       let trainerAttachmentUrls = [];
+       let finalAttachmentUrlsForRMS = ""; 
+       
+       // 🌟 จัดการอัปโหลดไฟล์แนบ (เฉพาะตอนที่ไม่ได้ถูกล็อคหน้าจอ) 🌟
+       if (isRetrain && newStatus === 'Retrain เรียบร้อย' && !vueRetrainApp.isReadOnly) {
+           if (vueRetrainApp.pendingFiles.length > 0) {
+               Swal.fire({ title: 'กำลังอัพโหลดไฟล์แนบ...', text: `อัพโหลด 0/${vueRetrainApp.pendingFiles.length} ไฟล์`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                try {
-                   trainerAttachmentUrl = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const base64Content = e.target.result.split(',')[1];
-                            google.script.run
-                                .withSuccessHandler(res => {
-                                    if(res.status === 'success') resolve(res.url);
-                                    else reject(new Error(res.message));
-                                })
-                                .withFailureHandler(err => reject(err))
-                                .uploadFileNative({
-                                    fileName: fileInput.files[0].name,
-                                    mimeType: fileInput.files[0].type,
-                                    fileBase64: base64Content
-                                });
-                        };
-                        reader.onerror = err => reject(err);
-                        reader.readAsDataURL(fileInput.files[0]);
-                   });
+                   for (let i = 0; i < vueRetrainApp.pendingFiles.length; i++) {
+                       const file = vueRetrainApp.pendingFiles[i];
+                       const url = await new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const base64Content = e.target.result.split(',')[1];
+                                google.script.run
+                                    .withSuccessHandler(res => {
+                                        if(res.status === 'success') resolve(res.url);
+                                        else reject(new Error(res.message));
+                                    })
+                                    .withFailureHandler(err => reject(err))
+                                    .uploadFileNative({
+                                        fileName: file.name,
+                                        mimeType: file.type,
+                                        fileBase64: base64Content
+                                    });
+                            };
+                            reader.onerror = err => reject(err);
+                            reader.readAsDataURL(file);
+                       });
+                       trainerAttachmentUrls.push(url);
+                       Swal.getTitle().textContent = 'กำลังอัพโหลดไฟล์แนบ...';
+                       Swal.getHtmlContainer().textContent = `อัพโหลด ${i+1}/${vueRetrainApp.pendingFiles.length} ไฟล์สำเร็จ`;
+                   }
                } catch(e) {
                    hideLoading();
                    Swal.fire('อัพโหลดไฟล์ล้มเหลว', e.message, 'error');
@@ -1621,43 +2048,56 @@
            }
        }
        
-       // เพิ่มประเมิน Retrain ลงในประวัติ
+       // 🌟 สร้าง Log ประเมิน (เฉพาะตอนที่ไม่ได้ถูกล็อคหน้าจอ) 🌟
        if (isRetrain && newStatus === 'Retrain เรียบร้อย') {
-           const retrainResult = document.getElementById('retrainResult').value;
-           const retrainComment = document.getElementById('retrainComment').value.trim();
-           const noteString = `[ประเมิน Retrain] ผล: ${retrainResult}\nความเห็น: ${retrainComment}`;
-           
-           // 🌟 เช็คก่อนว่าซ้ำกับประวัติเดิมอันล่าสุดไหม จะได้ไม่บันทึกลงไปซ้ำซ้อน 🌟
-           const isDuplicate = currentHistory.length > 0 && currentHistory.some(h => h.note === noteString);
-           
-           if (!isDuplicate || trainerAttachmentUrl !== "") {
-               const now = new Date();
-               const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+           if (!vueRetrainApp.isReadOnly) {
+               const form = vueRetrainApp.getFormData();
+               const grade = vueRetrainApp.finalGrade.text;
+               const tScore = vueRetrainApp.totalScore.toFixed(2);
                
-               let logObj = { 
-                   date: dateStr, 
-                   note: noteString, 
-                   user: currentUser 
-               };
-
-               // บันทึกลิงก์ไฟล์ลงใน History เพื่อให้ตอนโหลดดึงมาโชว์ได้
-               if (trainerAttachmentUrl) {
-                   logObj.attachment_url = trainerAttachmentUrl;
+               let baseNoteString = '';
+               if (form.version === 'v2') {
+                   const p1Score = vueRetrainApp.p1ScoreV2.toFixed(2);
+                   const p2Score = vueRetrainApp.p2ScoreV2.toFixed(2);
+                   const p3Score = vueRetrainApp.p3ScoreV2.toFixed(2);
+                   baseNoteString = `[ประเมิน Retrain] ผล: ${grade} (${tScore}/100 คะแนน)\n- P1 ความรู้ความเข้าใจ: ${p1Score}/40\n- P2 ทักษะปฏิบัติงาน: ${p2Score}/40\n- P3 ทัศนคติ: ${p3Score}/20\nความเห็น: ${form.comment}`;
                } else {
-                   // ดึงของเก่ามาใส่คืน จะได้ไม่หาย
-                   const oldLog = currentHistory.find(h => h.note && h.note.includes('[ประเมิน Retrain]'));
-                   if (oldLog && oldLog.attachment_url) {
-                       logObj.attachment_url = oldLog.attachment_url;
+                   const p1Score = vueRetrainApp.part1Score.toFixed(2);
+                   const p2Score = vueRetrainApp.part2Score.toFixed(2);
+                   const p3Score = vueRetrainApp.part3Score.toFixed(2);
+                   baseNoteString = `[ประเมิน Retrain] ผล: ${grade} (${tScore}/100 คะแนน)\n- P1 ปัญหาเฉพาะบุคคล: ${p1Score}/80\n- P2 ทัศนคติ: ${p2Score}/10\n- P3 ความเข้าใจ: ${p3Score}/10\nความเห็น: ${form.comment}`;
+               }
+               
+               let allUrls = [...vueRetrainApp.existingUrls, ...trainerAttachmentUrls];
+               finalAttachmentUrlsForRMS = allUrls.join(','); 
+               
+               const isDuplicate = currentHistory.length > 0 && currentHistory[0].note && currentHistory[0].note.startsWith(`[ประเมิน Retrain] ผล: ${grade}`);
+               
+               if (!isDuplicate || trainerAttachmentUrls.length > 0) {
+                   const now = new Date();
+                   const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                   
+                   let logObj = { 
+                       date: dateStr, 
+                       note: baseNoteString, 
+                       user: currentUser,
+                       attachment_url: finalAttachmentUrlsForRMS,
+                       raw_eval: JSON.parse(JSON.stringify(form)) // 🌟 เก็บข้อมูลดิบฟอร์มดาวเพื่อนำกลับมาแสดง 🌟
+                   };
+                   
+                   if (isDuplicate) {
+                       currentHistory[0].attachment_url = logObj.attachment_url;
+                       currentHistory[0].note = logObj.note;
+                       currentHistory[0].raw_eval = logObj.raw_eval;
+                   } else {
+                       currentHistory.unshift(logObj);
                    }
                }
-               
-               if (isDuplicate) {
-                   // ถ้ากดเซฟซ้ำโดยที่ไม่ได้แก้ข้อความ แต่แนบรูปใหม่
-                   const existingLog = currentHistory.find(h => h.note === noteString);
-                   if (existingLog && trainerAttachmentUrl) existingLog.attachment_url = trainerAttachmentUrl;
-               } else {
-                   currentHistory.unshift(logObj);
-               }
+           } else if (newFollowNote) {
+               // กรณีที่เคสถูกล็อกไปแล้ว แต่เทรนเนอร์ต้องการแค่พิมพ์โน้ตอัปเดตติดตามความคืบหน้าเพิ่ม
+               const now = new Date();
+               const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+               currentHistory.unshift({ date: dateStr, note: newFollowNote, user: currentUser });
            }
        } else if (newFollowNote) {
            const now = new Date();
@@ -1669,7 +2109,6 @@
        if (!isRetrain && (newStatus === 'อยู่ระหว่างเตรียมความพร้อมก่อนเปิดระบบ' || newStatus.includes('เตรียมความพร้อม'))) {
            document.querySelectorAll('.dynamic-tag:checked').forEach(cb => { tags.push(cb.value); });
        }
-       
        if (!isRetrain && document.getElementById('isReturningMaid').value === "true") {
            if (!tags.includes("คุณแม่บ้านเก่ากลับมา")) tags.push("คุณแม่บ้านเก่ากลับมา");
        }
@@ -1685,7 +2124,7 @@
             training_date: trainingDate || null,
             maid_code: document.getElementById('maidCode').value,
             full_name: name,
-            id_card: isRetrain ? '' : idInput.value.replace(/-/g, ''), // ข้ามบัตรปชชสำหรับ Retrain
+            id_card: isRetrain ? '' : idInput.value.replace(/-/g, ''), 
             phone: document.getElementById('phone').value,
             onboard_group: actualGroup,
             onboard_type: newStatus,
@@ -1698,9 +2137,7 @@
             skip_fast_track: isSkip
        };
 
-       if (currentHistory && currentHistory.length > 0) {
-           payload.latest_followup = currentHistory[0].date;
-       }
+       if (currentHistory && currentHistory.length > 0) payload.latest_followup = currentHistory[0].date;
        if (isSkip && finalManualStatus) payload.fast_track_status = finalManualStatus;
        if (shouldResetFT) payload.fast_track_status = null; 
 
@@ -1715,16 +2152,12 @@
                if (isRetrain || (sourceLeadId && sourceLeadId.startsWith('RMS-'))) {
                    try {
                        let rmsId = null;
-                       if (sourceLeadId && sourceLeadId.startsWith('RMS-')) {
-                           rmsId = sourceLeadId.replace('RMS-', '');
-                       } else if (recordId && recordId.startsWith('RMS-')) {
-                           rmsId = recordId.replace('RMS-', '');
-                       }
+                       if (sourceLeadId && sourceLeadId.startsWith('RMS-')) rmsId = sourceLeadId.replace('RMS-', '');
+                       else if (recordId && recordId.startsWith('RMS-')) rmsId = recordId.replace('RMS-', '');
                        
                        let query = window.supabase.from('rms_retrain_cases').select('id, action_logs, status');
-                       if (rmsId) {
-                           query = query.eq('id', rmsId);
-                       } else {
+                       if (rmsId) query = query.eq('id', rmsId);
+                       else {
                            const maidCodeVal = document.getElementById('maidCode').value;
                            if (maidCodeVal) query = query.eq('maid_id', maidCodeVal).order('created_at', { ascending: false }).limit(1);
                            else query = null;
@@ -1741,27 +2174,62 @@
                                if (newStatus === 'ยกเลิก') targetRmsStatus = 'cancelled';
                                
                                let noteToSend = newFollowNote || (currentHistory.length > 0 ? currentHistory[0].note : "อัพเดทสถานะการเทรน");
+                               let logActionStr = `เทรนเนอร์ประเมินผล (${newStatus})`;
+                               let finalAttachUrl = "";
+                               let isEvalLog = false;
                                
-                               // ถ้าระบุว่า Retrain เรียบร้อย ให้ส่งความเห็นไปโชว์สวยๆ เลย
-                               if (newStatus === 'Retrain เรียบร้อย') {
-                                   const retrainResult = document.getElementById('retrainResult').value;
-                                   const retrainComment = document.getElementById('retrainComment').value.trim();
-                                   noteToSend = `ผลประเมิน: ${retrainResult}\nความเห็น: ${retrainComment}`;
+                               // ถ้าเป็นการประเมินครั้งแรก
+                               if (newStatus === 'Retrain เรียบร้อย' && !vueRetrainApp.isReadOnly) {
+                                   const grade = vueRetrainApp.finalGrade.text;
+                                   noteToSend = `ผลประเมิน: ${grade}\nความเห็น: ${vueRetrainApp.getFormData().comment}`;
+                                   finalAttachUrl = finalAttachmentUrlsForRMS;
+                                   isEvalLog = true;
+                               } 
+                               // ถ้าถูกล็อกไปแล้ว แต่มีโน้ตติดตามอัปเดตเพิ่ม
+                               else if (newStatus === 'Retrain เรียบร้อย' && vueRetrainApp.isReadOnly) {
+                                   logActionStr = "แสดงความคิดเห็น";
+                                   noteToSend = newFollowNote || "อัพเดทข้อมูลเคส";
                                }
                                
-                               const newLog = {
-                                   date: new Date().toISOString(),
-                                   user: currentUser.split('@')[0],
-                                   action: `เทรนเนอร์ประเมินผล (${newStatus})`,
-                                   note: noteToSend,
-                                   attachment_url: trainerAttachmentUrl
-                               };
+                               if (isEvalLog) {
+                                   let isRmsDuplicate = false;
+                                   if (existingLogs.length > 0) {
+                                       const latestLog = existingLogs[0];
+                                       if (latestLog.action === logActionStr && latestLog.note === noteToSend) {
+                                           isRmsDuplicate = true;
+                                           if (finalAttachUrl) latestLog.attachment_url = finalAttachUrl;
+                                       }
+                                   }
+
+                                   if (!isRmsDuplicate || trainerAttachmentUrls.length > 0) {
+                                       if (!isRmsDuplicate) {
+                                           const newLog = {
+                                               date: new Date().toISOString(),
+                                               user: currentUser.split('@')[0],
+                                               action: logActionStr,
+                                               note: noteToSend,
+                                               attachment_url: finalAttachUrl,
+                                               raw_eval: JSON.parse(JSON.stringify(vueRetrainApp.getFormData())) // ส่ง Raw_Eval ไปเก็บที่ RMS ด้วย
+                                           };
+                                           existingLogs.unshift(newLog);
+                                       }
+                                   }
+                               } else if (newFollowNote) {
+                                   // กรณีแค่มีโน้ตเพิ่มเติม ก็สร้าง Log สั้นๆ เข้าไป
+                                   const newLog = {
+                                        date: new Date().toISOString(),
+                                        user: currentUser.split('@')[0],
+                                        action: logActionStr,
+                                        note: noteToSend,
+                                        attachment_url: ""
+                                   };
+                                   existingLogs.unshift(newLog);
+                               }
                                
-                               // ย้ายไปที่แถบเป้าหมาย (เช่น retrained)
                                await window.supabase.from('rms_retrain_cases').update({
                                    status: targetRmsStatus, 
                                    tracking_status: `เทรนเนอร์อัพเดท: ${newStatus}`,
-                                   action_logs: [newLog, ...existingLogs]
+                                   action_logs: existingLogs
                                }).eq('id', targetRmsId);
                            }
                        }
@@ -1775,14 +2243,12 @@
                if(error) throw error;
                if(typeof writeLogToSupabase === 'function') await writeLogToSupabase('CREATE_ONBOARD', 'Onboard', `Created: ${newId}`, currentUser);
                
-               // อัปเดตสถานะกลับไปยัง DB_Training ถ้ามาจาก Waiting Room
                if (sourceLeadId && !sourceLeadId.startsWith('OB-') && !sourceLeadId.startsWith('RMS-')) {
                     try {
                         const { data: sample } = await window.supabase.from('db_training').select('*').limit(1);
                         const dbKeys = (sample && sample.length > 0) ? Object.keys(sample[0]) : [];
                         const idCol = dbKeys.find(k => k.toLowerCase() === 'lead_id' || k.toLowerCase() === 'leadid') || 'lead_id';
                         const statCol = dbKeys.find(k => k.toLowerCase() === 'status') || 'status';
-                        
                         let tPayload = {}; tPayload[statCol] = 'เข้ารับการอบรมแล้ว';
                         await window.supabase.from('db_training').update(tPayload).eq(idCol, sourceLeadId);
                     } catch(e) { console.warn("Failed to update db_training status:", e); }
@@ -1834,68 +2300,30 @@
        else { input.classList.add('is-invalid'); return false; }
     }
     
-    // 🌟 Export Excel 🌟
     function exportReport() { 
         showLoading();
         try {
             const exportData = window.currentFilteredData && window.currentFilteredData.length > 0 ? window.currentFilteredData : globalData;
-            
             if (!exportData || exportData.length === 0) {
-                hideLoading();
-                Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลสำหรับเงื่อนไขที่เลือก', 'info');
-                return;
+                hideLoading(); Swal.fire('ไม่พบข้อมูล', 'ไม่มีข้อมูลสำหรับเงื่อนไขที่เลือก', 'info'); return;
             }
-
-            let excelData = [
-                ["วันที่อบรม", "ID", "ชื่อ-นามสกุล", "กลุ่ม", "ศูนย์", "เบอร์โทร", "เลขบัตร ปชช.", "สถานะ(Onboard)", "ประเภท(Master)", "วันเปิดระบบ", "ผู้ดูแล", "สถานะ FT", "ติดตามล่าสุด"]
-            ];
-            
+            let excelData = [["วันที่อบรม", "ID", "ชื่อ-นามสกุล", "กลุ่ม", "ศูนย์", "เบอร์โทร", "เลขบัตร ปชช.", "สถานะ(Onboard)", "ประเภท(Master)", "วันเปิดระบบ", "ผู้ดูแล", "สถานะ FT", "ติดตามล่าสุด"]];
             exportData.forEach(row => {
-                excelData.push([
-                    row.trainingDate || '-',
-                    row.maidCode || '-',
-                    row.name || '-',
-                    row.group || '-',
-                    row.center || '-',
-                    row.phone || '-',
-                    row.idCard || '-',
-                    row.type || '-',
-                    row.masterType || '-',
-                    row.openDate || '-',
-                    row.trainer || '-',
-                    row.fastTrackStatus || '-',
-                    row.latestFollowup || '-'
-                ]);
+                excelData.push([row.trainingDate || '-', row.maidCode || '-', row.name || '-', row.group || '-', row.center || '-', row.phone || '-', row.idCard || '-', row.type || '-', row.masterType || '-', row.openDate || '-', row.trainer || '-', row.fastTrackStatus || '-', row.latestFollowup || '-']);
             });
-            
             const timestamp = new Date().toISOString().slice(0,10);
-
             if (typeof XLSX !== 'undefined') {
-                const ws = XLSX.utils.aoa_to_sheet(excelData);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Onboard_Report");
-                XLSX.writeFile(wb, `Onboard_Report_${timestamp}.xlsx`);
+                const ws = XLSX.utils.aoa_to_sheet(excelData); const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Onboard_Report"); XLSX.writeFile(wb, `Onboard_Report_${timestamp}.xlsx`);
             } else {
                 let csvContent = "";
-                excelData.forEach(row => {
-                    const rowStr = row.map(f => `"${String(f || "").replace(/"/g, '""')}"`).join(",");
-                    csvContent += rowStr + "\n";
-                });
+                excelData.forEach(row => { csvContent += row.map(f => `"${String(f || "").replace(/"/g, '""')}"`).join(",") + "\n"; });
                 const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const downloadUrl = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = downloadUrl;
-                link.download = `Onboard_Report_${timestamp}.csv`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `Onboard_Report_${timestamp}.csv`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
             }
-            
             hideLoading();
-        } catch(e) {
-            hideLoading();
-            showError("Export failed: " + e.message);
-        }
+        } catch(e) { hideLoading(); showError("Export failed: " + e.message); }
     }
   </script>
 </body>
