@@ -5,10 +5,8 @@
   <meta charset="UTF-8">
   <title>Onboard System</title>
 
-  <!-- SheetJS สำหรับ Export Excel -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  <!-- ดึง CSS กลางมาใช้ (มี Bootstrap, FontAwesome, SweetAlert2, Flatpickr เรียบร้อยแล้ว) -->
   <?!= include('_Styles'); ?>
 
   <style>
@@ -92,14 +90,12 @@
     <?!= include('_Navbar') ?>
     
     <div class="container-fluid">
-        <!-- Header -->
         <div class="d-flex justify-content-end align-items-center mb-4">
             <button class="btn btn-soft-success rounded-pill px-3 shadow-sm fw-bold" onclick="exportReport()">
                 <i class="fas fa-file-excel me-2"></i> Report
             </button>
         </div>
 
-        <!-- Filter Card -->
         <div class="card mb-4 border-0 shadow-sm">
             <div class="card-body">
                 <div class="row g-3 align-items-end">
@@ -137,7 +133,6 @@
             </div>
         </div>
 
-        <!-- Tabs -->
         <ul class="nav nav-pills mb-4" id="myTab" role="tablist">
             <li class="nav-item">
                 <button class="nav-link active rounded-pill px-4 me-2" id="tab-pre" data-bs-toggle="tab" data-bs-target="#pane-pre" type="button">
@@ -161,9 +156,7 @@
             </li>
         </ul>
 
-        <!-- Content -->
         <div class="tab-content table-container border-0 shadow-sm">
-            <!-- Pane 1: Pre-Start -->
             <div class="tab-pane fade show active" id="pane-pre">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -173,7 +166,6 @@
                 </div>
                 <div id="noDataPre" class="text-center py-5 text-muted d-none"><i class="fas fa-inbox fa-3x mb-3 opacity-25"></i><br>ไม่มีข้อมูล</div>
             </div>
-            <!-- Pane 2: Wait -->
             <div class="tab-pane fade" id="pane-wait">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -183,7 +175,6 @@
                 </div>
                 <div id="noDataWait" class="text-center py-5 text-muted d-none"><i class="fas fa-clock fa-3x mb-3 opacity-25"></i><br>ไม่มีข้อมูล</div>
             </div>
-            <!-- Pane 3: Post -->
             <div class="tab-pane fade" id="pane-post">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -193,7 +184,6 @@
                 </div>
                 <div id="noDataPost" class="text-center py-5 text-muted d-none"><i class="fas fa-history fa-3x mb-3 opacity-25"></i><br>ไม่มีข้อมูล</div>
             </div>
-            <!-- Pane 4: Done -->
             <div class="tab-pane fade" id="pane-done">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle">
@@ -207,14 +197,12 @@
     </div>
   </div>
 
-  <!-- Action Modal -->
   <div class="modal fade" id="actionModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-white border-bottom-0 pb-0 d-flex justify-content-between">
           <h5 class="modal-title fw-bold text-primary" id="modalTitleText">จัดการข้อมูล</h5>
           <div>
-              <!-- Admin Config Button -->
               <button class="btn btn-sm btn-light rounded-circle me-2 d-none" id="btnConfigChecklist" onclick="openConfigModal()" title="จัดการคำถาม">
                   <i class="fas fa-cog text-muted"></i>
               </button>
@@ -225,14 +213,12 @@
            <form id="actionForm">
               <input type="hidden" id="fj_id"><input type="hidden" id="fj_mode">
               
-              <!-- Maid Card -->
               <div class="d-flex align-items-center bg-light p-3 rounded-3 mb-4 border border-light">
                   <div class="rounded-circle bg-white shadow-sm p-3 text-primary me-3"><i class="fas fa-user fa-lg"></i></div>
                   <div><h6 class="fw-bold mb-0 text-dark" id="displayMaidName">Name</h6><div class="text-muted small" id="displayMaidDetails">Code</div></div>
                   <div class="ms-auto text-end"><div class="text-muted small">Phone</div><h6 class="fw-bold text-primary mb-0" id="displayPhone">0XX-XXX-XXXX</h6></div>
               </div>
 
-              <!-- Assign Mode -->
               <div id="jobDetailsSection" class="d-none">
                   <h6 class="fw-bold text-secondary border-bottom pb-2 mb-3">ข้อมูลงานแรก</h6>
                   <div class="row g-3">
@@ -240,7 +226,6 @@
                       <div class="col-md-6"><label class="form-label small fw-bold text-muted">รหัสงาน (Job ID)</label><input type="text" class="form-control" id="fj_jobId"></div>
                       <div class="col-md-6"><label class="form-label small fw-bold text-muted">วันที่กดรับงาน</label><input type="text" class="form-control datepicker-assign" id="fj_acceptDate"></div>
                       
-                      <!-- Date and Time Picker -->
                       <div class="col-md-4">
                         <label class="form-label small fw-bold text-muted">วันที่ทำความสะอาด</label>
                         <div class="input-group">
@@ -259,7 +244,6 @@
                   </div>
               </div>
 
-              <!-- Checklist (Dynamic) -->
               <div id="checklistSection" class="d-none">
                   <div class="alert alert-soft-info border-0 d-flex align-items-start mb-4 d-none" id="preAdviceDisplay"></div>
                   
@@ -276,11 +260,9 @@
                   </div>
 
                   <div id="checklistForm" class="d-none">
-                      <!-- 1. Pre-Start Dynamic Container -->
                       <h6 class="fw-bold text-primary mb-3"><i class="fas fa-clipboard-list me-2"></i>สอบถามก่อนเริ่มงาน (Pre-Start)</h6>
                       <div class="ps-2 border-start border-3 border-primary-subtle mb-4" id="dynamicPreChecklist"></div>
                       
-                      <!-- 2. Post-Start Dynamic Container -->
                       <div class="post-call-only">
                           <h6 class="fw-bold text-success mb-3"><i class="fas fa-check-double me-2"></i>สอบถามหลังจบงาน (Post-Start)</h6>
                           <div class="ps-2 border-start border-3 border-success-subtle mb-4" id="dynamicPostChecklist"></div>
@@ -326,7 +308,6 @@
     </div>
   </div>
 
-  <!-- Summary Modal -->
   <div class="modal fade" id="summaryModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
@@ -370,7 +351,6 @@
     </div>
   </div>
 
-  <!-- History Modal -->
   <div class="modal fade" id="historyModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content border-0 shadow">
@@ -858,7 +838,12 @@
 
             let btnAction = '';
             if (type === 'pre') {
-                if(!item.bookingCode) btnAction = `<button class="btn btn-sm btn-soft-primary rounded-pill" onclick="openModal('${item.id}', 'assign')">เพิ่มงาน</button>`;
+                if(!item.bookingCode) {
+                    btnAction = `
+                        <button class="btn btn-sm btn-soft-primary rounded-pill mb-1 w-100" onclick="openModal('${item.id}', 'assign')">เพิ่มงาน</button><br>
+                        <button class="btn btn-sm btn-outline-warning rounded-pill text-dark fw-bold w-100" onclick="openFollowupModal('${item.id}')" title="บันทึกติดตาม"><i class="fas fa-headset me-1"></i> โทรติดตาม</button>
+                    `;
+                }
                 else btnAction = `<button class="btn btn-sm btn-soft-info rounded-pill" onclick="openModal('${item.id}', 'precall')"><i class="fas fa-phone"></i> โทรเยี่ยม</button>`;
             } else if (type === 'wait') {
                 btnAction = `
@@ -878,6 +863,31 @@
             let histBtn = `<button class="btn btn-sm btn-light text-secondary border rounded-pill ms-1" onclick="viewHistory('${item.id}')" title="ประวัติ"><i class="fas fa-history"></i></button>`;
             let deleteBtn = isUserAdmin ? `<button class="btn btn-sm btn-outline-danger rounded-pill ms-1" onclick="deleteFirstJobSupabase('${item.id}')" title="ลบข้อมูลงานแรก"><i class="fas fa-trash"></i></button>` : '';
 
+            // 🌟 ตรวจสอบประวัติการโทรติดตาม 🌟
+            let followups = (item.history || []).filter(h => h.note && h.note.includes('[โทรติดตาม]'));
+            let followupBadge = '';
+            if (followups.length > 0) {
+                let latestCall = followups[0].date; // ประวัติล่าสุดอยู่บนสุด
+                let callCount = followups.length;
+                
+                // ตัดเฉพาะเวลาสั้นๆ ถ้ามี
+                let timeStr = latestCall;
+                if(timeStr.includes('-') && timeStr.includes(' ')) {
+                    let parts = timeStr.split(' ');
+                    let dParts = parts[0].split('-');
+                    if(dParts.length === 3) {
+                         timeStr = `${dParts[2]}/${dParts[1]} ${parts[1].substring(0,5)}`; // dd/mm HH:MM
+                    }
+                }
+
+                followupBadge = `
+                    <div class="mt-2 text-info text-start d-inline-block" style="font-size: 0.7rem; font-weight: 600; background: #f0f8ff; padding: 4px 6px; border-radius: 6px; border: 1px solid #b6d4fe; line-height: 1.2;">
+                        <i class="fas fa-headset me-1"></i>ติดตามแล้ว ${callCount} ครั้ง<br>
+                        <span class="text-muted fw-normal" style="font-size: 0.65rem;">ล่าสุด: ${timeStr}</span>
+                    </div>
+                `;
+            }
+
             let row = `<td class="text-center text-muted">${index + 1}</td>`;
             row += `<td class="text-center">${maidLink}</td>`; 
             row += `<td class="${nameClass}">${item.name}</td>`; 
@@ -887,7 +897,7 @@
                 row += `<td>${displayPhone}</td>`;
                 row += `<td>${bookingDisplay}</td>`;
                 row += `<td>${item.cleanDate||'-'}</td>`;
-                row += `<td class="text-center">${statusBadge}</td>`;
+                row += `<td class="text-center">${statusBadge}<br>${followupBadge}</td>`;
             } else {
                 let stars = '-';
                 if(item.reviewScore) {
@@ -1125,7 +1135,7 @@
                logs.forEach(log => {
                    let boxClass = 'log-default';
                    if(log.note.includes('[Returned]')) boxClass = 'log-returned';
-                   else if(log.note.includes('Assign')) boxClass = 'log-status-change';
+                   else if(log.note.includes('Assign') || log.note.includes('[โทรติดตาม]')) boxClass = 'log-status-change';
                    html += `<div class="log-box ${boxClass}"><div>${log.note.replace(/\n/g, '<br>')}</div><div class="log-footer">โดย ${log.user || log.by || '-'}</div></div>`;
                });
                html += `</div>`;
@@ -1175,6 +1185,82 @@
        summaryModal.show();
     }
     
+    function openFollowupModal(id) {
+        Swal.fire({
+            title: 'บันทึกการโทรติดตาม',
+            input: 'textarea',
+            inputPlaceholder: 'พิมพ์บันทึกการสนทนา เช่น ลูกค้าขอเลื่อนรับงาน, รออุปกรณ์...',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-save me-1"></i> บันทึก',
+            cancelButtonText: 'ยกเลิก',
+            confirmButtonColor: '#0d6efd',
+            inputValidator: (value) => {
+                if (!value) return 'กรุณาระบุรายละเอียดการติดตาม!'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveFollowupSupabase(id, result.value);
+            }
+        });
+    }
+
+    async function saveFollowupSupabase(onboardId, noteText) {
+        showLoading();
+        try {
+            const obRow = rawData.find(x => x.id === onboardId);
+            if (!obRow) throw new Error("ไม่พบข้อมูลผู้สมัคร");
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            const logEntry = {
+                date: dateStr,
+                note: `[โทรติดตาม] (${timeStr}) ${noteText}`,
+                user: currentUser
+            };
+            
+            // ใช้ประวัติที่มีอยู่ หรือสร้าง Array ใหม่
+            let currentHist = obRow.history && Array.isArray(obRow.history) ? [...obRow.history] : [];
+            currentHist.unshift(logEntry);
+
+            const payload = {
+                history: currentHist,
+                record_timestamp: new Date().toISOString()
+            };
+
+            const { data: existing } = await supabase.from('prs_firstjob').select('*').eq('onboard_id', onboardId);
+            
+            if (existing && existing.length > 0) {
+                if (!existing[0].firstjob_id || existing[0].firstjob_id === 'EMPTY' || existing[0].firstjob_id === 'NULL') {
+                    payload.firstjob_id = "FJ-" + new Date().getTime().toString().substring(5);
+                }
+                const { error } = await supabase.from('prs_firstjob').update(payload).eq('onboard_id', onboardId);
+                if (error) throw error;
+            } else {
+                payload.firstjob_id = "FJ-" + new Date().getTime().toString().substring(5);
+                payload.onboard_id = onboardId;
+                payload.maid_code = obRow.maidCode;
+                payload.full_name = obRow.name;
+                payload.phone = obRow.phone;
+                payload.center = obRow.center;
+                payload.process_status = 'รอรับงานแรก';
+                const { error } = await supabase.from('prs_firstjob').insert([payload]);
+                if (error) throw error;
+            }
+
+            if(typeof writeLogToSupabase === 'function') {
+                await writeLogToSupabase('FOLLOWUP_FIRST_JOB', 'First Job', `Follow-up ${obRow.maidCode}: ${noteText}`, currentUser);
+            }
+            
+            Swal.fire({toast:true, position:'top-end', icon:'success', title:'บันทึกการติดตามเรียบร้อย', showConfirmButton:false, timer:2000}); 
+            fetchFirstJobDataFromSupabase();
+        } catch (e) {
+            hideLoading();
+            showError(e.message);
+        }
+    }
+
     function editFromSummary() { if(currentViewingId) { summaryModal.hide(); openModal(currentViewingId, 'postcall'); } }
     
     function saveData() {
@@ -1272,7 +1358,10 @@
                 note: `[Assign Job] จ่ายงานแรก: ${form.bookingCode} (Clean: ${form.cleanDate})`,
                 user: currentUser
             };
-            currentHistory.unshift(logEntry);
+            
+            // 🌟 ให้ใช้ History เดิมและ Add ต่อท้าย ไม่ทำลายข้อมูลเก่า
+            let currentHist = obRow.history && Array.isArray(obRow.history) ? [...obRow.history] : [];
+            currentHist.unshift(logEntry);
 
             const payload = {
                 onboard_id: onboardId,
@@ -1287,7 +1376,7 @@
                 work_hours: form.workHours ? parseFloat(form.workHours) : null,
                 process_status: 'Assigned', 
                 officer: currentUser,
-                history: currentHistory,
+                history: currentHist, // 🌟 ใช้ Array ที่ต่อท้ายแล้ว
                 record_timestamp: new Date().toISOString()
             };
 
@@ -1354,12 +1443,15 @@
             }
 
             const logEntry = { date: formatDateForDisplay(new Date()), note: noteContent, user: currentUser };
-            currentHistory.unshift(logEntry);
+            
+            // 🌟 ให้ใช้ History เดิมและ Add ต่อท้าย ไม่ทำลายข้อมูลเก่า
+            let currentHist = obRow.history && Array.isArray(obRow.history) ? [...obRow.history] : [];
+            currentHist.unshift(logEntry);
 
             const payload = {
                 process_status: processStatus,
                 officer: currentUser,
-                history: currentHistory,
+                history: currentHist, // 🌟 อัปเดต Array ใหม่เข้าฐานข้อมูล
                 question: extraData 
             };
 
@@ -1404,7 +1496,10 @@
             if (!existing || existing.length === 0) throw new Error("ไม่พบข้อมูลงานในระบบ");
 
             const noteText = `[Returned] คืนงานเนื่องจาก: ${reason}` + (problemId ? `\nProblem ID: ${problemId}` : "");
-            currentHistory.unshift({ date: formatDateForDisplay(new Date()), note: noteText, user: currentUser });
+            
+            // 🌟 ให้ใช้ History เดิมและ Add ต่อท้าย ไม่ทำลายข้อมูลเก่า
+            let currentHist = obRow.history && Array.isArray(obRow.history) ? [...obRow.history] : [];
+            currentHist.unshift({ date: formatDateForDisplay(new Date()), note: noteText, user: currentUser });
 
             const payload = {
                 booking_code: null,
@@ -1419,7 +1514,7 @@
                 reviewscore: null,
                 customercomment: null,
                 problem_id: null,
-                history: currentHistory
+                history: currentHist // 🌟 บันทึกทับ History เดิม
             };
 
             // 🌟 Auto-Patch
@@ -1466,7 +1561,7 @@
     function exportReport() { 
         showLoading(); 
         try {
-            let headers = ["รหัสแม่บ้าน","ชื่อ-นามสกุล","ศูนย์","เบอร์โทร","รหัสการจอง","JobID","วันทำความสะอาด","จำนวนชั่วโมง","สถานะ"];
+            let headers = ["รหัสแม่บ้าน","ชื่อ-นามสกุล","ศูนย์","เบอร์โทร","รหัสการจอง","JobID","วันทำความสะอาด","จำนวนชั่วโมง","สถานะ", "โทรติดตามครั้งแรก", "โทรติดตามครั้งล่าสุด"];
             checklistQuestions.forEach(q => headers.push(q.label));
             headers.push("คำแนะนำก่อนเริ่มงาน", "คำแนะนำหลังจบงาน", "รีวิว", "คอมเม้น", "รหัสปัญหา");
             
@@ -1481,8 +1576,17 @@
                     exportPhone = '0' + String(exportPhone);
                 }
 
+                // 🌟 ดึงข้อมูลการโทรติดตามครั้งแรกและครั้งล่าสุด
+                let followups = (row.history || []).filter(h => h.note && h.note.includes('[โทรติดตาม]'));
+                let firstFollowup = "-";
+                let lastFollowup = "-";
+                if (followups.length > 0) {
+                    lastFollowup = followups[0].date; // ข้อมูลล่าสุดอยู่ index 0 เสมอ
+                    firstFollowup = followups[followups.length - 1].date; // ข้อมูลแรกสุดอยู่ท้ายสุด
+                }
+
                 let rowData = [
-                    row.maidCode, row.name, row.center, `"${exportPhone}"`, row.bookingCode, row.jobId, row.cleanDate, row.workHours, row.processStatus
+                    row.maidCode, row.name, row.center, `"${exportPhone}"`, row.bookingCode, row.jobId, row.cleanDate, row.workHours, row.processStatus, firstFollowup, lastFollowup
                 ];
                 
                 checklistQuestions.forEach(question => {
