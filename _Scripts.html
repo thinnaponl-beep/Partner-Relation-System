@@ -9,24 +9,15 @@
   // ==========================================
   // 🚀 SUPABASE CONFIGURATION (ตั้งค่าเชื่อมต่อฐานข้อมูล)
   // ==========================================
-  // 🌟 อัปเดตเป็นฐานข้อมูลใหม่ (โปรเจกต์ gjppakbjhoqdpprdzhfj) 🌟
-       const supabaseUrl = 'https://bnzlooehcmgsqgcwjqcj.supabase.co'; 
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuemxvb2VoY21nc3FnY3dqcWNqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM5Mzc2MSwiZXhwIjoyMDkxOTY5NzYxfQ.ZswcbFK8tlJBV8ONQKuM8qNpEO4AJ0jVyd0JSfL-fBI'; 
+  const supabaseUrl = 'https://bnzlooehcmgsqgcwjqcj.supabase.co'; 
+  const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuemxvb2VoY21nc3FnY3dqcWNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzOTM3NjEsImV4cCI6MjA5MTk2OTc2MX0.mrYN-3lidK2MQu4IWnX6EoGDAiEW5wnGACqcLPlVNUo'; 
   
+  // นำ URL หลักของ Web App มาไว้ในตัวแปร เพื่อให้ Redirect ได้แม่นยำเมื่ออยู่ภายใต้ iframe
+  const scriptUrl = "<?= ScriptApp.getService().getUrl() ?>";
+
   // 🛡️ ป้องกัน Error: ตรวจสอบว่าโหลดไลบรารี Supabase สำเร็จหรือไม่
   if (typeof supabase !== 'undefined') {
       window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
-      
-      // 🩺 ระบบวิเคราะห์ปัญหาอัตโนมัติ (Debug) เพื่อตรวจสอบการเชื่อมต่อ
-      window.supabase.from('prs_onboard').select('onboard_id').limit(1).then(res => {
-          console.log("🔍 ตรวจสอบการเชื่อมต่อ Supabase (Test DB):", res);
-          if (res.error) {
-              console.error("❌ Supabase Error:", res.error.message);
-              setTimeout(() => alert("เข้าถึงฐานข้อมูลไม่ได้!\nสาเหตุ: " + res.error.message), 2000);
-          } else {
-              console.log("✅ เชื่อมต่อฐานข้อมูล Test DB สำเร็จ!");
-          }
-      });
   } else {
       console.error("❌ ไม่พบไลบรารี Supabase (CDN Blocked)");
       alert("ไม่สามารถโหลดไลบรารีฐานข้อมูลได้ กรุณาตรวจสอบอินเทอร์เน็ตหรือปิด Adblocker");
@@ -56,11 +47,95 @@
       }
   }
 
-  // ==========================================
+ // ==========================================
   // 🌟 BULLETPROOF INITIALIZATION 🌟
   // ==========================================
-  function initGlobalApp() {
-      // 1. จัดการแถบเมนู Active ด้านข้าง
+  async function initGlobalApp() {
+      // 1. ตรวจสอบว่า Supabase พร้อมทำงานหรือไม่
+      if (!window.supabase || !window.supabase.auth) {
+          setTimeout(initGlobalApp, 100);
+          return;
+      }
+
+      // 🌟 [ดึงข้อมูลสิทธิ์ล็อกอินจาก URL ด้านบนสุดเพื่อแก้ปัญหา Iframe Sandbox] 🌟
+      if (typeof google !== 'undefined' && google.script && google.script.url) {
+          google.script.url.getLocation(async function(location) {
+              let hash = location.hash;
+              
+              // ตรวจสอบว่าหน้าต่างหลักมี access_token ส่งมาหรือไม่
+              if (hash && hash.includes('access_token=')) {
+                  let cleanHash = hash.startsWith('#') ? hash.substring(1) : hash;
+                  let params = new URLSearchParams(cleanHash);
+                  let accessToken = params.get('access_token');
+                  let refreshToken = params.get('refresh_token');
+                  
+                  if (accessToken && refreshToken) {
+                      showLoading();
+                      // บังคับกำหนดเซสชันล็อกอินแบบ Manual เข้าไปใน Iframe
+                      const { data, error } = await window.supabase.auth.setSession({
+                          access_token: accessToken,
+                          refresh_token: refreshToken
+                      });
+                      
+                      if (!error) {
+                          console.log("Logged in successfully via Parent URL Hash!");
+                          hideLoading(); // ต้องปิด Loading ก่อนแสดงหน้าจอสำเร็จ
+                          
+                          // สร้างหน้าจอแจ้งเตือนให้ผู้ใช้คลิกปุ่มเพื่อไปต่อ (Bypass User Activation)
+                          document.body.innerHTML = `
+                              <div style="height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; background: #F0F4F8; flex-direction: column; text-align: center; padding: 20px; position: fixed; top: 0; left: 0; z-index: 9999;">
+                                  <i class="fas fa-check-circle text-success mb-4" style="font-size: 4rem;"></i>
+                                  <h3 class="fw-bold text-dark mb-2">เข้าสู่ระบบสำเร็จ</h3>
+                                  <p class="text-muted mb-4">ระบบตรวจสอบสิทธิ์เรียบร้อยแล้ว กรุณาคลิกปุ่มด้านล่างเพื่อเข้าสู่ระบบ</p>
+                                  <button onclick="window.top.location.replace('${scriptUrl}?page=home')" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm" style="background-color: #31C1D7; border-color: #31C1D7; font-size: 1.1rem; cursor: pointer;">
+                                      <i class="fas fa-home me-2"></i> เข้าสู่หน้าหลัก
+                                  </button>
+                              </div>
+                          `;
+                          return;
+                      } else {
+                          console.error("Failed to set manual session:", error);
+                          hideLoading();
+                      }
+                  }
+              }
+
+              // หากไม่มีโทเค็นใน URL หรือเกิดข้อผิดพลาด ให้ใช้วิธีเช็คเซสชันล็อกอินตามปกติ
+              proceedWithSessionCheck();
+          });
+      } else {
+          proceedWithSessionCheck();
+      }
+  }
+
+
+  // ฟังก์ชันตรวจสอบเซสชันปกติ
+  async function proceedWithSessionCheck() {
+      const { data: { session }, error } = await window.supabase.auth.getSession();
+      
+      if (!session) {
+          console.warn("No active session found. Showing login button overlay...");
+          
+          // บังคับแสดงหน้าจอที่มีปุ่มให้คลิก เพื่อป้องกันการบล็อกของเบราว์เซอร์
+          document.body.innerHTML = `
+              <div style="height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; background: #F0F4F8; flex-direction: column; text-align: center; padding: 20px; position: fixed; top: 0; left: 0; z-index: 9999;">
+                  <i class="fas fa-user-lock text-muted mb-4" style="font-size: 4rem;"></i>
+                  <h3 class="fw-bold text-dark mb-2">เซสชันหมดอายุ หรือยังไม่ได้เข้าสู่ระบบ</h3>
+                  <p class="text-muted mb-4">ระบบรักษาความปลอดภัยของ Google กำหนดให้ท่านคลิกปุ่มด้านล่างเพื่อดำเนินการต่อ</p>
+                  <a href="${scriptUrl}?page=login" target="_top" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm" style="background-color: #31C1D7; border-color: #31C1D7; font-size: 1.1rem; text-decoration: none;">
+                      <i class="fas fa-sign-in-alt me-2"></i> คลิกเพื่อไปหน้าเข้าสู่ระบบ
+                  </a>
+              </div>
+          `;
+          return; 
+      }
+
+      // ดึงอีเมลผู้ใช้จาก Session มาแสดงผล
+      const userEmail = session.user.email;
+      const userEmailEl = document.getElementById('userEmailDisplay');
+      if(userEmailEl) userEmailEl.textContent = userEmail;
+
+      // 2. จัดการแถบเมนู Active ด้านข้าง
       try {
           if (typeof google !== 'undefined' && google.script && google.script.url) {
               google.script.url.getLocation(function(location) {
@@ -78,28 +153,62 @@
           console.warn("Sidebar active sync skipped:", e);
       }
 
-      // 2. ดึงข้อมูลผู้ใช้งานจากระบบ Google Workspace เพื่อยืนยันตัวตนคนเข้าใช้งาน
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run
-              .withSuccessHandler(res => {
-                  if(res && res.isAdmin) {
-                      const configMenu = document.getElementById('nav-config');
-                      if(configMenu) configMenu.classList.remove('d-none');
-                  }
-                  const userEmailEl = document.getElementById('userEmailDisplay');
-                  if(userEmailEl) {
-                      userEmailEl.textContent = (res && res.userEmail) ? res.userEmail : "Officer";
-                  }
-              })
-              .withFailureHandler(err => {
-                  console.error("Config Load Error:", err);
-                  const userEmailEl = document.getElementById('userEmailDisplay');
-                  if(userEmailEl) userEmailEl.textContent = "Offline/Error";
-              })
-              .getClientConfig();
+      // ฟังก์ชันจัดการแสดงผลเมนูและปุ่มการ์ดบนหน้าต่างตามสิทธิ์ผู้ใช้งาน
+      const applyMenuPermissions = (isFullAdmin, hasVerifyAccess) => {
+          const navConfig = document.getElementById('nav-config');
+          const navVerify = document.getElementById('nav-verify');
+          const navAccount = document.getElementById('nav-account');
+          
+          const homeConfig = document.getElementById('menu-config-card');
+          const homeVerify = document.getElementById('home-card-verify');
+          const homeAccount = document.getElementById('home-card-account');
+
+          if (isFullAdmin) {
+              if (navConfig) navConfig.classList.remove('d-none');
+              if (homeConfig) homeConfig.classList.remove('d-none');
+          }
+          if (hasVerifyAccess) {
+              if (navVerify) navVerify.classList.remove('d-none');
+              if (navAccount) navAccount.classList.remove('d-none');
+              if (homeVerify) homeVerify.classList.remove('d-none');
+              if (homeAccount) homeAccount.classList.remove('d-none');
+          }
+      };
+
+      // 3. ตรวจสอบสิทธิ์จากฐานข้อมูล (Admins / Verify Access)
+      try {
+          const { data: perms } = await window.supabase
+              .from('prs_config')
+              .select('category, value')
+              .in('category', ['Admins', 'Verify Access']);
+              
+          if (perms && perms.length > 0) {
+              const userLower = userEmail.toLowerCase();
+              const admins = perms.filter(d => d.category === 'Admins').map(d => String(d.value).toLowerCase());
+              const verifyAccess = perms.filter(d => d.category === 'Verify Access').map(d => String(d.value).toLowerCase());
+              
+              const isFullAdmin = admins.includes(userLower);
+              const hasVerifyAccess = isFullAdmin || verifyAccess.includes(userLower);
+              
+              applyMenuPermissions(isFullAdmin, hasVerifyAccess);
+          }
+      } catch (err) {
+          console.error("Supabase permission check error:", err);
       }
 
-      // 3. ผูกคำสั่งให้กับ Global Search (กล่องค้นหาด้านบน)
+      // 4. ติดตามสถานะ (Listener) หากผู้ใช้ออกจากระบบ
+      window.supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_OUT') {
+               document.body.innerHTML = `
+                  <div style="height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; background: #F0F4F8; flex-direction: column; text-align: center; padding: 20px; position: fixed; top: 0; left: 0; z-index: 9999;">
+                      <h3 class="fw-bold text-dark mb-3">ออกจากระบบเรียบร้อย</h3>
+                      <a href="${scriptUrl}?page=login" target="_top" class="btn btn-primary rounded-pill px-5 py-3 fw-bold shadow-sm" style="background-color: #31C1D7; border-color: #31C1D7; text-decoration: none;">เข้าสู่ระบบอีกครั้ง</a>
+                  </div>
+               `;
+          }
+      });
+
+      // 5. ผูกคำสั่งให้กับ Global Search (กล่องค้นหาด้านบน)
       const searchInput = document.getElementById('globalSearchInput');
       const resultsContainer = document.getElementById('globalSearchResults');
       let globalSearchTimeout = null;
@@ -118,7 +227,6 @@
               
               if(spinner) spinner.classList.remove('d-none');
               
-              // หน่วงเวลาพิมพ์ 500ms ก่อนยิงคำค้นหาไปที่ Supabase
               globalSearchTimeout = setTimeout(async () => {
                   try {
                       const res = await globalSmartSearchSupabase(keyword);
@@ -133,7 +241,6 @@
               }, 500); 
           });
           
-          // ปิดหน้าต่างผลลัพธ์เมื่อคลิกที่ว่างบนหน้าจอ
           document.addEventListener('click', function(e) {
               if (!e.target.closest('#globalSearchInput') && !e.target.closest('#globalSearchResults')) {
                   resultsContainer.style.display = 'none';
@@ -147,7 +254,6 @@
       if (!window.supabase) throw new Error("Supabase is not initialized");
       const kw = `%${keyword}%`;
       
-      // ยิง Query 4 ตารางพร้อมกันแบบ Parallel เพื่อความเร็วสูงสุด
       const [obRes, vmRes, vaRes, hRes] = await Promise.all([
           supabase.from('prs_onboard').select('maid_code, full_name, id_card').or(`full_name.ilike.${kw},id_card.ilike.${kw},maid_code.ilike.${kw}`).limit(5),
           supabase.from('prs_verify_master').select('maid_code, full_name, id_card').or(`full_name.ilike.${kw},id_card.ilike.${kw},maid_code.ilike.${kw}`).limit(5),
@@ -157,7 +263,6 @@
 
       let resultsMap = new Map();
 
-      // ฟังก์ชันรวมผลลัพธ์จากแต่ละตารางเข้าด้วยกัน
       const processResult = (res, moduleName, codeField) => {
           if (!res || res.error || !res.data) return;
           res.data.forEach(item => {
@@ -251,8 +356,6 @@
   // ==========================================
   // 🌟 GLOBAL HELPERS 🌟
   // ==========================================
-  
-  // 🌟 ฟังก์ชันดึงข้อมูลทั้งหมดแบบทะลุขีดจำกัด 1,000 แถว (Pagination Loop)
   window.fetchAllSupabaseData = async function(tableName, orderByField, ascending = false) {
       if (!window.supabase) return [];
       let allData = [];
@@ -280,30 +383,20 @@
       return allData;
   };
 
-  function showLoading() {
-      if (typeof Swal !== 'undefined') {
-          Swal.fire({
-              title: 'กำลังประมวลผล...',
-              html: '<div class="spinner-border text-primary mt-2"></div>',
-              showConfirmButton: false,
-              allowOutsideClick: false,
-              background: 'rgba(255, 255, 255, 0.95)',
-              backdrop: 'rgba(0,0,0,0.3)'
-          });
-      }
+  if (typeof window.showLoading !== 'function') {
+      window.showLoading = function() {
+          if (typeof Swal !== 'undefined') Swal.fire({ title: 'กำลังโหลด...', allowOutsideClick: false, didOpen: () => { Swal.showLoading() } });
+      };
   }
-  
-  function hideLoading() {
-      if (typeof Swal !== 'undefined') {
-          Swal.close();
-      }
+  if (typeof window.hideLoading !== 'function') {
+      window.hideLoading = function() {
+          if (typeof Swal !== 'undefined') Swal.close();
+      };
   }
-  
-  function showError(msg) {
-      if (typeof Swal !== 'undefined') {
-          Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: msg, confirmButtonColor: '#31C1D7' });
-      } else {
-          alert('เกิดข้อผิดพลาด: ' + msg);
-      }
+  if (typeof window.showError !== 'function') {
+      window.showError = function(msg) {
+          if (typeof Swal !== 'undefined') Swal.fire('Error', msg, 'error');
+          else alert('Error: ' + msg);
+      };
   }
 </script>
