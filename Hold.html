@@ -80,6 +80,13 @@
 
     /* Fix SweetAlert Input Focus */
     .swal2-container { z-index: 2000 !important; }
+
+    /* Validation Style */
+    .is-invalid { border-color: #dc3545 !important; background-image: none !important; }
+    .invalid-feedback { display: none; width: 100%; margin-top: 0.25rem; font-size: 0.875em; color: #dc3545; }
+    .input-group:has(.is-invalid) + .invalid-feedback,
+    .is-invalid ~ .invalid-feedback { display: block; }
+    .is-valid { border-color: #198754 !important; }
   </style>
 </head>
 <body>
@@ -264,10 +271,20 @@
                                  <label class="form-label small fw-bold text-muted">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
                                  <input type="text" class="form-control fw-bold shadow-none" id="name" required>
                               </div>
-                              <div class="col-md-6">
+
+                              <!-- 🌟 อัปเดตช่องกรอกเลขบัตร ปชช. ให้มีปุ่มตาเปิดปิด (PDPA) 🌟 -->
+                              <div class="col-md-6" id="idCardContainer">
                                 <label class="form-label small fw-bold text-muted">เลขบัตรประชาชน (13 หลัก)</label>
-                                <input type="text" class="form-control shadow-none" id="idCard" maxlength="17" oninput="formatIdCard(this)">
+                                <div class="input-group has-validation">
+                                    <input type="text" class="form-control shadow-none" id="idCard" maxlength="17" placeholder="ระบุเลข 13 หลัก"
+                                           oninput="formatIdCard(this)" onblur="validateIdCard(this)">
+                                    <button class="btn btn-outline-secondary bg-white border-secondary-subtle" type="button" onclick="toggleIdCardVisibility()" title="แสดง/ซ่อนเลขบัตร" tabindex="-1">
+                                        <i class="fas fa-eye" id="toggleIdCardIcon"></i>
+                                    </button>
+                                    <div class="invalid-feedback">เลขบัตรประชาชนไม่ถูกต้อง</div>
+                                </div>
                               </div>
+
                               <div class="col-md-6">
                                 <label class="form-label small fw-bold text-muted">เบอร์โทรศัพท์</label>
                                 <input type="text" class="form-control shadow-none" id="phone">
@@ -428,7 +445,35 @@
     let currentHistory = [];
     let searchTimeout;
 
-    // 1. แก้ไขปัญหา SweetAlert พิมพ์ไม่ได้ใน Bootstrap Modal 
+    // 🌟 1. ฟังก์ชัน Masking เลขบัตรประชาชน (PDPA) 🌟
+    function getDisplayIdCard(idStr) {
+        if (!idStr) return '-';
+        let v = String(idStr).replace(/\D/g, '');
+        if (isUserAdmin) {
+            // แอดมินเห็นเลขเต็ม
+            if(v.length !== 13) return idStr;
+            return v.substring(0,1) + '-' + v.substring(1,5) + '-' + v.substring(5,10) + '-' + v.substring(10,12) + '-' + v.substring(12,13);
+        } else {
+            // ไม่ใช่แอดมิน ให้เซ็นเซอร์
+            if(v.length !== 13) return 'xxx-xxxx-xxxxx';
+            return 'x-xxxx-xxxxx-' + v.substring(10,12) + '-' + v.substring(12,13);
+        }
+    }
+
+    // 🌟 2. ฟังก์ชันซ่อน/แสดง เลขบัตรประชาชน (ปุ่มลูกตา) 🌟
+    function toggleIdCardVisibility() {
+        const idInput = document.getElementById('idCard');
+        const icon = document.getElementById('toggleIdCardIcon');
+        if (idInput.type === 'password') {
+            idInput.type = 'text';
+            icon.className = 'fas fa-eye';
+        } else {
+            idInput.type = 'password';
+            icon.className = 'fas fa-eye-slash';
+        }
+    }
+
+    // แก้ไขปัญหา SweetAlert พิมพ์ไม่ได้ใน Bootstrap Modal 
     document.addEventListener('focusin', function (e) {
         if (e.target.closest('.swal2-container')) {
             e.stopImmediatePropagation();
@@ -935,8 +980,15 @@
         document.getElementById('hasFastTrackStatus').value = "";
         
         document.getElementById('name').value = "";
+        
+        // 🌟 คืนค่าเลขบัตรให้พิมพ์ได้ และโชว์เป็น Type Text 🌟
         document.getElementById('idCard').value = "";
+        document.getElementById('idCard').readOnly = false;
+        document.getElementById('idCard').type = 'text';
+        const toggleIcon = document.getElementById('toggleIdCardIcon');
+        if(toggleIcon) toggleIcon.className = 'fas fa-eye';
         document.getElementById('idCard').classList.remove('is-invalid', 'is-valid');
+        
         document.getElementById('phone').value = "";
         
         document.getElementById('contactChannel').value = "Line OA"; // default
@@ -1115,6 +1167,11 @@
         document.getElementById('idCard').value = item.idCard || ""; 
         formatIdCard(document.getElementById('idCard')); 
         
+        // 🌟 ให้ตั้งค่าเลขบัตร ปชช เป็นแบบซ่อนอัตโนมัติ
+        document.getElementById('idCard').type = 'password';
+        const icon = document.getElementById('toggleIdCardIcon');
+        if (icon) icon.className = 'fas fa-eye-slash';
+        
         const listContainer = document.getElementById('autocomplete-list');
         listContainer.innerHTML = '';
 
@@ -1153,7 +1210,16 @@
            document.getElementById('recordId').value = item.id;
            document.getElementById('maidCode').value = item.maidCode;
            document.getElementById('name').value = item.name;
-           document.getElementById('idCard').value = item.idCard || ""; formatIdCard(document.getElementById('idCard'));
+           
+           // 🌟 ประยุกต์ PDPA: โชว์เลขที่ปิดบัง และห้ามแก้ไข หากไม่ใช่ Admin
+           document.getElementById('idCard').value = getDisplayIdCard(item.idCard);
+           document.getElementById('idCard').readOnly = !isUserAdmin;
+           
+           // ซ่อนเลขบัตรประชาชนก่อน 
+           document.getElementById('idCard').type = 'password';
+           const icon = document.getElementById('toggleIdCardIcon');
+           if(icon) icon.className = 'fas fa-eye-slash';
+
            document.getElementById('phone').value = item.phone;
            document.getElementById('contactChannel').value = item.contactChannel;
            
@@ -1544,7 +1610,7 @@
                     const { error: mErr } = await window.supabase.from('prs_verify_master').insert([masterPayload]);
                     if (mErr) throw mErr;
                     
-                    const { error: hErr } = await window.supabase.from('prs_hold').update({ fast_track_status: "Pending Result" }).eq('hold_id', id);
+                    const { error: hErr } = await supabase.from('prs_hold').update({ fast_track_status: "Pending Result" }).eq('hold_id', id);
                     if (hErr) throw hErr;
                     
                     if(typeof writeLogToSupabase === 'function') {
@@ -1571,9 +1637,18 @@
 
     async function saveData() {
        const idInput = document.getElementById('idCard');
-       if(idInput.value && !validateIdCard(idInput)) { 
-           Swal.fire({title: 'เลขบัตรไม่ถูกต้อง', text: '', icon: 'warning'}); 
-           return; 
+       const recordId = document.getElementById('recordId').value;
+       let finalIdCard = idInput.value.replace(/-/g, '');
+       
+       // 🌟 ระบบป้องกัน PDPA
+       if (!isUserAdmin && recordId && finalIdCard.toLowerCase().includes('x')) {
+           const oldRecord = globalData.find(x => String(x.id) === String(recordId));
+           if (oldRecord) finalIdCard = oldRecord.idCard;
+       } else {
+           if(idInput.value && !validateIdCard(idInput)) { 
+               Swal.fire({title: 'เลขบัตรไม่ถูกต้อง', text: '', icon: 'warning'}); 
+               return; 
+           }
        }
        
        let tags = [];
@@ -1590,16 +1665,12 @@
 
        let finalFtStatus = document.getElementById('hasFastTrackStatus').value || "";
        let verifyMethod = document.getElementById('verifyMethod').value;
-       
-       // 🌟 แก้ไขบั๊ก: ย้ายการประกาศ recordId ขึ้นมาด้านบน เพื่อป้องกัน Error Cannot access before initialization 🌟
-       const recordId = document.getElementById('recordId').value;
 
        if (verifyMethod === 'มีใบตรวจประวัติมาเอง') {
           finalFtStatus = document.getElementById('manualFtStatus').value || finalFtStatus;
        } else if (verifyMethod === 'ใช้ผลตรวจเดิม') {
           finalFtStatus = 'Verified';
        } else if (verifyMethod === 'ต้องส่งตรวจใหม่ผ่านระบบ') {
-          // 🌟 แก้ไข: ไม่ล้างค่า Verified ทิ้ง หากไม่ได้มีการเปลี่ยน Verify Method 🌟
           const oldVerifyMethod = recordId ? (globalData.find(x => x.id === recordId)?.verifyMethod || "") : "";
           if (oldVerifyMethod !== 'ต้องส่งตรวจใหม่ผ่านระบบ' && oldVerifyMethod !== "") {
               finalFtStatus = ''; 
@@ -1628,7 +1699,7 @@
            const payload = {
                maid_code: maidCodeVal,
                full_name: nameVal,
-               id_card: document.getElementById('idCard').value.replace(/-/g, ''),
+               id_card: finalIdCard,
                phone: document.getElementById('phone').value,
                contact_channel: document.getElementById('contactChannel').value,
                contact_date: document.getElementById('contactDate').value || null,
@@ -1645,7 +1716,9 @@
                reactivation_date: document.getElementById('reactivationDate').value || null,
                kpi_jobs: kpiData,
                officer: currentUser,
-               history: currentHistory
+               history: currentHistory,
+               contact_date: document.getElementById('contactDate').value || null,
+               retrain_date: document.getElementById('retrainDate').value || null
            };
 
            if (recordId) {
