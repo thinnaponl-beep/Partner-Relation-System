@@ -8,8 +8,8 @@ var WEB_APP_URL = '';
 
 // 🌟 ข้อมูลการเชื่อมต่อ Supabase (ใช้ var เพื่อป้องกัน Error is not defined ข้ามไฟล์)
 // อัปเดตฐานข้อมูลเป็นชุดล่าสุดให้ตรงกับฝั่งเว็บไซต์
-var SUPABASE_URL = 'https://bnzlooehcmgsqgcwjqcj.supabase.co'; 
-var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJuemxvb2VoY21nc3FnY3dqcWNqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NjM5Mzc2MSwiZXhwIjoyMDkxOTY5NzYxfQ.ZswcbFK8tlJBV8ONQKuM8qNpEO4AJ0jVyd0JSfL-fBI';
+var SUPABASE_URL = ''; 
+var SUPABASE_KEY = '';
 
 function sendDailyKpiAlertToSlack() {
   if (!SLACK_WEBHOOK_URL || SLACK_WEBHOOK_URL === 'YOUR_SLACK_WEBHOOK_URL_HERE') {
