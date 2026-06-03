@@ -110,7 +110,7 @@
               </div>
 
               <!-- 4. Unified Verify Workspace -->
-              <div class="col-md-6 col-lg-4 col-xl-3">
+              <div class="col-md-6 col-lg-4 col-xl-3 d-none" id="home-card-verify">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=verify_workspace" class="card menu-card menu-verify">
                       <div class="icon-box"><i class="fas fa-user-shield"></i></div>
                       <div class="menu-title">จัดการการตรวจประวัติ</div>
@@ -119,7 +119,7 @@
               </div>
 
               <!-- 5. Account Verify -->
-              <div class="col-md-6 col-lg-4 col-xl-3">
+              <div class="col-md-6 col-lg-4 col-xl-3 d-none" id="home-card-account">
                   <a href="<?= ScriptApp.getService().getUrl() ?>?page=account_verify" class="card menu-card menu-account">
                       <div class="icon-box"><i class="fas fa-search-dollar"></i></div>
                       <div class="menu-title">กระทบยอดบัญชี</div>
@@ -153,34 +153,12 @@
   <?!= include('_Scripts'); ?>
   
   <script>
-    // ตรวจสอบสิทธิ์ผู้ใช้งานเมื่อหน้าเว็บโหลดเสร็จ
+    // อัปเดต Title บาร์ด้านบนเมื่อโครงสร้างหน้าเว็บโหลดเสร็จ
     document.addEventListener('DOMContentLoaded', function() {
-        // อัปเดต Title บาร์ด้านบน
-        document.getElementById('pageTitle').textContent = "หน้าหลัก (Dashboard)";
-        document.getElementById('pageSubtitle').textContent = "เมนูหลักของระบบ";
-        
-        // ขออีเมลผู้ใช้จาก Google Apps Script จากนั้นไปเช็คสิทธิ์แอดมินจาก Supabase
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-            google.script.run.withSuccessHandler(async (res) => {
-                const userEmail = res.userEmail || "System";
-                
-                try {
-                    // 🚀 เช็คสิทธิ์จากตาราง prs_config ใน Supabase โดยตรง
-                    const { data, error } = await supabase
-                        .from('prs_config')
-                        .select('value')
-                        .eq('category', 'Admins')
-                        .ilike('value', userEmail); // ใช้ ilike เพื่อให้เช็คแบบไม่สนตัวพิมพ์เล็ก/ใหญ่
-                        
-                    if (data && data.length > 0) {
-                        // ถ้าเจออีเมลในตาราง Admins ให้เปิดการ์ดตั้งค่าระบบ
-                        document.getElementById('menu-config-card').classList.remove('d-none');
-                    }
-                } catch(e) {
-                    console.error("Error checking admin status in Supabase:", e);
-                }
-            }).getClientConfig();
-        }
+        const pageTitle = document.getElementById('pageTitle');
+        const pageSubtitle = document.getElementById('pageSubtitle');
+        if(pageTitle) pageTitle.textContent = "หน้าหลัก (Dashboard)";
+        if(pageSubtitle) pageSubtitle.textContent = "เมนูหลักของระบบ";
     });
   </script>
 
